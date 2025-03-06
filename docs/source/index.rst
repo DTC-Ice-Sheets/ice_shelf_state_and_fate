@@ -6,7 +6,7 @@
 State and Fate of Antarctic Ice Shelves
 =================================
 
-DTC Ice Sheets Use Case 3, will enable the stakeholders to gain information on the State and fate of Antarctic Ice Shelves.
+DTC Ice Sheets Use Case 3 will enable the stakeholders to gain information on the State and fate of Antarctic Ice Shelves.
 
 .. toctree::
    :maxdepth: 1
