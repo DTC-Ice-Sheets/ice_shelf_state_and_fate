@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Hydropower
+State and Fate of Antarctic Ice Shelves
 =================================
 
-DTC Ice Sheets Use Case 1, aimed to predict climatically driven changes to freshwater flux from the Greenland Ice Sheet into the proglacial environment.
+DTC Ice Sheets Use Case 3 will enable the stakeholders to gain information on the State and fate of Antarctic Ice Shelves.
 
 .. toctree::
    :maxdepth: 1

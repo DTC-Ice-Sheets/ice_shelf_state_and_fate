@@ -11,9 +11,9 @@ import sys
 
 src_root = os.path.abspath("../..")
 sys.path.insert(0, src_root)
-project = "Hydropower"
-company_copyright = "2025, Lancaster University."
-author = "Lancaster University."
+project = "State and Fate of Antarctic Ice Shelves"
+company_copyright = "2025, Earthwave Ltd."
+author = "Earthwave Ltd."
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
