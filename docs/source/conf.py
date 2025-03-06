@@ -11,7 +11,7 @@ import sys
 
 src_root = os.path.abspath("../..")
 sys.path.insert(0, src_root)
-project = "State and Fate of Antarctic Ice Shelves "
+project = "State and Fate of Antarctic Ice Shelves"
 company_copyright = "2025, Earthwave Ltd."
 author = "Earthwave Ltd."
 
