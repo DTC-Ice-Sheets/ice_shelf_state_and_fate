@@ -2,6 +2,7 @@
 
 import os
 import os.path as path
+from typing import Any, List, Optional, Tuple, Union
 
 import pandas as pd
 import xarray as xr
@@ -62,17 +63,36 @@ class CreateDataSets():
         if ascending not in (True, False):
             raise Exception("sorting must be one of either True or False...")
 
-        list_1 = set(list_1)
-        list_2 = set(list_2)
+        set_1 = set(list_1)
+        set_2 = set(list_2)
 
-        list_interesection = sorted(list_1.intersection(list_2), reverse=ascending)
+        list_interesection = sorted(set_1.intersection(set_2), reverse= not ascending)
 
         return list_interesection
 
-    def load_tiffs2dataframe(self,
+    @staticmethod
+    def convert_filename2date(file_name: str) -> str:
+        """
+        Convert a filename to a date string.
+
+        Parameters
+        ----------
+        file_name: str
+            The file name which consists of a date in YYYY-mm-dd format and a file extension such as .tif.
+            Note this splits the string based on the '.' and assumes the first part of the split is the date.
+
+        Returns
+        -------
+        str
+            The date in the format YYYY-mm-dd
+        """
+        return file_name.split(".")[0]
+
+    def load_tiffs2dataframe(self: Any,
                              file_names: list[str],
                              folder_path_elevations: str,
-                             folder_path_errors: str) -> pd.DataFrame:
+                             folder_path_errors: str,
+                             dem_diff: bool = True) -> pd.DataFrame:
         """
         Load a set of .tif files correspond to both the elevation (DEMdiff) and associated errors. Return
         the loaded .tif files as a pd.DataFrame.
@@ -95,13 +115,18 @@ class CreateDataSets():
         # A list used to hold the df for each time point. These will be concatonated at the end.
         data_elevation_list = []
 
+        if dem_diff:
+            elevation_col_name = "DEMdiff (m)"
+        else:
+            elevation_col_name = "elevation (m)"
+
         for file_name in file_names:
             date = self.convert_filename2date(file_name=file_name)
 
             file_path_elevation = path.join(folder_path_elevations, file_name)
             data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation).convert_to_dataframe()
             data_elevation["date"] = pd.Timestamp(date)
-            data_elevation = data_elevation.rename({"value": "elevation (m)"}, axis=1)
+            data_elevation = data_elevation.rename({"value": elevation_col_name}, axis=1)
             data_elevation = data_elevation.set_index(["x", "y", "date"])
 
             file_pathe_errors = path.join(folder_path_errors, file_name)
