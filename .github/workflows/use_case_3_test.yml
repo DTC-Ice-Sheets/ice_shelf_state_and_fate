@@ -26,5 +26,5 @@ jobs:
     with:
       package_name: use_case_3
       notebooks_allowed: true
-      file_size_limit: 10
+      file_size_limit_mb: 10
     secrets: inherit
