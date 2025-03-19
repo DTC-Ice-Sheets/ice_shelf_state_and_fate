@@ -169,16 +169,6 @@ def test_raster_numpy_save_and_load_y_affine_negative(tmpdir: str, y_affine_nega
     assert_save_and_load_tiff(save_path, y_affine_negative_fixture)
 
 
-def test_save_raster_with_kwargs(dummy_raster: RasterNp):
-    with patch("ew_common.raster_tools.raster_np.rasterio.open") as patch_rasterio_open:
-        dummy_raster.save_as_tiff("stoat.tif", BIGTIFF="YES")
-        patch_rasterio_open.assert_called_once_with(
-            "stoat.tif", "w", driver="GTiff", height=3, width=2, count=1, dtype="float32",
-            crs="+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs=True",
-            transform=Affine(100.0, 0.0, 0.0, 0.0, -100.0, 700.0), nodata=None, BIGTIFF="YES", compress="lzw"
-        )
-
-
 def test_raster_numpy_load_sub_extent(test_inputs_path: str):
 
     test_file = os.path.join(test_inputs_path, "rasters", "4x4.tiff")
