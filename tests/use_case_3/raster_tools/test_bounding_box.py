@@ -89,5 +89,3 @@ def test_bounding_box_dict_round_trip():
     print(BoundingBox.from_dict(bounding_box.as_dict()))
     print(str(bounding_box))
     assert str(bounding_box) == str(BoundingBox.from_dict(bounding_box.as_dict()))
-
-# test_bounding_box_dict_round_trip()
