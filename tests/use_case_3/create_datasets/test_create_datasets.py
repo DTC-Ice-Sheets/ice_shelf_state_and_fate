@@ -2,7 +2,6 @@
 
 import os.path as path
 
-import pandas as pd
 import pytest
 
 from use_case_3.create_datasets.create_datasets import CreateDataSets
@@ -62,7 +61,7 @@ def test_load_tiffs2dataframe(init_create_datasets: CreateDataSets):
                                                      dem_diff=True)
 
     assert data.shape == (48, 5)
-    assert list(data.columns) == ["x", "y", "date", "DEMdiff (m)", "error (m)"]
+    assert list(data.columns) == ["grid_longitude", "grid_latitude", "time", "DEMdiff (m)", "error (m)"]
 
     data = init_create_datasets.load_tiffs2dataframe(file_names=combined_tifs,
                                                      folder_path_elevations=test_folder_path,
@@ -70,4 +69,8 @@ def test_load_tiffs2dataframe(init_create_datasets: CreateDataSets):
                                                      dem_diff=False)
 
     assert data.shape == (48, 5)
-    assert list(data.columns) == ["x", "y", "date", "elevation (m)", "error (m)"]
+    assert list(data.columns) == ["grid_longitude", "grid_latitude", "time", "elevation (m)", "error (m)"]
+
+
+# init_create_datasets = CreateDataSets()
+# test_load_tiffs2dataframe(init_create_datasets)

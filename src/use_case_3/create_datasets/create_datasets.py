@@ -2,7 +2,7 @@
 
 import os
 import os.path as path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
 import xarray as xr
@@ -120,20 +120,37 @@ class CreateDataSets():
         else:
             elevation_col_name = "elevation (m)"
 
+        # Using a dummy initial time at the moment
+        initial_time = pd.Timestamp(year=1980,
+                                    month=1,
+                                    day=1)
+
         for file_name in file_names:
-            date = self.convert_filename2date(file_name=file_name)
+            date_time = self.convert_filename2date(file_name=file_name)
 
             file_path_elevation = path.join(folder_path_elevations, file_name)
             data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation).convert_to_dataframe()
-            data_elevation["date"] = pd.Timestamp(date)
-            data_elevation = data_elevation.rename({"value": elevation_col_name}, axis=1)
-            data_elevation = data_elevation.set_index(["x", "y", "date"])
+            data_elevation["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
+                                                  month=int(date_time.split("-")[1]),
+                                                  day=int(date_time.split("-")[2]))
+
+            data_elevation["time"] = pd.to_datetime(data_elevation["time"])
+            data_elevation["time"] = (data_elevation["time"] - initial_time).dt.total_seconds()
+            data_elevation = data_elevation.rename({"value": elevation_col_name,
+                                                    "x": "grid_longitude",
+                                                    "y": "grid_latitude"}, axis=1)
+            data_elevation = data_elevation.set_index(["grid_longitude", "grid_latitude", "time"])
 
             file_pathe_errors = path.join(folder_path_errors, file_name)
             data_error = RasterNp.load_from_tiff(file_path=file_pathe_errors).convert_to_dataframe()
-            data_error["date"] = pd.Timestamp(date)
-            data_error = data_error.rename({"value": "error (m)"}, axis=1)
-            data_error = data_error.set_index(["x", "y", "date"])
+            data_error["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
+                                                  month=int(date_time.split("-")[1]),
+                                                  day=int(date_time.split("-")[2]))
+            data_error["time"] = (data_error["time"] - initial_time).dt.total_seconds()
+            data_error = data_error.rename({"value": "error (m)",
+                                                    "x": "grid_longitude",
+                                                    "y": "grid_latitude"}, axis=1)
+            data_error = data_error.set_index(["grid_longitude", "grid_latitude", "time"])
 
             data_elevation = data_elevation.join(data_error, how="inner")
             data_elevation_list.append(data_elevation)
