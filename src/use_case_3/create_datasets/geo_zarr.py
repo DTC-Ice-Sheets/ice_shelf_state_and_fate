@@ -95,7 +95,6 @@ class GeoZarr:
         reshape_dims = [len(data[column].unique()) for column in coord_columns]
         data_reshape = data[target_column].to_numpy().reshape(reshape_dims)
 
-
         return data_reshape
 
     @staticmethod
