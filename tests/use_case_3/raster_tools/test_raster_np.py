@@ -1,11 +1,14 @@
 """Test the RasterNp class."""
 import os
+import timeit
+from timeit import Timer
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
+import rasterio.transform as tr
 from affine import Affine
 from numpy.typing import DTypeLike, NDArray
 
@@ -397,20 +400,3 @@ def test_bounding_box_partial_intersect_with_raster(test_inputs_path: str):
     assert abs(raster.bounding_box.min_y - expected_raster.bounding_box.min_y) < 1e-4
     assert abs(raster.bounding_box.max_y - expected_raster.bounding_box.max_y) < 1e-4
     assert raster.transform == expected_raster.transform
-
-
-def np_arr_() -> NDArray:
-    return np.array([[1, 2], [3, 4], [6, 6]])
-
-
-def bounding_box_() -> BoundingBox:
-    x_min = 0
-    x_max = 200
-    y_min = 400
-    y_max = 700
-    return BoundingBox(x_min, x_max, y_min, y_max)
-
-def y_affine_positive_(np_arr_fixture: NDArray, bounding_box_fixture: BoundingBox):
-    resolution = 100
-    return RasterNp(
-        np_arr_fixture, bounding_box_fixture, resolution, y_affine_negative=False, proj4_code=PROJ4_CODE_FIXTURE)
