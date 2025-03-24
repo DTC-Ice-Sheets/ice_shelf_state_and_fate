@@ -22,6 +22,7 @@ affine = "^2.4.0"
 rasterio = "^1.4.3"
 xarray = "^2025.1.2"
 zarr = "^3.0.5"
+fiona = "^1.10.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

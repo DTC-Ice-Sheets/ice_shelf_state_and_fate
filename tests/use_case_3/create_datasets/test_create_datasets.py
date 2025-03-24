@@ -27,9 +27,9 @@ def test_return_common_elements_from_two_lists():
     expected_result_2 = ["item_4", "item_3", "item_2", "item_1"]
     assert return_common_elements_from_two_lists(list_1, list_2, ascending=False) == expected_result_2
 
-def test_convert_filename2date():
+def test_extract_date_string_from_filename():
 
-    assert convert_filename2date("2015-01-01.tif") == "2015-01-01"
+    assert extract_date_string_from_filename("2015-01-01.tif") == "2015-01-01"
 
 def test_load_tiffs2dataframe():
 

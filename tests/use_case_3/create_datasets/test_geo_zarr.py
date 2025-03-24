@@ -14,7 +14,7 @@ from use_case_3.create_datasets.geo_zarr import GeoZarr
 @pytest.fixture
 def create_geozarr_memory_fixture() -> GeoZarr:
 
-    return GeoZarr(storage_type="memory_store")
+    return GeoZarr(storage_type=ZarrStorage.memory_store)
 
 @pytest.fixture
 def create_geozarr_local_store() -> GeoZarr:
@@ -24,7 +24,7 @@ def create_geozarr_local_store() -> GeoZarr:
     if path.isdir(test_folder_output_path):
         shutil.rmtree(test_folder_output_path)
 
-    return GeoZarr(storage_type="local_store",
+    return GeoZarr(storage_type=ZarrStorage.local_store,
                    storage_directory=test_folder_output_path)
 
 @pytest.fixture
@@ -62,14 +62,14 @@ def example_df_fixture() -> pd.DataFrame:
 def test__init___memory_store(create_geozarr_memory_fixture: GeoZarr):
 
     assert create_geozarr_memory_fixture.zarr_format == 2
-    assert create_geozarr_memory_fixture.storage_type == "memory_store"
+    assert create_geozarr_memory_fixture.storage_type == ZarrStorage.memory_store
     assert create_geozarr_memory_fixture.storage_directory is None
 
 def test__init__local_store(create_geozarr_local_store: GeoZarr):
 
     storage_directory = path.join(path.dirname(__file__), "test_outputs", "geozarr_example.zarr")
     assert create_geozarr_local_store.zarr_format == 2
-    assert create_geozarr_local_store.storage_type == "local_store"
+    assert create_geozarr_local_store.storage_type == ZarrStorage.local_store
     assert create_geozarr_local_store.storage_directory == storage_directory
 
 
@@ -133,7 +133,7 @@ def test_calculate_chunk_dims(create_geozarr_local_store: GeoZarr):
     create_geozarr_local_store.n_chunks = n_chunks
     assert create_geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == (12, 12, 12)
 
-def test_dataframe2geozar(create_geozarr_local_store: GeoZarr,
+def test_dataframe2geozarr(create_geozarr_local_store: GeoZarr,
                           example_df_fixture: pd.DataFrame):
 
     create_geozarr_local_store.dataframe2geozarr(data=example_df_fixture,

@@ -400,3 +400,28 @@ def test_bounding_box_partial_intersect_with_raster(test_inputs_path: str):
     assert abs(raster.bounding_box.min_y - expected_raster.bounding_box.min_y) < 1e-4
     assert abs(raster.bounding_box.max_y - expected_raster.bounding_box.max_y) < 1e-4
     assert raster.transform == expected_raster.transform
+
+
+def test_mask_from_raster_np(dummy_raster, bounding_box_fixture):
+
+    # Before masking
+    assert np.isnan(dummy_raster[0, 0])
+    assert dummy_raster[0, 1] == 2
+    assert dummy_raster[1, 0] == 3
+    assert dummy_raster[1, 1] == 4
+    assert dummy_raster[2, 0] == 6
+    assert dummy_raster[2, 1] == 6
+
+    mask_np = np.array([[False, False], [False, True], [True, False]])
+    mask = RasterNp(mask_np, bounding_box_fixture, 100)
+
+    dummy_raster.mask_from_raster_np(mask=mask,
+                                     include_mask_value=0)
+
+    # After masking
+    assert np.isnan(dummy_raster[0, 0])
+    assert dummy_raster[0, 1] == 2
+    assert dummy_raster[1, 0] == 3
+    assert np.isnan(dummy_raster[1, 1])
+    assert np.isnan(dummy_raster[2, 0])
+    assert dummy_raster[2, 1] == 6

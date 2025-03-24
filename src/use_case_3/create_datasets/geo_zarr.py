@@ -1,19 +1,24 @@
 """Module for reading and writing GeoZarr files."""
 
 import json
+import os
+import os.path as path
 from typing import Any, List, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 import zarr
 import zarr.storage
+
+from use_case_3.create_datasets.create_dataset_helper_functions import ZarrStorage
 
 
 class GeoZarr:
     """The GeoZarr data object. Allows the reading and writing of GeoZarr files which conform to the GeoZarr spec."""
 
     def __init__(self: Any,
-                 storage_type: str,
+                 storage_type: ZarrStorage,
                  storage_directory: Union[str, None]=None,
                  zarr_format: int=2,
                  n_chunks: int=1) -> None:
@@ -41,9 +46,9 @@ class GeoZarr:
         self.n_chunks = n_chunks
         self.storage_type = storage_type
         self.storage_directory = storage_directory
-        if self.storage_type == "memory_store":
+        if self.storage_type == ZarrStorage.memory_store:
             self.store = zarr.storage.MemoryStore()
-        elif self.storage_type == "local_store":
+        elif self.storage_type == ZarrStorage.local_store:
             if self.storage_directory is None:
                 raise TypeError("Enter a valid storage location")
             self.store = zarr.storage.LocalStore(root=self.storage_directory)
@@ -67,7 +72,7 @@ class GeoZarr:
                 "bounds": ["time_bnds", "None", "None", "None", "None", "None"],
                 "calendar": ["standard", "None", "None", "None", "None", "None"],
                 "long_name": ["time", "grid_latitude", "grid_longitude", "elevation", "DEMdiff", "error"],
-                "units": ["minutes since 1970-01-01T00:00:00", "degrees", "None", "m", "m", "m"]}
+                "units": ["seconds since 1970-01-01T00:00:00", "degrees", "None", "m", "m", "m"]}
 
         self.dimensions_config = pd.DataFrame(data)
 
@@ -213,6 +218,8 @@ class GeoZarr:
                                  attributes=attributes,
                                  chunk_shape=self._calculate_chunk_dims(data_coord.shape))
 
+        zarr.consolidate_metadata(self.store)
+
         if self.storage_type == "memory_store":
             return self.root
 
@@ -243,3 +250,58 @@ class GeoZarr:
             data_slice.append(slice(0, dim))
 
         self.root[name].set_basic_selection(tuple(data_slice), data)
+
+    @staticmethod
+    def load_geo_zarr(file_path: str) -> dict:
+        """
+        Load a GeoZarr file save saved on disk as a local store. This serialises
+        the data and return a dict like object, where the keys are the array names
+        and the values are np.ndarrays.
+
+        The aim was for this to be a thin wrapper around zarr.load(), however, this currently
+        throws: 'NotImplementedError: loading groups not yet supported'. Instead, this has
+        been implemented by scanning the zarr file root directory and loading each array into
+        memory. Currently this will only load arrays directly in the root zarr folder.
+
+        There are other options for loading this zarr file without loading everything into
+        memory such as using the self.load_geo_zarr_xarray, which is the recommended method.
+
+        TODO: Recursively load non root data (this can only be auxiliary data according to
+              the GeoZarr specification).
+
+        Parameters
+        ----------
+        file_path : str
+            The file path to the root zarr folder group location.
+
+        Returns
+        -------
+        dict
+            The loaded GeoZarr file as a dict-like object
+        """
+        data_arrays = os.listdir(file_path)
+
+        data_arrays = [x for x in data_arrays if x[0] != "."]
+
+        zarr_dict = {feature: zarr.load(path.join(file_path, feature)) for feature in data_arrays \
+          if ".zarray" in os.listdir(path.join(file_path, feature))}
+
+        return zarr_dict
+
+    def load_geo_zarr_xarray(self: Any,
+                             file_path: str) -> xr.DataArray:
+        """
+        Load the GeoZarr file into an xarray.
+
+        Parameters
+        ----------
+        file_path : str
+            The file path to the root zarr folder group location.
+
+        Returns
+        -------
+        xarray
+            The xarray of the zarr file
+        """
+        return xr.open_zarr(store=file_path,
+                            zarr_format=self.zarr_format)

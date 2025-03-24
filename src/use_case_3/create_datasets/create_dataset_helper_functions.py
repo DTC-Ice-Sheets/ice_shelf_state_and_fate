@@ -2,12 +2,16 @@
 
 import os
 import os.path as path
-from typing import Any
+from enum import Enum
+from typing import Any, Union
 
+import geopandas as gpd
 import pandas as pd
+import rasterio
+import rasterio.mask
 import xarray as xr
 
-from use_case_3.raster_tools.raster_np import RasterNp
+from use_case_3.raster_tools.raster_np import BoundingBox, RasterNp
 
 
 def get_list_of_tiffs_from_folder(folder_path: str) -> list[str]:
@@ -26,12 +30,12 @@ def get_list_of_tiffs_from_folder(folder_path: str) -> list[str]:
     """
     files = os.listdir(folder_path)
 
-    return [file for file in files if file[-4:]==".tif"]
+    return [file for file in files if file.endswith(".tif")]
 
 
 def return_common_elements_from_two_lists(list_1: list,
-                                            list_2: list,
-                                            ascending: bool=False) -> list:
+                                          list_2: list,
+                                          ascending: bool=False) -> list:
     """
     Return a list of the common elements in two lists. This is done by converting the lists to sets
     before checking the intersection and then returning a list of the common elements sorted in
@@ -64,7 +68,7 @@ def return_common_elements_from_two_lists(list_1: list,
     return list_interesection
 
 
-def convert_filename2date(file_name: str) -> str:
+def extract_date_string_from_filename(file_name: str) -> str:
     """
     Convert a filename to a date string.
 
@@ -85,7 +89,9 @@ def convert_filename2date(file_name: str) -> str:
 def load_tiffs2dataframe(file_names: list[str],
                          folder_path_elevations: str,
                          folder_path_errors: str,
-                         dem_diff: bool = True) -> pd.DataFrame:
+                         file_path_mask: Union[str, None] = None,
+                         dem_diff: bool = True,
+                         glacier_name: Union[str, None] = None) -> pd.DataFrame:
     """
     Load a set of .tif files correspond to both the elevation (DEMdiff) and associated errors. Return
     the loaded .tif files as a pd.DataFrame.
@@ -98,6 +104,10 @@ def load_tiffs2dataframe(file_names: list[str],
         folder path pointing to where the elevation data is stored.
     folder_path_errors: str
         folder path pointing to where the elevation error data is stored.
+    file_path_mask : str
+        file path pointing at where the mask file is stored
+    dem_diff : bool
+        A boolean value idenifying whether the elevation data should be a DEMdiff or absolue elevation.
 
     Returns
     -------
@@ -119,29 +129,48 @@ def load_tiffs2dataframe(file_names: list[str],
                                 month=1,
                                 day=1)
 
-    for file_name in file_names:
-        date_time = convert_filename2date(file_name=file_name)
+    for i, file_name in enumerate(file_names):
+
+        date_time = extract_date_string_from_filename(file_name=file_name)
 
         file_path_elevation = path.join(folder_path_elevations, file_name)
-        data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation).convert_to_dataframe()
+        data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation)
+
+        # On the first iteration create the mask to be used.
+        if i == 0 and file_path_mask is not None:
+            mask = get_mask_from_shapefile(file_path_raster=file_path_elevation,
+                                           file_path_mask=file_path_mask,
+                                           glacier_name=glacier_name)
+
+        if file_path_mask is not None:
+            data_elevation.mask_from_raster_np(mask,
+                                            include_mask_value=False)
+
+        data_elevation = data_elevation.convert_to_dataframe()
         data_elevation["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
                                                 month=int(date_time.split("-")[1]),
                                                 day=int(date_time.split("-")[2]))
 
         data_elevation["time"] = pd.to_datetime(data_elevation["time"])
-        data_elevation["time"] = (data_elevation["time"] - initial_time).dt.total_seconds()/60
+        data_elevation["time"] = (data_elevation["time"] - initial_time).dt.total_seconds()
         data_elevation["value"] = data_elevation["value"]
         data_elevation = data_elevation.rename({"value": elevation_col_name,
                                                 "x": "grid_longitude",
                                                 "y": "grid_latitude"}, axis=1)
         data_elevation = data_elevation.set_index(["grid_longitude", "grid_latitude", "time"])
 
-        file_pathe_errors = path.join(folder_path_errors, file_name)
-        data_error = RasterNp.load_from_tiff(file_path=file_pathe_errors).convert_to_dataframe()
+        file_path_errors = path.join(folder_path_errors, file_name)
+        data_error = RasterNp.load_from_tiff(file_path=file_path_errors)
+        if file_path_mask is not None:
+            data_error.mask_from_raster_np(mask,
+                                           include_mask_value=False)
+
+        data_error = data_error.convert_to_dataframe()
         data_error["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
                                                 month=int(date_time.split("-")[1]),
                                                 day=int(date_time.split("-")[2]))
-        data_error["time"] = (data_error["time"] - initial_time).dt.total_seconds()/60
+
+        data_error["time"] = (data_error["time"] - initial_time).dt.total_seconds()
         data_error = data_error.rename({"value": "error",
                                         "x": "grid_longitude",
                                         "y": "grid_latitude"}, axis=1)
@@ -151,7 +180,6 @@ def load_tiffs2dataframe(file_names: list[str],
         data_elevation_list.append(data_elevation)
 
     return pd.concat(data_elevation_list, axis=0).reset_index(drop=False)
-
 
 def load_netcdf(folder_path: str,
                 file_name: str) -> pd.DataFrame:
@@ -181,3 +209,52 @@ def load_netcdf(folder_path: str,
     data = xr.open_dataset(path.join(folder_path, file_name))
     data = data.to_dataframe()
     return data
+
+class ZarrStorage(Enum):
+    """Specifies the Zarr file storage types available."""
+
+    local_store = "local_store"
+    memory_store = "memory_store"
+
+def get_mask_from_shapefile(file_path_raster: str,
+                            file_path_mask: str,
+                            glacier_name: str) -> RasterNp:
+    """
+    Convert a shapefile with a polygon defining a mask to a mask in a RasterNp object.
+    In this case the mask is boolean with the same extent as the tif to be masked. Where a pixel
+    is marked as False in the mask, it will be included, while True results in the pixel being
+    set to a np.nan value.
+
+    Parameters
+    ----------
+    file_path_raster : str
+        File path to the raster to be masked.
+    file_path_mask : str
+        File path to the mask store, stored as a .gpkg. The 'Name' column specifies the
+        glacier names and the 'geometry' column specifies the mask polygon.
+    glacier_name : str
+        The glacier of interest.
+
+    Returns
+    -------
+    RasterNp
+        a RasterNp object containing the mask.
+    """
+    shapes = gpd.read_file(file_path_mask)
+    shape = shapes[shapes["Name"]==glacier_name]
+
+    with rasterio.open(file_path_raster) as src:
+        mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False)
+
+        bounds = (src.bounds[0], src.bounds[1], src.bounds[2], src.bounds[3]) #minx, miny, maxx, maxy
+        bounding_box = BoundingBox(min_x=bounds[0],
+                                   min_y=bounds[1],
+                                   max_x=bounds[2],
+                                   max_y=bounds[3])
+
+    resolution = (bounds[2] - bounds[0]) / mask.shape[1]
+    mask = RasterNp(input_array=mask,
+                    bounding_box=bounding_box,
+                    resolution=resolution)
+
+    return mask
