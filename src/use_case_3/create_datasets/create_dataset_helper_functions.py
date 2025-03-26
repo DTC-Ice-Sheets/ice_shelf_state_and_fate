@@ -156,8 +156,8 @@ def load_tiffs2dataframe(file_names: list[str],
         # Convert elevation data to a DataFrame and rename columns as necessary.
         data_elevation = data_elevation.convert_to_dataframe()
         data_elevation["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
-                                                month=int(date_time.split("-")[1]),
-                                                day=int(date_time.split("-")[2]))
+                                              month=int(date_time.split("-")[1]),
+                                              day=int(date_time.split("-")[2]))
 
         data_elevation["time"] = pd.to_datetime(data_elevation["time"])
         data_elevation["time"] = (data_elevation["time"] - initial_time).dt.total_seconds()
@@ -176,8 +176,8 @@ def load_tiffs2dataframe(file_names: list[str],
 
         data_error = data_error.convert_to_dataframe()
         data_error["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
-                                                month=int(date_time.split("-")[1]),
-                                                day=int(date_time.split("-")[2]))
+                                          month=int(date_time.split("-")[1]),
+                                          day=int(date_time.split("-")[2]))
 
         data_error["time"] = (data_error["time"] - initial_time).dt.total_seconds()
         data_error = data_error.rename({"value": "error",
