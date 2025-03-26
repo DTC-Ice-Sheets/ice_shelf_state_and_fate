@@ -12,6 +12,12 @@ from use_case_3.create_datasets.geo_zarr import GeoZarr
 
 
 @pytest.fixture
+def dataframe_fixture() -> pd.DataFrame:
+    return pd.DataFrame(np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16]]),
+                        columns=["y", "x", "z", "target"])
+
+
+@pytest.fixture
 def create_geozarr_memory_fixture() -> GeoZarr:
 
     return GeoZarr(storage_type=ZarrStorage.memory_store)
@@ -72,46 +78,78 @@ def test__init__local_store(create_geozarr_local_store: GeoZarr):
     assert create_geozarr_local_store.storage_type == ZarrStorage.local_store
     assert create_geozarr_local_store.storage_directory == storage_directory
 
+def test__reshape_data_simple(create_geozarr_local_store: GeoZarr):
 
-def test__reshape_data(example_df_fixture: pd.DataFrame,
-                       create_geozarr_local_store: GeoZarr):
+    data = pd.DataFrame(np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16]]),
+                        columns=["y", "x", "z", "target"])
 
-    n_random_checks = 2
+    coord_columns = ["y", "x", "z"]
+    coord_columns = sorted(coord_columns)
 
-    coord_columns = ["grid_latitude", "grid_longitude", "time"]
+    # Order the columns alpabetically between the different column groups
+    data = pd.concat([data["target"],
+                        data[coord_columns]], axis=1)
 
-    example_df_fixture = example_df_fixture.sort_values(coord_columns)
+    data = data.sort_values(coord_columns)
 
-    data_reshaped = create_geozarr_local_store._reshape_data(data=example_df_fixture,
-                                                             target_column="DEMdiff",
+    assert data.iloc[0, 0] == 6
+    assert data.iloc[2, 2] == 8
+    assert data.iloc[4, 3] == 17
+
+    data_reshaped, data_coordinates = create_geozarr_local_store._reshape_data(data=data,
+                                                             target_column="target",
                                                              coord_columns=coord_columns)
 
-    latitudes = create_geozarr_local_store._reduce_coordinates(data=example_df_fixture,
-                                                               target_column=coord_columns[0])
+    # Check the coordinate variables
+    assert np.array_equal(data_coordinates[0], np.arange(1, 19))
+    assert np.array_equal(data_coordinates[1], np.arange(7, 20))
+    assert np.array_equal(data_coordinates[2], np.arange(0, 18))
 
-    longitudes = create_geozarr_local_store._reduce_coordinates(data=example_df_fixture,
-                                                               target_column=coord_columns[1])
+    assert data_reshaped[0, 2, 11] == 6
+    assert data_reshaped[1, 3, 5] == 12
+    assert data_reshaped[2, 1, 0] == 4
+    assert data_reshaped[13, 0, 15] == 13
+    assert data_reshaped[17, 12, 17] == 16
 
-    times = create_geozarr_local_store._reduce_coordinates(data=example_df_fixture,
-                                                               target_column=coord_columns[2])
+def test__reshape_data_duplicate(create_geozarr_local_store: GeoZarr):
 
-    for _ in range(n_random_checks):
-        idx  = np.random.choice(example_df_fixture.index)
-        lat = example_df_fixture.loc[idx, coord_columns[0]]
-        long = example_df_fixture.loc[idx, coord_columns[1]]
-        time = example_df_fixture.loc[idx, coord_columns[2]]
-        value_ground_truth = example_df_fixture.loc[idx, "DEMdiff"]
+    data = pd.DataFrame(np.array([[8, 3, 0, 4],
+                                  [10, 2, 5, 12],
+                                  [9, 1, 11, 6],
+                                  [7, 14, 15, 13],
+                                  [19, 18, 17, 16],
+                                  [9, 1, 17, 5]]),
+                        columns=["y", "x", "z", "target"])
 
-        value_reshape = np.squeeze(data_reshaped[np.where(latitudes == lat),
-                                       np.where(longitudes == long),
-                                       np.where(times == time)])
+    coord_columns = ["y", "x", "z"]
+    coord_columns = sorted(coord_columns)
 
-        assert value_ground_truth == value_reshape
+    # Order the columns alpabetically between the different column groups
+    data = pd.concat([data["target"],
+                      data[coord_columns]], axis=1)
 
-def test_reduce_coordinates(small_df_fixture: pd.DataFrame):
+    data = data.sort_values(coord_columns)
 
-    assert np.array_equal(GeoZarr._reduce_coordinates(data=small_df_fixture, target_column="x"), np.array([1, 2, 3, 5]))
-    assert np.array_equal(GeoZarr._reduce_coordinates(data=small_df_fixture, target_column="y"), np.array([2, 3, 5]))
+    assert data.iloc[0, 0] == 6
+    assert data.iloc[2, 2] == 10
+    assert data.iloc[4, 3] == 15
+    assert data.iloc[5, 3] == 17
+
+    data_reshaped, data_coordinates = create_geozarr_local_store._reshape_data(data=data,
+                                                             target_column="target",
+                                                             coord_columns=coord_columns)
+
+    # Check the coordinate variables
+    assert np.array_equal(data_coordinates[0], np.arange(1, 19))
+    assert np.array_equal(data_coordinates[1], np.arange(7, 20))
+    assert np.array_equal(data_coordinates[2], np.arange(0, 18))
+
+    assert data_reshaped[0, 2, 11] == 6
+    assert data_reshaped[0, 2, 17] == 5
+    assert data_reshaped[1, 3, 5] == 12
+    assert data_reshaped[2, 1, 0] == 4
+    assert data_reshaped[13, 0, 15] == 13
+    assert data_reshaped[17, 12, 17] == 16
 
 def test_create_dimensions_config(create_geozarr_local_store: GeoZarr):
 
@@ -151,7 +189,9 @@ def test_dataframe2geozarr(create_geozarr_local_store: GeoZarr,
                                                               "time"]
 
     assert create_geozarr_local_store.root["DEMdiff"][0, 0, 0] == 12.0
-    assert create_geozarr_local_store.root["DEMdiff"][2, 3, 1] == 7.0
+    assert create_geozarr_local_store.root["DEMdiff"][2, 0, 0] == 4
+    assert create_geozarr_local_store.root["DEMdiff"][3, 2, 731] == 2
+    assert np.isnan(create_geozarr_local_store.root["DEMdiff"][3, 2, 730])
     assert create_geozarr_local_store.root["DEMdiff"].attrs["_ARRAY_DIMENSIONS"] == ["grid_latitude",
                                                                                      "grid_longitude",
                                                                                      "time"]

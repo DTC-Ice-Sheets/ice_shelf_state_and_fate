@@ -3,7 +3,7 @@
 import json
 import os
 import os.path as path
-from typing import Any, List, Union
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -27,10 +27,10 @@ class GeoZarr:
 
         Parameters
         ----------
-        storage_type : str
-            Define the storage type used, currently can be one of 'memory_store' or 'local_store'.
+        storage_type : ZarrStorage
+            Define the storage type used, currently can be one of ZarrStorage.memory_store or ZarrStorage.local_store.
         storage_directory : str, optional
-            The storage directory if the 'local_store' optins is used, by default None.
+            The storage directory if the ZarrStorage.local_store option is used, by default None.
         zarr_format : int, optional
             The zarr specification used, note this can be 2 or 3, but GeoZarr is based on Zarr 2, by default 2.
         n_chunks : int, optional
@@ -40,7 +40,7 @@ class GeoZarr:
         Raises
         ------
         TypeError
-            Raised when no storage directory is specified when the 'local_store' parameter is passed.
+            Raised when no storage directory is specified when the 'ZarrSorage.local_store' parameter is passed.
         """
         self.zarr_format = zarr_format
         self.n_chunks = n_chunks
@@ -65,6 +65,8 @@ class GeoZarr:
 
         !!!!!!!!!
         Note this is currently a place holder and some of these do not follow CF standard naming conventions.
+        We think that this will probably be some kind of external look-up dictionary held outside of the class
+        where we can populate this for all of the expected standard names.
         !!!!!!!!!
         """
         data = {"standard_name": ["time", "grid_latitude", "grid_longitude", "elevation", "DEMdiff", "error"],
@@ -79,9 +81,14 @@ class GeoZarr:
     @staticmethod
     def _reshape_data(data: pd.DataFrame,
                       target_column:str,
-                      coord_columns: List[str]) -> np.ndarray:
+                      coord_columns: List[str]) -> Tuple[np.ndarray, list[np.ndarray]]:
         """
         Reshape a 2-dimensional array into an N-dimensional array based on a specified number of coordinate columns.
+        This ensures a uniformly spaced grid in the coordinates. In cases where the coordinate period is not uniform,
+        this is resampled to the highest common factor. Note, resampling only works with coordinates which are integers.
+
+        TODO: This needs optimised, there are to many for loops and some of this can probably be vectorised.
+        TODO: This only tested for 2D --> 3D data transformations.
 
         Parameters
         ----------
@@ -94,33 +101,57 @@ class GeoZarr:
 
         Returns
         -------
-        np.ndarray
-            The reshape data array in the form of an np.ndarray.
+        Tuple[np.ndarray, list[np.ndarray]
+            The reshaped data array in the form of an np.ndarray.
+            The coordinates of the reshaped data array in the form of an np.ndarray.
         """
-        reshape_dims = [len(data[column].unique()) for column in coord_columns]
-        data_reshape = data[target_column].to_numpy().reshape(reshape_dims)
+        # Get a list of data vectors for each coordinate.
+        coords_list = []
+        for coord_column in coord_columns:
+            coords_list.append(data[coord_column].values)
 
-        return data_reshape
+        # Get the vector of target data.
+        target = data[target_column].values
 
-    @staticmethod
-    def _reduce_coordinates(data: pd.DataFrame,
-                            target_column: str) -> np.ndarray:
-        """
-        Reduce a coordinate variabel to a sorted monotonically increasing set of coordinates.
+        # Create empty lists to hold important information regardin coordinate remapping.
+        coords_list_unique = [] # This holds the unique coordinate values for each coordinate variable.
+        coords_idx = [] # This holds the coordinate indexes for each coordinate variable.
+        data_coords = [] # used to store the final coordinate vectors which are resampled.
+        for i, coord in enumerate(coords_list):
+            # This calculates the difference between the coordinates for each variable, if it is not spaced evenly,
+            # then this is resampled. This assumes that the data to be resampled is an integer!
+            if not np.all(np.diff(np.unique(np.sort(coord)))==np.diff(np.unique(np.sort(coord)))[0]):
+                period = np.min(np.gcd(np.diff(np.unique(np.sort(coord))).astype(int),
+                                    np.diff(np.unique(np.sort(coord)))[0].astype(int)))
+            else:
+                period = np.diff(np.unique(np.sort(coord)))[0]
+            # Create a sorted list of unique coordinate values.
+            coords_list_unique.append(np.arange(np.min(coord), np.max(coord)+period, period))
+            coords_idx.append(np.zeros(coords_list[i].shape))
+            data_coords.append(coords_list_unique[i])
 
-        Parameters
-        ----------
-        data : pd.DataFrame
-            The data to be processed including the target feature in the form of a pd.DataFrame.
-        target_column : str
-            The coordinate feature to be processed.
+        # Map the orignal coordinates to the index of the new coordinate mapping, i.e. from the long form 2d data to the
+        # N-dim tensor.
+        for i in range(len(coords_list)):
+            coords_idx[i] = coords_list_unique[i].searchsorted(coords_list[i])
 
-        Returns
-        -------
-        np.ndarray
-            The processed coordinate variable. This will be monotonically increasing and contain no duplicates.
-        """
-        return np.sort(data[target_column].unique())
+        # Get the expected shape of the N-dim tensor.
+        shape_matrix = [n.shape[0] for n in coords_list_unique]
+
+        # Create the N-dim tensor and fill with NaN values.
+        data_reshape = np.empty(shape_matrix)
+        data_reshape[:] = np.nan
+
+        # Create an array of coordinates where the N-Dim tensor will be filled with the data.
+        final_idx = np.hstack([x.reshape((x.shape[0], -1)).astype(int) for x in coords_idx])
+
+        # Iterate through the coordinates and set the data in the correct positions in the N-Dim array.
+        # This should be possible to do through one assignment operation, but I at the moment I can't do this with np!
+        for i in range(final_idx.shape[0]):
+            idx = tuple([final_idx[i, j] for j in range(final_idx.shape[1])])
+            data_reshape[idx] = target[i]
+
+        return data_reshape, data_coords
 
     def _calculate_chunk_dims(self: Any,
                               data_shape: tuple) -> tuple:
@@ -129,8 +160,19 @@ class GeoZarr:
 
                   chunk_dim = ceil(n_elements / n_chunks)
 
-        This means that when the n_elements is not divisable by the n_chunks that the final chunk will overhang
-        the edge of the array. This is standard in Zarr.
+        When n_elements is not exactly divisable by n_chunks, the final chunk will overhang the edge of the array.
+        This is standard in Zarr. i.e for the case of a 3x3 array with n_chunks = 2 will result in 4 2x2 chunks:
+
+                            col1 col2  col3
+                          |----------|------------|
+                        0 |  a    d  |  g    NaN  |
+                          |          |            |
+                        1 |  b    e  |  h    NaN  |
+                        --|----------|------------|
+                        2 |  c    f  |  i    NaN  |
+                          |          |            |
+                          | NaN  NaN | NaN   NaN  |
+                          |----------|------------|
 
         Parameters
         ----------
@@ -154,8 +196,9 @@ class GeoZarr:
                           auxiliary_columns: Union[List, None]) -> Union[None, zarr.Group]:
         """
         Convert a pandas dataframe to geozarr. Note this currently assumes that the column names will follow
-        CF naming conventions. It also currently assumes that the gird used, i.e. the x/y grid or the lat/long grid
-        will be the same at all datapoints and time points.
+        CF naming conventions.
+
+        TODO: Auxiliary data is currently not handled.
 
         Parameters
         ----------
@@ -172,6 +215,11 @@ class GeoZarr:
         -------
         Union[None, zarr.Group]
             If the geozarr file is created as a memory store then it is returned else None is returned.
+
+        Raises
+        ------
+        ValueError
+            Raised when column names are not in theself.dimensions_config dict.
         """
         # Sort the column names alphabetically:
         data_columns = sorted(data_columns)
@@ -183,10 +231,14 @@ class GeoZarr:
                           data[coordinate_columns],
                           data[auxiliary_columns]], axis=1)
 
+        # Sort the data by the coordinate columns
         data = data.sort_values(coordinate_columns)
 
+        # Create the necessary GeoZarr attributes for the coordinate columns.
         self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
 
+        # Create the N-Dim array for each sepcified data column - According to GeoZarr this should be geospacial
+        # observations.
         for column in data_columns:
             standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"]==column]
             if standard_dimensions.shape[0] > 0:
@@ -195,32 +247,38 @@ class GeoZarr:
                 attributes["_ARRAY_DIMENSIONS"] = coordinate_columns
             else:
                 raise ValueError(f"Column {column} is not a CF standard name, please check this")
-            data_reshape = self._reshape_data(data=data,
-                                              target_column=column,
-                                              coord_columns=coordinate_columns)
+
+            data_reshape, data_reshape_coords = self._reshape_data(data=data,
+                                                                   target_column=column,
+                                                                   coord_columns=coordinate_columns)
+
             self._add_data_array(data=data_reshape,
                                  dtype=data[column].to_numpy().dtype,
                                  name=column,
                                  attributes=attributes,
                                  chunk_shape=self._calculate_chunk_dims(data_reshape.shape))
 
-        for column in coordinate_columns:
+        # Process the coordinate coluumns
+        for i, column in enumerate(coordinate_columns):
             standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"]==column]
             if standard_dimensions.shape[0] > 0:
                 attributes = {key: standard_dimensions[key].iloc[0] for key in standard_dimensions.columns}
                 attributes["_ARRAY_DIMENSIONS"] = [column]
             else:
                 raise ValueError(f"Column {column} is not a CF standard name, please check this")
-            data_coord = np.sort(data[column].unique())
+            data_coord = data_reshape_coords[i]
             self._add_data_array(data=data_coord,
                                  dtype=data[column].to_numpy().dtype,
                                  name=column,
                                  attributes=attributes,
                                  chunk_shape=self._calculate_chunk_dims(data_coord.shape))
 
+        # Encouraged by XArray to increase the speed at which the Zarr file can be loaded. This consolidates all
+        # metadata to the root metadata file.
         zarr.consolidate_metadata(self.store)
 
-        if self.storage_type == "memory_store":
+        # If the storage type chosen is memory only then return the Zarr object, else the method returns nothing.
+        if self.storage_type == ZarrStorage.memory_store:
             return self.root
 
     def _add_data_array(self,
@@ -234,10 +292,16 @@ class GeoZarr:
 
         Parameters
         ----------
+        attributes : dict[str, zarr.core.common.JSON]
+            The attributes to be written into the attribute file for the variable.
         data : np.ndarray
             The data to be added to a data_array.
         dtype : np.typing.DTypeLike
             The dtype of the array.
+        name : str
+            The name of the variable.
+        chunk_shape : tuple
+            The shape of a single chunk.
         """
         self.root.create_array(name=name,
                                shape=data.shape,
@@ -291,7 +355,7 @@ class GeoZarr:
     def load_geo_zarr_xarray(self: Any,
                              file_path: str) -> xr.DataArray:
         """
-        Load the GeoZarr file into an xarray.
+        Load the GeoZarr file into an xarray. Thin wrapper around xarray.open_zarr.
 
         Parameters
         ----------

@@ -56,9 +56,14 @@ def return_common_elements_from_two_lists(list_1: list,
     -------
     list
         The list containing the intersection between list_1 and list_2 and duplicates removed.
+
+    Raises
+    ------
+    TypeError
+        Raised if non boolean value is passed.
     """
     if ascending not in (True, False):
-        raise Exception("sorting must be one of either True or False...")
+        raise TypeError("sorting must be one of either True or False...")
 
     set_1 = set(list_1)
     set_2 = set(list_2)
@@ -124,11 +129,12 @@ def load_tiffs2dataframe(file_names: list[str],
     else:
         elevation_col_name = "elevation"
 
-    # Using a dummy initial time at the moment
+    # Reference datum - Note CF standards expects time in the format: Time unit since reference datum.
     initial_time = pd.Timestamp(year=1970,
                                 month=1,
                                 day=1)
 
+    # Process each file.
     for i, file_name in enumerate(file_names):
 
         date_time = extract_date_string_from_filename(file_name=file_name)
@@ -136,16 +142,18 @@ def load_tiffs2dataframe(file_names: list[str],
         file_path_elevation = path.join(folder_path_elevations, file_name)
         data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation)
 
-        # On the first iteration create the mask to be used.
+        # On the first iteration create the mask to be used as a raster.
         if i == 0 and file_path_mask is not None:
             mask = get_mask_from_shapefile(file_path_raster=file_path_elevation,
                                            file_path_mask=file_path_mask,
                                            glacier_name=glacier_name)
 
+        # Mask the data if there is a mask available.
         if file_path_mask is not None:
             data_elevation.mask_from_raster_np(mask,
                                             include_mask_value=False)
 
+        # Convert elevation data to a DataFrame and rename columns as necessary.
         data_elevation = data_elevation.convert_to_dataframe()
         data_elevation["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
                                                 month=int(date_time.split("-")[1]),
@@ -159,6 +167,7 @@ def load_tiffs2dataframe(file_names: list[str],
                                                 "y": "grid_latitude"}, axis=1)
         data_elevation = data_elevation.set_index(["grid_longitude", "grid_latitude", "time"])
 
+        # Process the errors
         file_path_errors = path.join(folder_path_errors, file_name)
         data_error = RasterNp.load_from_tiff(file_path=file_path_errors)
         if file_path_mask is not None:
@@ -176,6 +185,7 @@ def load_tiffs2dataframe(file_names: list[str],
                                         "y": "grid_latitude"}, axis=1)
         data_error = data_error.set_index(["grid_longitude", "grid_latitude", "time"])
 
+        # Join the elevation and error data together
         data_elevation = data_elevation.join(data_error, how="inner")
         data_elevation_list.append(data_elevation)
 
