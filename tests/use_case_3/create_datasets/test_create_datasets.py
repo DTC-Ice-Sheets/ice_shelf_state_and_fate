@@ -78,5 +78,13 @@ def test_load_tiffs2dataframe_basalmelt():
     assert data.shape == (16, 4)
     assert list(data.columns) == ["projection_x_coordinate",
                                   "projection_y_coordinate",
-                                  "basal_melt",
-                                  "basal_melt_uncertainty"]
+                                  "basal_melt_rate",
+                                  "basal_melt_rate_uncertainty"]
+
+@pytest.fixture
+def simple_polygon_mask_fixture():
+    coords = ((0., 0.), (0., 1.), (1., 1.), (1., 0.), (0., 0.))
+
+def test_get_mask_from_shapefile():
+
+    test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")

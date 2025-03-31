@@ -220,7 +220,7 @@ def load_tiffs2dataframe_basalmelt(file_path_obvs: str,
     data = RasterNp.load_from_tiff(file_path=file_path_obvs)
     # data.plot()
 
-    observation_col_name = "basal_melt"
+    observation_col_name = "basal_melt_rate"
 
     # On the first iteration create the mask to be used as a raster.
     if file_path_mask is not None:
@@ -237,7 +237,6 @@ def load_tiffs2dataframe_basalmelt(file_path_obvs: str,
 
     # Convert elevation data to a DataFrame and rename columns as necessary.
     data = data.convert_to_dataframe()
-    # print(data)
     data["value"] = data["value"]
     data = data.rename({"value": observation_col_name,
                         "x": "projection_x_coordinate",
