@@ -175,25 +175,28 @@ def test_dataframe2geozarr(create_geozarr_local_store: GeoZarr,
                           example_df_fixture: pd.DataFrame):
 
     create_geozarr_local_store.dataframe2geozarr(data=example_df_fixture,
-                                                 data_columns=["DEMdiff",
-                                                               "error"],
-                                                 coordinate_columns=["grid_longitude",
-                                                                     "grid_latitude",
+                                                 data_columns=["height_difference_from_dem",
+                                                               "height_difference_from_dem_uncertainty"],
+                                                 coordinate_columns=["projection_y_coordinate",
+                                                                     "projection_x_coordinate",
                                                                      "time"],
-                                                 auxiliary_columns=[])
+                                                 auxiliary_columns=[],
+                                                 map_projection="EPSG:3031")
 
-    assert sorted(create_geozarr_local_store.root.keys()) == ["DEMdiff",
-                                                              "error",
-                                                              "grid_latitude",
-                                                              "grid_longitude",
+    assert sorted(create_geozarr_local_store.root.keys()) == ["height_difference_from_dem",
+                                                              "height_difference_from_dem_uncertainty",
+                                                              "projection_x_coordinate",
+                                                              "projection_y_coordinate",
                                                               "time"]
 
-    assert create_geozarr_local_store.root["DEMdiff"][0, 0, 0] == 12.0
-    assert create_geozarr_local_store.root["DEMdiff"][2, 0, 0] == 4
-    assert create_geozarr_local_store.root["DEMdiff"][3, 2, 731] == 2
-    assert np.isnan(create_geozarr_local_store.root["DEMdiff"][3, 2, 730])
-    assert create_geozarr_local_store.root["DEMdiff"].attrs["_ARRAY_DIMENSIONS"] == ["grid_latitude",
-                                                                                     "grid_longitude",
-                                                                                     "time"]
+    assert create_geozarr_local_store.root["height_difference_from_dem"][0, 0, 0] == 12
+    assert create_geozarr_local_store.root["height_difference_from_dem"][2, 0, 0] == 14
+    assert create_geozarr_local_store.root["height_difference_from_dem"][3, 2, 731] == 7
+    assert np.isnan(create_geozarr_local_store.root["height_difference_from_dem"][3, 2, 730])
+    assert create_geozarr_local_store.root["height_difference_from_dem"].attrs["_ARRAY_DIMENSIONS"] \
+          == ["projection_x_coordinate",
+              "projection_y_coordinate",
+              "time"]
 
-    assert create_geozarr_local_store.root["grid_longitude"].attrs["_ARRAY_DIMENSIONS"] == ["grid_longitude"]
+    assert create_geozarr_local_store.root["projection_y_coordinate"].attrs["_ARRAY_DIMENSIONS"] == \
+        ["projection_y_coordinate"]

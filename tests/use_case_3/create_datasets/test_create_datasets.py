@@ -49,7 +49,11 @@ def test_load_tiffs2dataframe():
                                 dem_diff=True)
 
     assert data.shape == (48, 5)
-    assert list(data.columns) == ["grid_longitude", "grid_latitude", "time", "DEMdiff", "error"]
+    assert list(data.columns) == ["projection_x_coordinate",
+                                  "projection_y_coordinate",
+                                  "time",
+                                  "height_difference_from_dem",
+                                  "height_difference_from_dem_uncertainty"]
 
     data = load_tiffs2dataframe(file_names=combined_tifs,
                                 folder_path_elevations=test_folder_path,
@@ -57,4 +61,22 @@ def test_load_tiffs2dataframe():
                                 dem_diff=False)
 
     assert data.shape == (48, 5)
-    assert list(data.columns) == ["grid_longitude", "grid_latitude", "time", "elevation", "error"]
+    assert list(data.columns) == ["projection_x_coordinate",
+                                  "projection_y_coordinate",
+                                  "time",
+                                  "height_above_mean_sea_level",
+                                  "height_above_mean_sea_level_uncertainty"]
+
+def test_load_tiffs2dataframe_basalmelt():
+
+    # It doesn't matter that these are the same for testing
+    test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
+
+    data = load_tiffs2dataframe_basalmelt(file_path_obvs=test_file_path,
+                                          file_path_errors=test_file_path)
+
+    assert data.shape == (16, 4)
+    assert list(data.columns) == ["projection_x_coordinate",
+                                  "projection_y_coordinate",
+                                  "basal_melt",
+                                  "basal_melt_uncertainty"]

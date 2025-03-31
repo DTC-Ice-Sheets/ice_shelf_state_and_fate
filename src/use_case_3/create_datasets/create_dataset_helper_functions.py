@@ -125,9 +125,9 @@ def load_tiffs2dataframe(file_names: list[str],
     data_elevation_list = []
 
     if dem_diff:
-        elevation_col_name = "DEMdiff"
+        elevation_col_name = "height_difference_from_dem"
     else:
-        elevation_col_name = "elevation"
+        elevation_col_name = "height_above_mean_sea_level"
 
     # Reference datum - Note CF standards expects time in the format: Time unit since reference datum.
     initial_time = pd.Timestamp(year=1970,
@@ -163,9 +163,9 @@ def load_tiffs2dataframe(file_names: list[str],
         data_elevation["time"] = (data_elevation["time"] - initial_time).dt.total_seconds()
         data_elevation["value"] = data_elevation["value"]
         data_elevation = data_elevation.rename({"value": elevation_col_name,
-                                                "x": "grid_longitude",
-                                                "y": "grid_latitude"}, axis=1)
-        data_elevation = data_elevation.set_index(["grid_longitude", "grid_latitude", "time"])
+                                                "x": "projection_x_coordinate",
+                                                "y": "projection_y_coordinate"}, axis=1)
+        data_elevation = data_elevation.set_index(["projection_x_coordinate", "projection_y_coordinate", "time"])
 
         # Process the errors
         file_path_errors = path.join(folder_path_errors, file_name)
@@ -180,16 +180,87 @@ def load_tiffs2dataframe(file_names: list[str],
                                           day=int(date_time.split("-")[2]))
 
         data_error["time"] = (data_error["time"] - initial_time).dt.total_seconds()
-        data_error = data_error.rename({"value": "error",
-                                        "x": "grid_longitude",
-                                        "y": "grid_latitude"}, axis=1)
-        data_error = data_error.set_index(["grid_longitude", "grid_latitude", "time"])
+        data_error = data_error.rename({"value": elevation_col_name+ "_uncertainty",
+                                        "x": "projection_x_coordinate",
+                                        "y": "projection_y_coordinate"}, axis=1)
+        data_error = data_error.set_index(["projection_x_coordinate", "projection_y_coordinate", "time"])
 
         # Join the elevation and error data together
         data_elevation = data_elevation.join(data_error, how="inner")
         data_elevation_list.append(data_elevation)
 
     return pd.concat(data_elevation_list, axis=0).reset_index(drop=False)
+
+
+def load_tiffs2dataframe_basalmelt(file_path_obvs: str,
+                                   file_path_errors: str,
+                                   file_path_mask: Union[str, None] = None,
+                                   glacier_name: Union[str, None] = None) -> pd.DataFrame:
+    """
+    Load a .tif files for the  and associated errors. Return
+    the loaded .tif files as a pd.DataFrame.
+
+    Parameters
+    ----------
+    file_path_obvs: str
+        folder path pointing to where the observations are stored.
+    file_path_errors: str
+        folder path pointing to where the observation error data is stored.
+    file_path_mask : str
+        file path pointing at where the mask file is stored
+    glacier_name
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame object containing the basal melt data and associated errors at every coordinate
+        and timepoint. Note that currently this assumes that the x and y variables are the longitude and the latitude.
+        This will need to be revisited.
+    """
+    data = RasterNp.load_from_tiff(file_path=file_path_obvs)
+    # data.plot()
+
+    observation_col_name = "basal_melt"
+
+    # On the first iteration create the mask to be used as a raster.
+    if file_path_mask is not None:
+        mask = get_mask_from_shapefile(file_path_raster=file_path_obvs,
+                                        file_path_mask=file_path_mask,
+                                        glacier_name=glacier_name)
+
+    # Mask the data if there is a mask available.
+    if file_path_mask is not None:
+        data.mask_from_raster_np(mask,
+                                 include_mask_value=False)
+
+    # data.plot()
+
+    # Convert elevation data to a DataFrame and rename columns as necessary.
+    data = data.convert_to_dataframe()
+    # print(data)
+    data["value"] = data["value"]
+    data = data.rename({"value": observation_col_name,
+                        "x": "projection_x_coordinate",
+                        "y": "projection_y_coordinate"}, axis=1)
+    data = data.set_index(["projection_x_coordinate", "projection_y_coordinate"])
+
+    # Process the errors
+    data_error = RasterNp.load_from_tiff(file_path=file_path_errors)
+    if file_path_mask is not None:
+        data_error.mask_from_raster_np(mask,
+                                       include_mask_value=False)
+
+    data_error = data_error.convert_to_dataframe()
+    data_error = data_error.rename({"value": observation_col_name + "_uncertainty",
+                                    "x": "projection_x_coordinate",
+                                    "y": "projection_y_coordinate"}, axis=1)
+    data_error = data_error.set_index(["projection_x_coordinate", "projection_y_coordinate"])
+
+    # Join the elevation and error data together
+    data = data.join(data_error, how="inner").reset_index(drop=False)
+
+    return data
+
 
 def load_netcdf(folder_path: str,
                 file_name: str) -> pd.DataFrame:
@@ -220,11 +291,13 @@ def load_netcdf(folder_path: str,
     data = data.to_dataframe()
     return data
 
+
 class ZarrStorage(Enum):
     """Specifies the Zarr file storage types available."""
 
     local_store = "local_store"
     memory_store = "memory_store"
+
 
 def get_mask_from_shapefile(file_path_raster: str,
                             file_path_mask: str,

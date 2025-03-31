@@ -69,12 +69,66 @@ class GeoZarr:
         where we can populate this for all of the expected standard names.
         !!!!!!!!!
         """
-        data = {"standard_name": ["time", "grid_latitude", "grid_longitude", "elevation", "DEMdiff", "error"],
-                "axis": ["T", "Y", "X", "None", "None", "None"],
-                "bounds": ["time_bnds", "None", "None", "None", "None", "None"],
-                "calendar": ["standard", "None", "None", "None", "None", "None"],
-                "long_name": ["time", "grid_latitude", "grid_longitude", "elevation", "DEMdiff", "error"],
-                "units": ["seconds since 1970-01-01T00:00:00", "degrees", "None", "m", "m", "m"]}
+        data = {"standard_name": ["time",
+                                  "grid_latitude",
+                                  "grid_longitude",
+                                  "height_above_mean_sea_level",
+                                  "height_difference_from_dem",
+                                  "height_above_mean_sea_level_uncertainty",
+                                  "height_difference_from_dem_uncertainty",
+                                  "basal_melt_rate",
+                                  "projection_x_coordinate",
+                                  "projection_y_coordinate"],
+                "axis": ["T",
+                         "Y",
+                         "X",
+                         "None",
+                         "None",
+                         "None",
+                         "None",
+                         "None",
+                         "X",
+                         "Y"],
+                "bounds": ["time_bnds",
+                           "None",
+                           "None",
+                           "None",
+                           "None",
+                           "None",
+                           "None",
+                           "None",
+                           "None",
+                           "None"],
+                "calendar": ["standard",
+                             "None",
+                             "None",
+                             "None",
+                             "None",
+                             "None",
+                             "None",
+                             "None",
+                             "None",
+                             "None"],
+                "long_name": ["time",
+                              "grid_latitude",
+                              "grid_longitude",
+                              "height_above_mean_sea_level",
+                              "height_difference_from_dem",
+                              "height_above_mean_sea_level_uncertainty",
+                              "height_difference_from_dem_uncertainty",
+                              "basel_melt",
+                              "projection_x_coordinate",
+                              "projection_y_coordinate"],
+                "units": ["seconds since 1970-01-01T00:00:00",
+                          "degrees",
+                          "degrees",
+                          "m",
+                          "m",
+                          "m",
+                          "m",
+                          "m/s",
+                          "m",
+                          "m"]}
 
         self.dimensions_config = pd.DataFrame(data)
 
@@ -193,7 +247,8 @@ class GeoZarr:
                           data: pd.DataFrame,
                           data_columns: List,
                           coordinate_columns: List,
-                          auxiliary_columns: Union[List, None]) -> Union[None, zarr.Group]:
+                          auxiliary_columns: Union[List, None],
+                          map_projection: str) -> Union[None, zarr.Group]:
         """
         Convert a pandas dataframe to geozarr. Note this currently assumes that the column names will follow
         CF naming conventions.
@@ -210,6 +265,8 @@ class GeoZarr:
             The column names specifiying the coordinate columns.
         auxiliary_columns : Union[List, None]
             The columns names specifying any Auxiliary columns to be included.
+        map_projection : str
+            The projection code used.
 
         Returns
         -------
@@ -236,6 +293,7 @@ class GeoZarr:
 
         # Create the necessary GeoZarr attributes for the coordinate columns.
         self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
+        self.root.attrs["MAP_PROJECTION"] = map_projection
 
         # Create the N-Dim array for each sepcified data column - According to GeoZarr this should be geospacial
         # observations.
