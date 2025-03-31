@@ -17,4 +17,7 @@ def test_setup_logging() -> None:
     assert isinstance(added_handler, logging.StreamHandler)
     assert added_handler.level == logging.INFO
     assert isinstance(added_handler.formatter, logging.Formatter)
-    assert added_handler.formatter._fmt == "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
+    assert added_handler.formatter._fmt == (
+        "[%(levelname)8s %(asctime)s.%(msecs)03d pid%(process)6d, %(filename)30s, "
+        "ln%(lineno)4s, in %(funcName)25s()] %(message)s"
+    )
