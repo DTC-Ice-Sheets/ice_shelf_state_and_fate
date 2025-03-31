@@ -3,7 +3,7 @@
 import os
 import os.path as path
 from enum import Enum
-from typing import Any, Union
+from typing import Union
 
 import geopandas as gpd
 import pandas as pd

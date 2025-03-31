@@ -9,9 +9,7 @@ import pandas as pd
 import rasterio
 import rasterio.transform as tr
 from affine import Affine
-from matplotlib.figure import Figure
 from numpy.typing import NDArray
-from rasterio.crs import CRS
 from rasterio.windows import Window, from_bounds
 
 from use_case_3.raster_tools.bounding_box import BoundingBox

@@ -7,15 +7,13 @@ import argparse
 import logging
 
 from use_case_3.example_sub_package_b.example_module_b import WorseCalculator
-from use_case_3.monitoring import setup_logging
 from use_case_3.schemas import ExampleEntryPointSchema
 
 logger = logging.getLogger(__name__)
 
 
-def main(*args) -> None:
+def main(*args) -> None:  #noqa: ANN002
     """Calculate numbers poorly."""
-    setup_logging()
     parser = argparse.ArgumentParser(
         prog="use_case_3",
         description="Perform some bad calculations on two integers.",
