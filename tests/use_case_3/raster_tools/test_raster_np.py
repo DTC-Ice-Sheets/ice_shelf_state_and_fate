@@ -1,12 +1,10 @@
 """Test the RasterNp class."""
 import os
-from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
-from affine import Affine
 from numpy.typing import DTypeLike, NDArray
 
 from use_case_3.raster_tools.bounding_box import BoundingBox

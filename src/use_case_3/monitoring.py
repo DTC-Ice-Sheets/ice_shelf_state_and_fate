@@ -17,9 +17,13 @@ def setup_logging() -> None:
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
 
-    # Create a formatter and set it for the console handler
-    formatter = logging.Formatter("[%(asctime)s] %(levelname)s in %(name)s: %(message)s")
-    console_handler.setFormatter(formatter)
-
+    logging.basicConfig(
+        handlers=[console_handler],
+        level="INFO",
+        format="[%(levelname)8s %(asctime)s.%(msecs)03d pid%(process)6d, %(filename)30s, "
+        "ln%(lineno)4s, in %(funcName)25s()] %(message)s",
+        datefmt="%Y-%m-%d %Z %H:%M:%S",  # add timezone to date format
+        force=True,
+    )
     # Add the console handler to the root logger
     logger.addHandler(console_handler)

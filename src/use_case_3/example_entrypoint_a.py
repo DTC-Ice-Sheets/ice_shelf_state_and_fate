@@ -7,7 +7,6 @@ import argparse
 import logging
 
 from use_case_3.example_sub_package_a.example_module_a import BadCalculator
-from use_case_3.monitoring import setup_logging
 from use_case_3.schemas import ExampleEntryPointSchema
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     """Calculate numbers poorly."""
-    setup_logging()
     parser = argparse.ArgumentParser(
         prog="use_case_3",
         description="Perform some bad calculations on two integers.",
