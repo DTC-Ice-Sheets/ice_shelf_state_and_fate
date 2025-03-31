@@ -16,7 +16,6 @@ def dataframe_fixture() -> pd.DataFrame:
     return pd.DataFrame(np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16]]),
                         columns=["y", "x", "z", "target"])
 
-
 @pytest.fixture
 def create_geozarr_memory_fixture() -> GeoZarr:
 

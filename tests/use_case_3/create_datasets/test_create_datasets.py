@@ -2,7 +2,9 @@
 
 import os.path as path
 
+import geopandas as gpd
 import pytest
+from shapely import Polygon
 
 from use_case_3.create_datasets.create_dataset_helper_functions import *
 
@@ -81,10 +83,31 @@ def test_load_tiffs2dataframe_basalmelt():
                                   "basal_melt_rate",
                                   "basal_melt_rate_uncertainty"]
 
-@pytest.fixture
-def simple_polygon_mask_fixture():
-    coords = ((0., 0.), (0., 1.), (1., 1.), (1., 0.), (0., 0.))
 
 def test_get_mask_from_shapefile():
 
+    # Need to create a mask to load from a .gpkg
+    test_mask_input_path = path.join(path.dirname(__file__), "test_inputs", "masks", "toy_mask_4x4.gpkg")
+
+    coords = ((100., 1200.), ( 300., 1200.), (300., 1300.), (100., 1300.))
+    polygon = Polygon(coords)
+
+    d =  {"Name": ["test"], "geometry": [polygon]}
+
+    gdf = gpd.GeoDataFrame(d)
+    gdf.to_file(test_mask_input_path)
+
     test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
+
+    data = RasterNp.load_from_tiff(file_path=test_file_path)
+
+    data_mask = get_mask_from_shapefile(file_path_raster=test_file_path,
+                                        file_path_mask=test_mask_input_path,
+                                        glacier_name="test")
+
+    assert data_mask[0, 0]
+    assert data_mask[3, 3]
+    assert data_mask[3, 1]
+
+    assert not data_mask[1, 1]
+    assert not data_mask[2, 2]
