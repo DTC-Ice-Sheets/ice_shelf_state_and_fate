@@ -80,8 +80,14 @@ def test__init__local_store(create_geozarr_local_store: GeoZarr):
 
 def test__reshape_data_simple(create_geozarr_local_store: GeoZarr):
 
-    data = pd.DataFrame(np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16]]),
+    data = pd.DataFrame(np.array([[8, 3, 0, 4],
+                                  [10, 2, 5, 12],
+                                  [9, 1, 11, 6],
+                                  [7, 14, 15, 13],
+                                  [19, 18, 17, 16]]),
                         columns=["y", "x", "z", "target"])
+
+    print(data.shape)
 
     coord_columns = ["y", "x", "z"]
     coord_columns = sorted(coord_columns)

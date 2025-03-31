@@ -16,7 +16,6 @@ from rasterio.windows import Window, from_bounds
 
 from use_case_3.raster_tools.bounding_box import BoundingBox
 from use_case_3.raster_tools.helpers import make_grid_mesh_xy
-from use_case_3.raster_tools.plotting import im_plot
 
 
 class RasterNp(np.ndarray):
