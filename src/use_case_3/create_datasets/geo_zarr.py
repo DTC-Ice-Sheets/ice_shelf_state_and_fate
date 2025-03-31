@@ -21,7 +21,8 @@ class GeoZarr:
                  storage_type: ZarrStorage,
                  storage_directory: Union[str, None]=None,
                  zarr_format: int=2,
-                 n_chunks: int=1) -> None:
+                 n_chunks: int=1,
+                 overwrite: bool=True) -> None:
         """
         Initialise the GeoZarr object.
 
@@ -55,7 +56,8 @@ class GeoZarr:
 
         #This is where the zarr file is created according to the storage type chosen
         self.root = zarr.create_group(store=self.store,
-                                      zarr_format=self.zarr_format)
+                                      zarr_format=self.zarr_format,
+                                      overwrite=overwrite)
         self.create_dimensions_config()
 
     def create_dimensions_config(self) -> None:
