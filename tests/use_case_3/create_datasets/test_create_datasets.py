@@ -98,7 +98,7 @@ def test_load_tiffs2dataframe_basalmelt():
 
 def test_get_mask_from_shapefile():
     # Need to create a mask to load from a .gpkg
-    test_mask_input_path = path.join(path.dirname(__file__), "test_inputs", "masks", "toy_mask_4x4.gpkg")
+    test_mask_input_path = path.join(path.dirname(__file__), "test_inputs", "toy_mask_4x4.gpkg")
 
     coords = ((100., 1200.), ( 300., 1200.), (300., 1300.), (100., 1300.))
     polygon = Polygon(coords)
