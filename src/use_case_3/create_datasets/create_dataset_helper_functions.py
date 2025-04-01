@@ -39,7 +39,7 @@ def return_common_elements_from_two_lists(list_1: list,
     """
     Return a list of the common elements in two lists. This is done by converting the lists to sets
     before checking the intersection and then returning a list of the common elements sorted in
-    ascending order by default. Note that as this done by converting to sets so any duplicates will also
+    ascending order by default. Note that this is done by converting to sets so any duplicates will also
     be removed.
 
     Parameters
@@ -49,8 +49,8 @@ def return_common_elements_from_two_lists(list_1: list,
     list_2: list
         A second list of elements.
     ascending: bool
-        Flag to determine how the final list is sorted. If False then this will sort in ascending order, while
-        if True this will be descending.
+        Flag to determine how the final list is sorted. If True then this will sort in ascending order, while
+        if False this will be descending.
 
     Returns
     -------
@@ -62,15 +62,15 @@ def return_common_elements_from_two_lists(list_1: list,
     TypeError
         Raised if non boolean value is passed.
     """
-    if ascending not in (True, False):
+    if not isinstance(ascending, bool):
         raise TypeError("sorting must be one of either True or False...")
 
     set_1 = set(list_1)
     set_2 = set(list_2)
 
-    list_interesection = sorted(set_1.intersection(set_2), reverse= not ascending)
+    list_intersection = sorted(set_1.intersection(set_2), reverse= not ascending)
 
-    return list_interesection
+    return list_intersection
 
 
 def extract_date_string_from_filename(file_name: str) -> str:
@@ -121,7 +121,7 @@ def load_tiffs2dataframe(file_names: list[str],
         and timepoint. Note that currently this assumes that the x and y variables are the longitude and the latitude.
         This will need to be revisited.
     """
-    # A list used to hold the df for each time point. These will be concatonated at the end.
+    # A list used to hold the df for each time point. These will be concatenated at the end.
     data_elevation_list = []
 
     if dem_diff:

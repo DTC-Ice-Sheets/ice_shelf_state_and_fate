@@ -25,12 +25,12 @@ def dataframe_fixture() -> pd.DataFrame:
 
 
 @pytest.fixture
-def create_geozarr_memory_fixture() -> GeoZarr:
+def geozarr_memory_store() -> GeoZarr:
     return GeoZarr(storage_type=ZarrStorage.memory_store)
 
 
 @pytest.fixture
-def create_geozarr_local_store() -> GeoZarr:
+def geozarr_local_store() -> GeoZarr:
     test_folder_output_path = path.join(path.dirname(__file__), "test_outputs", "geozarr_example.zarr")
 
     if path.isdir(test_folder_output_path):
@@ -70,20 +70,20 @@ def example_df_fixture() -> pd.DataFrame:
     return data
 
 
-def test__init___memory_store(create_geozarr_memory_fixture: GeoZarr):
-    assert create_geozarr_memory_fixture.zarr_format == 2
-    assert create_geozarr_memory_fixture.storage_type == ZarrStorage.memory_store
-    assert create_geozarr_memory_fixture.storage_directory is None
+def test__init___memory_store(geozarr_memory_store: GeoZarr):
+    assert geozarr_memory_store.zarr_format == 2
+    assert geozarr_memory_store.storage_type == ZarrStorage.memory_store
+    assert geozarr_memory_store.storage_directory is None
 
 
-def test__init__local_store(create_geozarr_local_store: GeoZarr):
+def test__init__local_store(geozarr_local_store: GeoZarr):
     storage_directory = path.join(path.dirname(__file__), "test_outputs", "geozarr_example.zarr")
-    assert create_geozarr_local_store.zarr_format == 2
-    assert create_geozarr_local_store.storage_type == ZarrStorage.local_store
-    assert create_geozarr_local_store.storage_directory == storage_directory
+    assert geozarr_local_store.zarr_format == 2
+    assert geozarr_local_store.storage_type == ZarrStorage.local_store
+    assert geozarr_local_store.storage_directory == storage_directory
 
 
-def test__reshape_data_simple(create_geozarr_local_store: GeoZarr):
+def test__reshape_data_simple(geozarr_local_store: GeoZarr):
     data = pd.DataFrame(
         np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16]]),
         columns=["y", "x", "z", "target"],
@@ -103,7 +103,7 @@ def test__reshape_data_simple(create_geozarr_local_store: GeoZarr):
     assert data.iloc[2, 2] == 8
     assert data.iloc[4, 3] == 17
 
-    data_reshaped, data_coordinates = create_geozarr_local_store._reshape_data(
+    data_reshaped, data_coordinates = geozarr_local_store._reshape_data(
         data=data, target_column="target", coord_columns=coord_columns
     )
 
@@ -119,7 +119,7 @@ def test__reshape_data_simple(create_geozarr_local_store: GeoZarr):
     assert data_reshaped[17, 12, 17] == 16
 
 
-def test__reshape_data_duplicate(create_geozarr_local_store: GeoZarr):
+def test__reshape_data_duplicate(geozarr_local_store: GeoZarr):
     data = pd.DataFrame(
         np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16], [9, 1, 17, 5]]),
         columns=["y", "x", "z", "target"],
@@ -138,7 +138,7 @@ def test__reshape_data_duplicate(create_geozarr_local_store: GeoZarr):
     assert data.iloc[4, 3] == 15
     assert data.iloc[5, 3] == 17
 
-    data_reshaped, data_coordinates = create_geozarr_local_store._reshape_data(
+    data_reshaped, data_coordinates = geozarr_local_store._reshape_data(
         data=data, target_column="target", coord_columns=coord_columns
     )
 
@@ -155,28 +155,25 @@ def test__reshape_data_duplicate(create_geozarr_local_store: GeoZarr):
     assert data_reshaped[17, 12, 17] == 16
 
 
-def test_create_dimensions_config(create_geozarr_local_store: GeoZarr):
-    assert create_geozarr_local_store.dimensions_config.loc[0, "standard_name"] == "time"
-    assert create_geozarr_local_store.dimensions_config.loc[3, "calendar"] == "None"
+def test_create_dimensions_config(geozarr_local_store: GeoZarr):
+    assert geozarr_local_store.dimensions_config.loc[0, "standard_name"] == "time"
+    assert geozarr_local_store.dimensions_config.loc[3, "calendar"] == "None"
 
 
-def test_calculate_chunk_dims(create_geozarr_local_store: GeoZarr):
-    data_shape = (12, 12, 12)
-    n_chunks = 3
-    create_geozarr_local_store.n_chunks = n_chunks
-    assert create_geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == (4, 4, 4)
-    data_shape = (13, 13, 13)
-    n_chunks = 3
-    create_geozarr_local_store.n_chunks = n_chunks
-    assert create_geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == (5, 5, 5)
-    data_shape = (12, 12, 12)
-    n_chunks = 1
-    create_geozarr_local_store.n_chunks = n_chunks
-    assert create_geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == (12, 12, 12)
+@pytest.mark.parametrize("data_shape,n_chunks, chunk_shape", [((12, 12, 12), 3, (4, 4, 4)),
+                                                              ((13, 13, 13), 3, (5, 5, 5)),
+                                                              ((12, 12, 12), 1, (12, 12, 12))])
+def test_calculate_chunk_dims(geozarr_local_store: GeoZarr, data_shape, n_chunks, chunk_shape):
+    geozarr_local_store.n_chunks = n_chunks
+    assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
+    geozarr_local_store.n_chunks = n_chunks
+    assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
+    geozarr_local_store.n_chunks = n_chunks
+    assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
 
 
-def test_dataframe2geozarr(create_geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):
-    create_geozarr_local_store.dataframe2geozarr(
+def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):
+    geozarr_local_store.dataframe2geozarr(
         data=example_df_fixture,
         data_columns=["height_difference_from_dem", "height_difference_from_dem_uncertainty"],
         coordinate_columns=["projection_y_coordinate", "projection_x_coordinate", "time"],
@@ -184,7 +181,7 @@ def test_dataframe2geozarr(create_geozarr_local_store: GeoZarr, example_df_fixtu
         map_projection="EPSG:3031",
     )
 
-    assert sorted(create_geozarr_local_store.root.keys()) == [
+    assert sorted(geozarr_local_store.root.keys()) == [
         "height_difference_from_dem",
         "height_difference_from_dem_uncertainty",
         "projection_x_coordinate",
@@ -192,16 +189,16 @@ def test_dataframe2geozarr(create_geozarr_local_store: GeoZarr, example_df_fixtu
         "time",
     ]
 
-    assert create_geozarr_local_store.root["height_difference_from_dem"][0, 0, 0] == 12
-    assert create_geozarr_local_store.root["height_difference_from_dem"][2, 0, 0] == 14
-    assert create_geozarr_local_store.root["height_difference_from_dem"][3, 2, 731] == 7
-    assert np.isnan(create_geozarr_local_store.root["height_difference_from_dem"][3, 2, 730])
-    assert create_geozarr_local_store.root["height_difference_from_dem"].attrs["_ARRAY_DIMENSIONS"] == [
+    assert geozarr_local_store.root["height_difference_from_dem"][0, 0, 0] == 12
+    assert geozarr_local_store.root["height_difference_from_dem"][2, 0, 0] == 14
+    assert geozarr_local_store.root["height_difference_from_dem"][3, 2, 731] == 7
+    assert np.isnan(geozarr_local_store.root["height_difference_from_dem"][3, 2, 730])
+    assert geozarr_local_store.root["height_difference_from_dem"].attrs["_ARRAY_DIMENSIONS"] == [
         "projection_x_coordinate",
         "projection_y_coordinate",
         "time",
     ]
 
-    assert create_geozarr_local_store.root["projection_y_coordinate"].attrs["_ARRAY_DIMENSIONS"] == [
+    assert geozarr_local_store.root["projection_y_coordinate"].attrs["_ARRAY_DIMENSIONS"] == [
         "projection_y_coordinate"
     ]

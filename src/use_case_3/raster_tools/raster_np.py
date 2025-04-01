@@ -511,8 +511,10 @@ class RasterNp(np.ndarray):
         include_mask_value : Optional[float]
             The in-mask value in the mask geotiff, by default 1.
         outside_mask_return_value : Optional[float]
-            The value assinged to data found outside of the mask, by default np.nan. note - the default
+            The value assigned to data found outside of the mask, by default np.nan. note - the default
             outside_mask_return_value value of np.nan does not work with int-based arrays.
+
+        TODO: Check and return error when using int-based arrays.
         """
         # For each point in current file, get mask value and mask nan accordingly
         y, x = self.yx_gridpoints()
