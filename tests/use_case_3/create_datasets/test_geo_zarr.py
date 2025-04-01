@@ -166,10 +166,6 @@ def test_create_dimensions_config(geozarr_local_store: GeoZarr):
 def test_calculate_chunk_dims(geozarr_local_store: GeoZarr, data_shape, n_chunks, chunk_shape):
     geozarr_local_store.n_chunks = n_chunks
     assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
-    geozarr_local_store.n_chunks = n_chunks
-    assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
-    geozarr_local_store.n_chunks = n_chunks
-    assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
 
 
 def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):
