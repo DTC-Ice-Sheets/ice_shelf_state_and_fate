@@ -13,7 +13,6 @@ from use_case_3.create_datasets.create_dataset_helper_functions import (
     load_tiffs2dataframe_basalmelt,
     return_common_elements_from_two_lists,
 )
-from use_case_3.raster_tools.raster_np import RasterNp
 
 
 def test_get_list_of_tifs_from_folder():
@@ -110,8 +109,6 @@ def test_get_mask_from_shapefile():
     gdf.to_file(test_mask_input_path)
 
     test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
-
-    data = RasterNp.load_from_tiff(file_path=test_file_path)
 
     data_mask = get_mask_from_shapefile(
         file_path_raster=test_file_path, file_path_mask=test_mask_input_path, glacier_name="test"
