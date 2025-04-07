@@ -8,12 +8,11 @@ import pandas as pd
 import pytest
 
 from use_case_3.create_datasets.create_dataset_helper_functions import (
-    ZarrStorage,
     get_list_of_tiffs_from_folder,
     load_tiffs2dataframe,
     return_common_elements_from_two_lists,
 )
-from use_case_3.create_datasets.geo_zarr import GeoZarr
+from use_case_3.create_datasets.geo_zarr import GeoZarr, ZarrStorage
 
 
 @pytest.fixture
@@ -89,8 +88,6 @@ def test__reshape_data_simple(geozarr_local_store: GeoZarr):
         columns=["y", "x", "z", "target"],
     )
 
-    print(data.shape)
-
     coord_columns = ["y", "x", "z"]
     coord_columns = sorted(coord_columns)
 
@@ -160,9 +157,10 @@ def test_create_dimensions_config(geozarr_local_store: GeoZarr):
     assert geozarr_local_store.dimensions_config.loc[3, "calendar"] == "None"
 
 
-@pytest.mark.parametrize("data_shape,n_chunks, chunk_shape", [((12, 12, 12), 3, (4, 4, 4)),
-                                                              ((13, 13, 13), 3, (5, 5, 5)),
-                                                              ((12, 12, 12), 1, (12, 12, 12))])
+@pytest.mark.parametrize(
+    "data_shape,n_chunks, chunk_shape",
+    [((12, 12, 12), 3, (4, 4, 4)), ((13, 13, 13), 3, (5, 5, 5)), ((12, 12, 12), 1, (12, 12, 12))],
+)
 def test_calculate_chunk_dims(geozarr_local_store: GeoZarr, data_shape, n_chunks, chunk_shape):
     geozarr_local_store.n_chunks = n_chunks
     assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
@@ -195,6 +193,4 @@ def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.
         "time",
     ]
 
-    assert geozarr_local_store.root["projection_y_coordinate"].attrs["_ARRAY_DIMENSIONS"] == [
-        "projection_y_coordinate"
-    ]
+    assert geozarr_local_store.root["projection_y_coordinate"].attrs["_ARRAY_DIMENSIONS"] == ["projection_y_coordinate"]

@@ -2,7 +2,7 @@
 
 import os
 import os.path as path
-from enum import Enum
+import re
 from typing import Union
 
 import geopandas as gpd
@@ -33,9 +33,7 @@ def get_list_of_tiffs_from_folder(folder_path: str) -> list[str]:
     return [file for file in files if file.endswith(".tif")]
 
 
-def return_common_elements_from_two_lists(list_1: list,
-                                          list_2: list,
-                                          ascending: bool=False) -> list:
+def return_common_elements_from_two_lists(list_1: list, list_2: list, ascending: bool = False) -> list:
     """
     Return a list of the common elements in two lists. This is done by converting the lists to sets
     before checking the intersection and then returning a list of the common elements sorted in
@@ -68,35 +66,56 @@ def return_common_elements_from_two_lists(list_1: list,
     set_1 = set(list_1)
     set_2 = set(list_2)
 
-    list_intersection = sorted(set_1.intersection(set_2), reverse= not ascending)
+    list_intersection = sorted(set_1.intersection(set_2), reverse=not ascending)
 
     return list_intersection
 
 
-def extract_date_string_from_filename(file_name: str) -> str:
+def extract_date_string_from_filename(file_name: str, date_format: str = "YYYY-mm-dd") -> str:
     """
-    Convert a filename to a date string.
+    Convert a filename containing a date to a string.
 
     Parameters
     ----------
-    file_name: str
-        The file name which consists of a date in YYYY-mm-dd format and a file extension such as .tif.
-        Note this splits the string based on the '.' and assumes the first part of the split is the date.
+    file_name : str
+        The file name which contains a date.
+    date_format : str
+        The format of the date expected which must follow either: "YYYY-mm-dd", "YYYY-dd-mm", "dd-mm-YYYY" or
+        "mm-dd-YYYY".
 
     Returns
     -------
     str
         The date in the format YYYY-mm-dd.
+
+    Raises
+    ------
+    ValueError
+        If the wrong date format is found.
     """
-    return file_name.split(".")[0]
+    acceptable_formats = ["YYYY-mm-dd", "YYYY-dd-mm", "dd-mm-YYYY", "mm-dd-YYYY"]
+    if date_format not in acceptable_formats:
+        raise ValueError(f"The date format {date_format} is not one of {acceptable_formats}.")
+
+    if date_format in acceptable_formats[:2]:
+        match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", file_name)  # look for YYYY-mm-dd or YYYY-dd-mm pattern
+    elif date_format in acceptable_formats[2:]:
+        match = re.search(r"\b\d{2}-\d{2}-\d{4}\b", file_name)  # look for dd-mm-YYYY or m-dd-YYYY pattern
+
+    if match:
+        return match.group(0)
+    else:
+        raise ValueError(f"No date of format {date_format} found in the filename {file_name}.")
 
 
-def load_tiffs2dataframe(file_names: list[str],
-                         folder_path_elevations: str,
-                         folder_path_errors: str,
-                         file_path_mask: Union[str, None] = None,
-                         dem_diff: bool = True,
-                         glacier_name: Union[str, None] = None) -> pd.DataFrame:
+def load_tiffs2dataframe(
+    file_names: list[str],
+    folder_path_elevations: str,
+    folder_path_errors: str,
+    file_path_mask: Union[str, None] = None,
+    dem_diff: bool = True,
+    glacier_name: Union[str, None] = None,
+) -> pd.DataFrame:
     """
     Load a set of .tif files correspond to both the elevation (DEMdiff) and associated errors. Return
     the loaded .tif files as a pd.DataFrame.
@@ -113,6 +132,8 @@ def load_tiffs2dataframe(file_names: list[str],
         file path pointing at where the mask file is stored
     dem_diff : bool
         A boolean value idenifying whether the elevation data should be a DEMdiff or absolue elevation.
+    glacier_name : Union[str, None]
+        The glacier of interest.
 
     Returns
     -------
@@ -130,59 +151,51 @@ def load_tiffs2dataframe(file_names: list[str],
         elevation_col_name = "height_above_mean_sea_level"
 
     # Reference datum - Note CF standards expects time in the format: Time unit since reference datum.
-    initial_time = pd.Timestamp(year=1970,
-                                month=1,
-                                day=1)
+    initial_time = pd.Timestamp(year=1970, month=1, day=1)
 
     # Process each file.
     for i, file_name in enumerate(file_names):
-
-        date_time = extract_date_string_from_filename(file_name=file_name)
+        date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
 
         file_path_elevation = path.join(folder_path_elevations, file_name)
         data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation)
 
         # On the first iteration create the mask to be used as a raster.
         if i == 0 and file_path_mask is not None:
-            mask = get_mask_from_shapefile(file_path_raster=file_path_elevation,
-                                           file_path_mask=file_path_mask,
-                                           glacier_name=glacier_name)
+            mask = get_mask_from_shapefile(
+                file_path_raster=file_path_elevation, file_path_mask=file_path_mask, glacier_name=glacier_name
+            )
 
         # Mask the data if there is a mask available.
         if file_path_mask is not None:
-            data_elevation.mask_from_raster_np(mask,
-                                            include_mask_value=False)
+            data_elevation.mask_from_raster_np(mask, include_mask_value=False)
 
         # Convert elevation data to a DataFrame and rename columns as necessary.
         data_elevation = data_elevation.convert_to_dataframe()
-        data_elevation["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
-                                              month=int(date_time.split("-")[1]),
-                                              day=int(date_time.split("-")[2]))
+        data_elevation["time"] = (pd.to_datetime(date_time) - initial_time).total_seconds()
 
-        data_elevation["time"] = pd.to_datetime(data_elevation["time"])
-        data_elevation["time"] = (data_elevation["time"] - initial_time).dt.total_seconds()
-        data_elevation["value"] = data_elevation["value"]
-        data_elevation = data_elevation.rename({"value": elevation_col_name,
-                                                "x": "projection_x_coordinate",
-                                                "y": "projection_y_coordinate"}, axis=1)
+        data_elevation = data_elevation.rename(
+            {"value": elevation_col_name, "x": "projection_x_coordinate", "y": "projection_y_coordinate"}, axis=1
+        )
         data_elevation = data_elevation.set_index(["projection_x_coordinate", "projection_y_coordinate", "time"])
 
         # Process the errors
         file_path_errors = path.join(folder_path_errors, file_name)
         data_error = RasterNp.load_from_tiff(file_path=file_path_errors)
         if file_path_mask is not None:
-            data_error.mask_from_raster_np(mask,
-                                           include_mask_value=False)
+            data_error.mask_from_raster_np(mask, include_mask_value=False)
 
         data_error = data_error.convert_to_dataframe()
-        data_error["time"] = pd.Timestamp(year=int(date_time.split("-")[0]),
-                                          month=int(date_time.split("-")[1]),
-                                          day=int(date_time.split("-")[2]))
+        data_error["time"] = (pd.to_datetime(date_time) - initial_time).total_seconds()
 
-        data_error["time"] = (data_error["time"] - initial_time).dt.total_seconds()
-        data_error = data_error.rename({"value": elevation_col_name+ "_uncertainty",
-                                        "x": "projection_x_coordinate",
-                                        "y": "projection_y_coordinate"}, axis=1)
+        data_error = data_error.rename(
+            {
+                "value": elevation_col_name + "_uncertainty",
+                "x": "projection_x_coordinate",
+                "y": "projection_y_coordinate",
+            },
+            axis=1,
+        )
         data_error = data_error.set_index(["projection_x_coordinate", "projection_y_coordinate", "time"])
 
         # Join the elevation and error data together
@@ -192,23 +205,26 @@ def load_tiffs2dataframe(file_names: list[str],
     return pd.concat(data_elevation_list, axis=0).reset_index(drop=False)
 
 
-def load_tiffs2dataframe_basalmelt(file_path_obvs: str,
-                                   file_path_errors: str,
-                                   file_path_mask: Union[str, None] = None,
-                                   glacier_name: Union[str, None] = None) -> pd.DataFrame:
+def load_tiffs2dataframe_basalmelt(
+    file_path_obvservations: str,
+    file_path_errors: str,
+    file_path_mask: Union[str, None] = None,
+    glacier_name: Union[str, None] = None,
+) -> pd.DataFrame:
     """
     Load a .tif files for the  and associated errors. Return
     the loaded .tif files as a pd.DataFrame.
 
     Parameters
     ----------
-    file_path_obvs: str
+    file_path_obvservations: str
         folder path pointing to where the observations are stored.
     file_path_errors: str
         folder path pointing to where the observation error data is stored.
     file_path_mask : str
         file path pointing at where the mask file is stored
-    glacier_name
+    glacier_name : Union[str, None]
+        The glacier of interest.
 
     Returns
     -------
@@ -217,42 +233,42 @@ def load_tiffs2dataframe_basalmelt(file_path_obvs: str,
         and timepoint. Note that currently this assumes that the x and y variables are the longitude and the latitude.
         This will need to be revisited.
     """
-    data = RasterNp.load_from_tiff(file_path=file_path_obvs)
-    # data.plot()
+    data = RasterNp.load_from_tiff(file_path=file_path_obvservations)
 
     observation_col_name = "basal_melt_rate"
 
     # On the first iteration create the mask to be used as a raster.
     if file_path_mask is not None:
-        mask = get_mask_from_shapefile(file_path_raster=file_path_obvs,
-                                        file_path_mask=file_path_mask,
-                                        glacier_name=glacier_name)
+        mask = get_mask_from_shapefile(
+            file_path_raster=file_path_obvservations, file_path_mask=file_path_mask, glacier_name=glacier_name
+        )
 
     # Mask the data if there is a mask available.
     if file_path_mask is not None:
-        data.mask_from_raster_np(mask,
-                                 include_mask_value=False)
-
-    # data.plot()
+        data.mask_from_raster_np(mask, include_mask_value=False)
 
     # Convert elevation data to a DataFrame and rename columns as necessary.
     data = data.convert_to_dataframe()
     data["value"] = data["value"]
-    data = data.rename({"value": observation_col_name,
-                        "x": "projection_x_coordinate",
-                        "y": "projection_y_coordinate"}, axis=1)
+    data = data.rename(
+        {"value": observation_col_name, "x": "projection_x_coordinate", "y": "projection_y_coordinate"}, axis=1
+    )
     data = data.set_index(["projection_x_coordinate", "projection_y_coordinate"])
 
     # Process the errors
     data_error = RasterNp.load_from_tiff(file_path=file_path_errors)
     if file_path_mask is not None:
-        data_error.mask_from_raster_np(mask,
-                                       include_mask_value=False)
+        data_error.mask_from_raster_np(mask, include_mask_value=False)
 
     data_error = data_error.convert_to_dataframe()
-    data_error = data_error.rename({"value": observation_col_name + "_uncertainty",
-                                    "x": "projection_x_coordinate",
-                                    "y": "projection_y_coordinate"}, axis=1)
+    data_error = data_error.rename(
+        {
+            "value": observation_col_name + "_uncertainty",
+            "x": "projection_x_coordinate",
+            "y": "projection_y_coordinate",
+        },
+        axis=1,
+    )
     data_error = data_error.set_index(["projection_x_coordinate", "projection_y_coordinate"])
 
     # Join the elevation and error data together
@@ -261,8 +277,7 @@ def load_tiffs2dataframe_basalmelt(file_path_obvs: str,
     return data
 
 
-def load_netcdf(folder_path: str,
-                file_name: str) -> pd.DataFrame:
+def load_netcdf(folder_path: str, file_name: str) -> pd.DataFrame:
     """
     Load a NetCDF file (.nc) and return a Pandas DataFrame object.
 
@@ -291,16 +306,7 @@ def load_netcdf(folder_path: str,
     return data
 
 
-class ZarrStorage(Enum):
-    """Specifies the Zarr file storage types available."""
-
-    local_store = "local_store"
-    memory_store = "memory_store"
-
-
-def get_mask_from_shapefile(file_path_raster: str,
-                            file_path_mask: str,
-                            glacier_name: str) -> RasterNp:
+def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_name: str) -> RasterNp:
     """
     Convert a shapefile with a polygon defining a mask to a mask in a RasterNp object.
     In this case the mask is boolean with the same extent as the tif to be masked. Where a pixel
@@ -323,20 +329,15 @@ def get_mask_from_shapefile(file_path_raster: str,
         a RasterNp object containing the mask.
     """
     shapes = gpd.read_file(file_path_mask)
-    shape = shapes[shapes["Name"]==glacier_name]
+    shape = shapes[shapes["Name"] == glacier_name]
 
     with rasterio.open(file_path_raster) as src:
         mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False)
 
-        bounds = (src.bounds[0], src.bounds[1], src.bounds[2], src.bounds[3]) #minx, miny, maxx, maxy
-        bounding_box = BoundingBox(min_x=bounds[0],
-                                   min_y=bounds[1],
-                                   max_x=bounds[2],
-                                   max_y=bounds[3])
+        bounds = (src.bounds[0], src.bounds[1], src.bounds[2], src.bounds[3])  # minx, miny, maxx, maxy
+        bounding_box = BoundingBox(min_x=bounds[0], min_y=bounds[1], max_x=bounds[2], max_y=bounds[3])
 
     resolution = (bounds[2] - bounds[0]) / mask.shape[1]
-    mask = RasterNp(input_array=mask,
-                    bounding_box=bounding_box,
-                    resolution=resolution)
+    mask = RasterNp(input_array=mask, bounding_box=bounding_box, resolution=resolution)
 
     return mask

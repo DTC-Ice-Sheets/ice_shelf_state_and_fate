@@ -85,7 +85,7 @@ def test_load_tiffs2dataframe_basalmelt():
     # It doesn't matter that these are the same for testing
     test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
 
-    data = load_tiffs2dataframe_basalmelt(file_path_obvs=test_file_path, file_path_errors=test_file_path)
+    data = load_tiffs2dataframe_basalmelt(file_path_obvservations=test_file_path, file_path_errors=test_file_path)
 
     assert data.shape == (16, 4)
     assert list(data.columns) == [

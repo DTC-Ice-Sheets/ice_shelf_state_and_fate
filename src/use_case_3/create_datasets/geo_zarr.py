@@ -3,6 +3,7 @@
 import json
 import os
 import os.path as path
+from enum import Enum
 from typing import Any, List, Tuple, Union
 
 import numpy as np
@@ -11,18 +12,25 @@ import xarray as xr
 import zarr
 import zarr.storage
 
-from use_case_3.create_datasets.create_dataset_helper_functions import ZarrStorage
+
+class ZarrStorage(Enum):
+    """Specifies the Zarr file storage types available."""
+
+    local_store = "local_store"
+    memory_store = "memory_store"
 
 
 class GeoZarr:
     """The GeoZarr data object. Allows the reading and writing of GeoZarr files which conform to the GeoZarr spec."""
 
-    def __init__(self: Any,
-                 storage_type: ZarrStorage,
-                 storage_directory: Union[str, None]=None,
-                 zarr_format: int=2,
-                 n_chunks: int=1,
-                 overwrite: bool=True) -> None:
+    def __init__(
+        self: Any,
+        storage_type: ZarrStorage,
+        storage_directory: Union[str, None] = None,
+        zarr_format: int = 2,
+        n_chunks: int = 1,
+        overwrite: bool = True,
+    ) -> None:
         """
         Initialise the GeoZarr object.
 
@@ -41,7 +49,7 @@ class GeoZarr:
         Raises
         ------
         TypeError
-            Raised when no storage directory is specified when the 'ZarrSorage.local_store' parameter is passed.
+            Raised when no storage directory is specified when the 'ZarrStorage.local_store' parameter is passed.
         """
         self.zarr_format = zarr_format
         self.n_chunks = n_chunks
@@ -54,10 +62,8 @@ class GeoZarr:
                 raise TypeError("Enter a valid storage location")
             self.store = zarr.storage.LocalStore(root=self.storage_directory)
 
-        #This is where the zarr file is created according to the storage type chosen
-        self.root = zarr.create_group(store=self.store,
-                                      zarr_format=self.zarr_format,
-                                      overwrite=overwrite)
+        # This is where the zarr file is created according to the storage type chosen
+        self.root = zarr.create_group(store=self.store, zarr_format=self.zarr_format, overwrite=overwrite)
         self.create_dimensions_config()
 
     def create_dimensions_config(self) -> None:
@@ -71,79 +77,57 @@ class GeoZarr:
         where we can populate this for all of the expected standard names.
         !!!!!!!!!
         """
-        data = {"standard_name": ["time",
-                                  "grid_latitude",
-                                  "grid_longitude",
-                                  "height_above_mean_sea_level",
-                                  "height_difference_from_dem",
-                                  "height_above_mean_sea_level_uncertainty",
-                                  "height_difference_from_dem_uncertainty",
-                                  "basal_melt_rate",
-                                  "basal_melt_rate_uncertainty",
-                                  "projection_x_coordinate",
-                                  "projection_y_coordinate"],
-                "axis": ["T",
-                         "Y",
-                         "X",
-                         "None",
-                         "None",
-                         "None",
-                         "None",
-                         "None",
-                         "None",
-                         "X",
-                         "Y"],
-                "bounds": ["time_bnds",
-                           "None",
-                           "None",
-                           "None",
-                           "None",
-                           "None",
-                           "None",
-                           "None",
-                           "None",
-                           "None",
-                           "None"],
-                "calendar": ["standard",
-                             "None",
-                             "None",
-                             "None",
-                             "None",
-                             "None",
-                             "None",
-                             "None",
-                             "None",
-                             "None",
-                             "None"],
-                "long_name": ["time",
-                              "grid_latitude",
-                              "grid_longitude",
-                              "height_above_mean_sea_level",
-                              "height_difference_from_dem",
-                              "height_above_mean_sea_level_uncertainty",
-                              "height_difference_from_dem_uncertainty",
-                              "basel_melt_rate",
-                              "basel_melt_rate_uncertainty",
-                              "projection_x_coordinate",
-                              "projection_y_coordinate"],
-                "units": ["seconds since 1970-01-01T00:00:00",
-                          "degrees",
-                          "degrees",
-                          "m",
-                          "m",
-                          "m",
-                          "m",
-                          "m/s",
-                          "m/s",
-                          "m",
-                          "m"]}
+        data = {
+            "standard_name": [
+                "time",
+                "grid_latitude",
+                "grid_longitude",
+                "height_above_mean_sea_level",
+                "height_difference_from_dem",
+                "height_above_mean_sea_level_uncertainty",
+                "height_difference_from_dem_uncertainty",
+                "basal_melt_rate",
+                "basal_melt_rate_uncertainty",
+                "projection_x_coordinate",
+                "projection_y_coordinate",
+            ],
+            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y"],
+            "bounds": ["time_bnds", "None", "None", "None", "None", "None", "None", "None", "None", "None", "None"],
+            "calendar": ["standard", "None", "None", "None", "None", "None", "None", "None", "None", "None", "None"],
+            "long_name": [
+                "time",
+                "grid_latitude",
+                "grid_longitude",
+                "height_above_mean_sea_level",
+                "height_difference_from_dem",
+                "height_above_mean_sea_level_uncertainty",
+                "height_difference_from_dem_uncertainty",
+                "basel_melt_rate",
+                "basel_melt_rate_uncertainty",
+                "projection_x_coordinate",
+                "projection_y_coordinate",
+            ],
+            "units": [
+                "seconds since 1970-01-01T00:00:00",
+                "degrees",
+                "degrees",
+                "m",
+                "m",
+                "m",
+                "m",
+                "m/s",
+                "m/s",
+                "m",
+                "m",
+            ],
+        }
 
         self.dimensions_config = pd.DataFrame(data)
 
     @staticmethod
-    def _reshape_data(data: pd.DataFrame,
-                      target_column:str,
-                      coord_columns: List[str]) -> Tuple[np.ndarray, list[np.ndarray]]:
+    def _reshape_data(
+        data: pd.DataFrame, target_column: str, coord_columns: List[str]
+    ) -> Tuple[np.ndarray, list[np.ndarray]]:
         """
         Reshape a 2-dimensional array into an N-dimensional array based on a specified number of coordinate columns.
         This ensures a uniformly spaced grid in the coordinates. In cases where the coordinate period is not uniform,
@@ -176,19 +160,23 @@ class GeoZarr:
         target = data[target_column].values
 
         # Create empty lists to hold important information regardin coordinate remapping.
-        coords_list_unique = [] # This holds the unique coordinate values for each coordinate variable.
-        coords_idx = [] # This holds the coordinate indexes for each coordinate variable.
-        data_coords = [] # used to store the final coordinate vectors which are resampled.
+        coords_list_unique = []  # This holds the unique coordinate values for each coordinate variable.
+        coords_idx = []  # This holds the coordinate indexes for each coordinate variable.
+        data_coords = []  # used to store the final coordinate vectors which are resampled.
         for i, coord in enumerate(coords_list):
             # This calculates the difference between the coordinates for each variable, if it is not spaced evenly,
             # then this is resampled. This assumes that the data to be resampled is an integer!
-            if not np.all(np.diff(np.unique(np.sort(coord)))==np.diff(np.unique(np.sort(coord)))[0]):
-                period = np.min(np.gcd(np.diff(np.unique(np.sort(coord))).astype(int),
-                                    np.diff(np.unique(np.sort(coord)))[0].astype(int)))
+            if not np.all(np.diff(np.unique(np.sort(coord))) == np.diff(np.unique(np.sort(coord)))[0]):
+                period = np.min(
+                    np.gcd(
+                        np.diff(np.unique(np.sort(coord))).astype(int),
+                        np.diff(np.unique(np.sort(coord)))[0].astype(int),
+                    )
+                )
             else:
                 period = np.diff(np.unique(np.sort(coord)))[0]
             # Create a sorted list of unique coordinate values.
-            coords_list_unique.append(np.arange(np.min(coord), np.max(coord)+period, period))
+            coords_list_unique.append(np.arange(np.min(coord), np.max(coord) + period, period))
             coords_idx.append(np.zeros(coords_list[i].shape))
             data_coords.append(coords_list_unique[i])
 
@@ -215,8 +203,7 @@ class GeoZarr:
 
         return data_reshape, data_coords
 
-    def _calculate_chunk_dims(self: Any,
-                              data_shape: tuple) -> tuple:
+    def _calculate_chunk_dims(self: Any, data_shape: tuple) -> tuple:
         """
         Calculate the dims of each chunk in the Zarr file. The following fomula is applied on each dim.
 
@@ -250,13 +237,14 @@ class GeoZarr:
 
         return tuple(chunk_dims)
 
-
-    def dataframe2geozarr(self,
-                          data: pd.DataFrame,
-                          data_columns: List,
-                          coordinate_columns: List,
-                          auxiliary_columns: Union[List, None],
-                          map_projection: str) -> Union[None, zarr.Group]:
+    def dataframe2geozarr(
+        self,
+        data: pd.DataFrame,
+        data_columns: List[str],
+        coordinate_columns: List[str],
+        auxiliary_columns: Union[List, None],
+        map_projection: str,
+    ) -> Union[None, zarr.Group]:
         """
         Convert a pandas dataframe to geozarr. Note this currently assumes that the column names will follow
         CF naming conventions.
@@ -292,9 +280,7 @@ class GeoZarr:
         auxiliary_columns = sorted(auxiliary_columns)
 
         # Order the columns alpabetically between the different column groups
-        data = pd.concat([data[data_columns],
-                          data[coordinate_columns],
-                          data[auxiliary_columns]], axis=1)
+        data = pd.concat([data[data_columns], data[coordinate_columns], data[auxiliary_columns]], axis=1)
 
         # Sort the data by the coordinate columns
         data = data.sort_values(coordinate_columns)
@@ -303,41 +289,48 @@ class GeoZarr:
         self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
         self.root.attrs["MAP_PROJECTION"] = map_projection
 
-        # Create the N-Dim array for each sepcified data column - According to GeoZarr this should be geospacial
+        # Create the N-Dim array for each sepcified data column - According to GeoZarr this should be geospatial
         # observations.
         for column in data_columns:
-            standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"]==column]
+            standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == column]
             if standard_dimensions.shape[0] > 0:
-                attributes = {key: standard_dimensions[key].iloc[0] for key in standard_dimensions.columns if
-                              standard_dimensions[key].iloc[0] != "None"}
+                attributes = {
+                    key: standard_dimensions[key].iloc[0]
+                    for key in standard_dimensions.columns
+                    if standard_dimensions[key].iloc[0] != "None"
+                }
                 attributes["_ARRAY_DIMENSIONS"] = coordinate_columns
             else:
                 raise ValueError(f"Column {column} is not a CF standard name, please check this")
 
-            data_reshape, data_reshape_coords = self._reshape_data(data=data,
-                                                                   target_column=column,
-                                                                   coord_columns=coordinate_columns)
+            data_reshape, data_reshape_coords = self._reshape_data(
+                data=data, target_column=column, coord_columns=coordinate_columns
+            )
 
-            self._add_data_array(data=data_reshape,
-                                 dtype=data[column].to_numpy().dtype,
-                                 name=column,
-                                 attributes=attributes,
-                                 chunk_shape=self._calculate_chunk_dims(data_reshape.shape))
+            self._add_data_array(
+                data=data_reshape,
+                dtype=data[column].to_numpy().dtype,
+                name=column,
+                attributes=attributes,
+                chunk_shape=self._calculate_chunk_dims(data_reshape.shape),
+            )
 
-        # Process the coordinate coluumns
+        # Process the coordinate columns
         for i, column in enumerate(coordinate_columns):
-            standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"]==column]
+            standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == column]
             if standard_dimensions.shape[0] > 0:
                 attributes = {key: standard_dimensions[key].iloc[0] for key in standard_dimensions.columns}
                 attributes["_ARRAY_DIMENSIONS"] = [column]
             else:
                 raise ValueError(f"Column {column} is not a CF standard name, please check this")
             data_coord = data_reshape_coords[i]
-            self._add_data_array(data=data_coord,
-                                 dtype=data[column].to_numpy().dtype,
-                                 name=column,
-                                 attributes=attributes,
-                                 chunk_shape=self._calculate_chunk_dims(data_coord.shape))
+            self._add_data_array(
+                data=data_coord,
+                dtype=data[column].to_numpy().dtype,
+                name=column,
+                attributes=attributes,
+                chunk_shape=self._calculate_chunk_dims(data_coord.shape),
+            )
 
         # Encouraged by XArray to increase the speed at which the Zarr file can be loaded. This consolidates all
         # metadata to the root metadata file.
@@ -347,12 +340,14 @@ class GeoZarr:
         if self.storage_type == ZarrStorage.memory_store:
             return self.root
 
-    def _add_data_array(self,
-                        attributes: dict[str, zarr.core.common.JSON],
-                        data: np.ndarray,
-                        dtype: np.typing.DTypeLike,
-                        name: str,
-                        chunk_shape: tuple) -> None:
+    def _add_data_array(
+        self,
+        attributes: dict[str, zarr.core.common.JSON],
+        data: np.ndarray,
+        dtype: np.typing.DTypeLike,
+        name: str,
+        chunk_shape: tuple,
+    ) -> None:
         """
         Add a data_array to the GeoZarr.
 
@@ -369,11 +364,9 @@ class GeoZarr:
         chunk_shape : tuple
             The shape of a single chunk.
         """
-        self.root.create_array(name=name,
-                               shape=data.shape,
-                               attributes=json.loads(json.dumps(attributes)),
-                               dtype=dtype,
-                               chunks=chunk_shape)
+        self.root.create_array(
+            name=name, shape=data.shape, attributes=json.loads(json.dumps(attributes)), dtype=dtype, chunks=chunk_shape
+        )
 
         data_slice = []
         for dim in data.shape:
@@ -413,13 +406,15 @@ class GeoZarr:
 
         data_arrays = [x for x in data_arrays if x[0] != "."]
 
-        zarr_dict = {feature: zarr.load(path.join(file_path, feature)) for feature in data_arrays \
-          if ".zarray" in os.listdir(path.join(file_path, feature))}
+        zarr_dict = {
+            feature: zarr.load(path.join(file_path, feature))
+            for feature in data_arrays
+            if ".zarray" in os.listdir(path.join(file_path, feature))
+        }
 
         return zarr_dict
 
-    def load_geo_zarr_xarray(self: Any,
-                             file_path: str) -> xr.DataArray:
+    def load_geo_zarr_xarray(self: Any, file_path: str) -> xr.DataArray:
         """
         Load the GeoZarr file into an xarray. Thin wrapper around xarray.open_zarr.
 
@@ -433,5 +428,4 @@ class GeoZarr:
         xarray
             The xarray of the zarr file
         """
-        return xr.open_zarr(store=file_path,
-                            zarr_format=self.zarr_format)
+        return xr.open_zarr(store=file_path, zarr_format=self.zarr_format)
