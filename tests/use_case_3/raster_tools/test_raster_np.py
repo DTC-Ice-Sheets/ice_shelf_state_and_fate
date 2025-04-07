@@ -1,4 +1,5 @@
 """Test the RasterNp class."""
+
 import os
 
 import numpy as np
@@ -31,21 +32,24 @@ def bounding_box_fixture() -> BoundingBox:
 def y_affine_negative_fixture(np_arr_fixture: NDArray, bounding_box_fixture: BoundingBox):
     resolution = 100
     return RasterNp(
-        np_arr_fixture, bounding_box_fixture, resolution, y_affine_negative=True, proj4_code=PROJ4_CODE_FIXTURE)
+        np_arr_fixture, bounding_box_fixture, resolution, y_affine_negative=True, proj4_code=PROJ4_CODE_FIXTURE
+    )
 
 
 @pytest.fixture
 def y_affine_positive_fixture(np_arr_fixture: NDArray, bounding_box_fixture: BoundingBox):
     resolution = 100
     return RasterNp(
-        np_arr_fixture, bounding_box_fixture, resolution, y_affine_negative=False, proj4_code=PROJ4_CODE_FIXTURE)
+        np_arr_fixture, bounding_box_fixture, resolution, y_affine_negative=False, proj4_code=PROJ4_CODE_FIXTURE
+    )
 
 
 @pytest.fixture
 def dummy_raster():
     np_arr_nan = np.array([[np.nan, 2], [3, 4], [6, 6]])
     raster_np = RasterNp(
-        np_arr_nan, BoundingBox(0, 200, 400, 700), 100, y_affine_negative=True, proj4_code=PROJ4_CODE_FIXTURE)
+        np_arr_nan, BoundingBox(0, 200, 400, 700), 100, y_affine_negative=True, proj4_code=PROJ4_CODE_FIXTURE
+    )
     return raster_np
 
 
@@ -74,14 +78,16 @@ def assert_save_and_load_tiff(save_path: str, raster_np: RasterNp, data_type: DT
     assert raster_np.bounding_box.max_y == raster_np_loaded.bounding_box.max_y
     #  note that the two proj4 codes below are equivalent,
     # e.g. see https://www.spatialreference.org/ref/epsg/wgs-84-nsidc-sea-ice-polar-stereographic-north/
-    assert (len({raster_np.proj4_code, raster_np_loaded.proj4_code}
-            - {"+init=epsg:3413",
-               "+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs=True"}) == 0
-            or (raster_np.proj4_code == raster_np_loaded.proj4_code))
+    assert len(
+        {raster_np.proj4_code, raster_np_loaded.proj4_code}
+        - {
+            "+init=epsg:3413",
+            "+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs=True",
+        }
+    ) == 0 or (raster_np.proj4_code == raster_np_loaded.proj4_code)
 
 
 def test_raster_np_init_y_affine_positive(bounding_box_fixture: BoundingBox, y_affine_positive_fixture: RasterNp):
-
     assert y_affine_positive_fixture.resolution == 100
     assert y_affine_positive_fixture.bounding_box.min_x == bounding_box_fixture.min_x
     assert y_affine_positive_fixture.bounding_box.max_x == bounding_box_fixture.max_x
@@ -142,7 +148,8 @@ def test_load_tiff_nan_no_values_doubles_extents(tmpdir: str, y_affine_negative_
 
     y_affine_negative_fixture.save_as_tiff(file_path, no_data=6)
     loaded_raster = y_affine_negative_fixture.load_from_tiff(
-        file_path, bounding_box=BoundingBox(0.0, 200.0, 400.0, 600.0))
+        file_path, bounding_box=BoundingBox(0.0, 200.0, 400.0, 600.0)
+    )
     assert np.isnan(loaded_raster[1, 1])
     assert ~np.isnan(loaded_raster[0, 0])
 
@@ -168,7 +175,6 @@ def test_raster_numpy_save_and_load_y_affine_negative(tmpdir: str, y_affine_nega
 
 
 def test_raster_numpy_load_sub_extent(test_inputs_path: str):
-
     test_file = os.path.join(test_inputs_path, "rasters", "4x4.tiff")
     # Actual extent = min_x=50.0, max_x=450.0, min_y=1050.0, max_y=1450.0
     sub_extent = BoundingBox(min_x=150, max_x=450.0, min_y=1150.0, max_y=1350.0)
@@ -181,7 +187,6 @@ def test_raster_numpy_load_sub_extent(test_inputs_path: str):
 
 
 def test_raster_numpy_load_sub_extent_sub_pixels(test_inputs_path: str):
-
     test_file = os.path.join(test_inputs_path, "rasters", "4x4.tiff")
     # Actual extent = min_x=50.0, max_x=450.0, min_y=1050.0, max_y=1450.0
     sub_extent = BoundingBox(min_x=210, max_x=310.0, min_y=1210.0, max_y=1340.0)
@@ -193,7 +198,6 @@ def test_raster_numpy_load_sub_extent_sub_pixels(test_inputs_path: str):
 
 
 def test_raster_numpy_load_with_extent_greater_than_image(test_inputs_path: str):
-
     test_file = os.path.join(test_inputs_path, "rasters", "4x4.tiff")
     # Actual extent = min_x=50.0, max_x=450.0, min_y=1050.0, max_y=1450.0
     sub_extent = BoundingBox(min_x=-100, max_x=500, min_y=0, max_y=2000)
@@ -302,7 +306,8 @@ def test_get_resolution_rounded_extent_odd_extent(y_affine_negative_fixture: Ras
         y_affine_negative_fixture.bounding_box.min_x - 50,
         y_affine_negative_fixture.bounding_box.max_x - 50,
         y_affine_negative_fixture.bounding_box.min_y - 50,
-        y_affine_negative_fixture.bounding_box.max_y - 50)
+        y_affine_negative_fixture.bounding_box.max_y - 50,
+    )
 
     extent = BoundingBox(-250, 500, 70, 911)
     round_extent = y_affine_negative_fixture._get_resolution_rounded_bounding_box(extent)
@@ -313,7 +318,6 @@ def test_get_resolution_rounded_extent_odd_extent(y_affine_negative_fixture: Ras
 
 
 def test_extent_intersects_tiff(test_inputs_path: str):
-
     mask_file = os.path.join(test_inputs_path, "rasters", "small_mask.tiff")
 
     # Inside Tiff
@@ -336,7 +340,6 @@ def test_raster_np_get_centre_points(y_affine_negative_fixture: RasterNp):
 
 
 def test_raster_np_mask_from_file(test_inputs_path: str, y_affine_negative_fixture: RasterNp):
-
     mask_path = os.path.join(test_inputs_path, "rasters", "simple_mask.tiff")
 
     y_affine_negative_fixture.mask_from_file(mask_path, outside_mask_return_value=0)
@@ -346,7 +349,6 @@ def test_raster_np_mask_from_file(test_inputs_path: str, y_affine_negative_fixtu
 
 
 def test_raster_np_mask_from_file_include_mask_value(test_inputs_path: str, y_affine_negative_fixture: RasterNp):
-
     mask_path = os.path.join(test_inputs_path, "rasters", "simple_mask.tiff")
     y_affine_negative_fixture.mask_from_file(mask_path, include_mask_value=0, outside_mask_return_value=0)
 
@@ -354,9 +356,9 @@ def test_raster_np_mask_from_file_include_mask_value(test_inputs_path: str, y_af
     assert y_affine_negative_fixture[0, 0] == 1
 
 
-def test_raster_np_mask_from_file_include_mask_value_affine_positive(test_inputs_path: str,
-                                                                     y_affine_positive_fixture: RasterNp):
-
+def test_raster_np_mask_from_file_include_mask_value_affine_positive(
+    test_inputs_path: str, y_affine_positive_fixture: RasterNp
+):
     mask_path = os.path.join(test_inputs_path, "rasters", "simple_mask.tiff")
     y_affine_positive_fixture.mask_from_file(mask_path, outside_mask_return_value=100)
 
@@ -366,12 +368,22 @@ def test_raster_np_mask_from_file_include_mask_value_affine_positive(test_inputs
 
 def test_convert_to_dataframe(y_affine_negative_fixture: RasterNp):
     df1 = y_affine_negative_fixture.convert_to_dataframe()
-    df1a = pd.DataFrame({"x": [50.0, 50.0, 50.0, 150.0, 150.0, 150.0], "y": [
-                        450.0, 550.0, 650.0, 450.0, 550.0, 650.0], "value": [6, 3, 1, 6, 4, 2]})
+    df1a = pd.DataFrame(
+        {
+            "x": [50.0, 50.0, 50.0, 150.0, 150.0, 150.0],
+            "y": [450.0, 550.0, 650.0, 450.0, 550.0, 650.0],
+            "value": [6, 3, 1, 6, 4, 2],
+        }
+    )
 
     df2 = y_affine_negative_fixture.convert_to_dataframe("goose")
-    df2a = pd.DataFrame({"x": [50.0, 50.0, 50.0, 150.0, 150.0, 150.0], "y": [
-                        450.0, 550.0, 650.0, 450.0, 550.0, 650.0], "goose": [6, 3, 1, 6, 4, 2]})
+    df2a = pd.DataFrame(
+        {
+            "x": [50.0, 50.0, 50.0, 150.0, 150.0, 150.0],
+            "y": [450.0, 550.0, 650.0, 450.0, 550.0, 650.0],
+            "goose": [6, 3, 1, 6, 4, 2],
+        }
+    )
 
     assert len(df1) == 6
     pdt.assert_frame_equal(df1, df1a)
@@ -386,8 +398,7 @@ def test_bounding_box_partial_intersect_with_raster(test_inputs_path: str):
     sub_extent = BoundingBox(min_x=976290.688, min_y=-1902572.555, max_x=2671651.758, max_y=-478302.955)
     raster = RasterNp.load_from_tiff(test_file, bounding_box=sub_extent)
 
-    expected_raster = RasterNp.load_from_tiff(
-        os.path.join(test_inputs_path, "rasters", "svalbard_sub_extent.tif"))
+    expected_raster = RasterNp.load_from_tiff(os.path.join(test_inputs_path, "rasters", "svalbard_sub_extent.tif"))
 
     np.testing.assert_array_equal(raster.data, expected_raster.data)
     assert abs(raster.bounding_box.min_x - expected_raster.bounding_box.min_x) < 1e-4
@@ -397,18 +408,24 @@ def test_bounding_box_partial_intersect_with_raster(test_inputs_path: str):
     assert raster.transform == expected_raster.transform
 
 
-def np_arr_() -> NDArray:
-    return np.array([[1, 2], [3, 4], [6, 6]])
+def test_mask_from_raster_np(dummy_raster, bounding_box_fixture):
+    # Before masking
+    assert np.isnan(dummy_raster[0, 0])
+    assert dummy_raster[0, 1] == 2
+    assert dummy_raster[1, 0] == 3
+    assert dummy_raster[1, 1] == 4
+    assert dummy_raster[2, 0] == 6
+    assert dummy_raster[2, 1] == 6
 
+    mask_np = np.array([[False, False], [False, True], [True, False]])
+    mask = RasterNp(mask_np, bounding_box_fixture, 100)
 
-def bounding_box_() -> BoundingBox:
-    x_min = 0
-    x_max = 200
-    y_min = 400
-    y_max = 700
-    return BoundingBox(x_min, x_max, y_min, y_max)
+    dummy_raster.mask_from_raster_np(mask=mask, include_mask_value=0)
 
-def y_affine_positive_(np_arr_fixture: NDArray, bounding_box_fixture: BoundingBox):
-    resolution = 100
-    return RasterNp(
-        np_arr_fixture, bounding_box_fixture, resolution, y_affine_negative=False, proj4_code=PROJ4_CODE_FIXTURE)
+    # After masking
+    assert np.isnan(dummy_raster[0, 0])
+    assert dummy_raster[0, 1] == 2
+    assert dummy_raster[1, 0] == 3
+    assert np.isnan(dummy_raster[1, 1])
+    assert np.isnan(dummy_raster[2, 0])
+    assert dummy_raster[2, 1] == 6

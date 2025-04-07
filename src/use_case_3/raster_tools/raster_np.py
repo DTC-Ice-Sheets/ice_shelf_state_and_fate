@@ -80,6 +80,7 @@ class RasterNp(np.ndarray):
 
         expected_x_count = round((bounding_box.max_x - bounding_box.min_x) / resolution)
         expected_y_count = round((bounding_box.max_y - bounding_box.min_y) / resolution)
+
         if expected_x_count != self.shape[1] or expected_y_count != self.shape[0]:
             raise ValueError("Extent and resolution do not match array dimensions")
         return bounding_box
@@ -473,10 +474,10 @@ class RasterNp(np.ndarray):
         file_path : str
             File path of mask file.
         include_mask_value : Optional[float]
-            The in-mask value in the mask geotiff, by default 1
+            The in-mask value in the mask geotiff, by default 1.
         outside_mask_return_value : Optional[float]
             The value assinged to data found outside of the mask, by default np.nan. note - the default
-            outside_mask_return_value value of np.nan does not work with int-based arrays
+            outside_mask_return_value value of np.nan does not work with int-based arrays.
         """
         # For each point in current file, get mask value and mask nan accordingly
         y, x = self.yx_gridpoints()
@@ -484,6 +485,41 @@ class RasterNp(np.ndarray):
 
         # Load intersecting mask tiff
         mask = RasterNp.load_from_tiff(file_path, bounding_box=self.bounding_box)
+        # Now force mask extent to cover the same area as self.extent
+        mask = mask.new_extent_copy(self.bounding_box, fill_to_extent=True, fill_value=outside_mask_return_value)
+        mask_values = mask.at_yx(y, x)
+        mask_values = mask_values.reshape(-1, self.shape[0]).swapaxes(0, 1)
+        mask_values = (mask_values == include_mask_value)
+
+        # Apply mask
+        if self.y_affine_negative:
+            mask_values = mask_values[::-1]
+
+        self[~mask_values] = outside_mask_return_value
+
+    def mask_from_raster_np(self: RasterNp,
+                            mask: RasterNp,
+                            include_mask_value: Optional[Union[float, bool]] = 1,
+                            outside_mask_return_value: Optional[float] = np.nan) -> None:
+        """
+        Mask object in place from a np.ndarray mask.
+
+        Parameters
+        ----------
+        mask : RasterNp
+            The mask represented as a RasterNp.
+        include_mask_value : Optional[float]
+            The in-mask value in the mask geotiff, by default 1.
+        outside_mask_return_value : Optional[float]
+            The value assigned to data found outside of the mask, by default np.nan. note - the default
+            outside_mask_return_value value of np.nan does not work with int-based arrays.
+
+        TODO: Check and return error when using int-based arrays.
+        """
+        # For each point in current file, get mask value and mask nan accordingly
+        y, x = self.yx_gridpoints()
+        x, y = make_grid_mesh_xy(x, y)
+
         # Now force mask extent to cover the same area as self.extent
         mask = mask.new_extent_copy(self.bounding_box, fill_to_extent=True, fill_value=outside_mask_return_value)
         mask_values = mask.at_yx(y, x)
