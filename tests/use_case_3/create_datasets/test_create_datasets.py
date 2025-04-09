@@ -85,7 +85,7 @@ def test_load_tiffs2dataframe_basalmelt():
     # It doesn't matter that these are the same for testing
     test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
 
-    data = load_tiffs2dataframe_basalmelt(file_path_obvservations=test_file_path, file_path_errors=test_file_path)
+    data = load_tiffs2dataframe_basalmelt(file_path_observations=test_file_path, file_path_errors=test_file_path)
 
     assert data.shape == (16, 4)
     assert list(data.columns) == [
@@ -100,10 +100,10 @@ def test_get_mask_from_shapefile():
     # Need to create a mask to load from a .gpkg
     test_mask_input_path = path.join(path.dirname(__file__), "test_inputs", "toy_mask_4x4.gpkg")
 
-    coords = ((100., 1200.), ( 300., 1200.), (300., 1300.), (100., 1300.))
+    coords = ((100.0, 1200.0), (300.0, 1200.0), (300.0, 1300.0), (100.0, 1300.0))
     polygon = Polygon(coords)
 
-    d =  {"Name": ["test"], "geometry": [polygon]}
+    d = {"Name": ["test"], "geometry": [polygon]}
 
     gdf = gpd.GeoDataFrame(d)
     gdf.to_file(test_mask_input_path)
