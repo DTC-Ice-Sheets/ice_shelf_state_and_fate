@@ -385,7 +385,7 @@ class TimeSeriesModule:
 
         return pd.DataFrame(
             np.hstack((data_agg.reshape((-1, 1)), data_agg_spread.reshape((-1, 1)), data_agg_n.reshape((-1, 1)))),
-            columns=[aggregate, "data_" + aggregate_spread, aggregate + "_n"],
+            columns=["aggregation", "data_" + aggregate_spread, "aggregation_n"],
             index=time_agg,
         )
 
@@ -815,8 +815,8 @@ class TimeSeriesModule:
 
     @staticmethod
     def combine_uncertainties_quadrature(
-        data_uncertainties_1: np.ndarray, data_uncertainties_2: Union[np.float64, np.ndarray]
-    ) -> np.ndarray:
+        data_uncertainties_1: Union[np.float64, np.ndarray], data_uncertainties_2: Union[np.float64, np.ndarray]
+    ) -> Union[np.float64, np.ndarray]:
         """
         Combine uncertainties through quadrature.
 
@@ -848,23 +848,21 @@ class TimeSeriesModule:
 
         Parameters
         ----------
-        self : Any
-            _description_
         data_observations : np.ndarray
-            _description_
+            The data observations.
         dimension_data : dict
-            _description_
+            The coordinate data.
         dimension_names : List[str]
-            _description_
+            The dimension names
         data_mask : Union[None, np.ndarray], optional
-            _description_, by default None
+            The data mask, by default None
         period : Union[None, str], optional
-            _description_, by default None
+            The period over which the data is aggregated, by default None
 
         Returns
         -------
         pd.DataFrame
-            _description_
+            The time series of the coverage.
         """
         data_observations, dimension_names = self._expand_dimensions(
             data=data_observations, dimension_names=dimension_names, modify_dimension_names=True
@@ -884,7 +882,7 @@ class TimeSeriesModule:
         data_coverage_n = self.count_nan_elements(data=data_observations, non_nan=True, time_index=time_idx)
 
         return pd.DataFrame(
-            np.hstack((data_coverage.reshape((-1, 1)), data_coverage_n.reshape((-1, 1)))),
+            np.hstack((data_coverage.reshape((-1, 1)) * 100, data_coverage_n.reshape((-1, 1)))),
             columns=["coverage", "coverage_n"],
             index=time_agg,
         )
@@ -974,3 +972,138 @@ class TimeSeriesModule:
             return np.count_nonzero(~data)
         else:
             return np.count_nonzero(~np.isnan(data))
+
+    def summary_statistics(
+        self: Any, timeseries: pd.DataFrame, observation_name: str, observation_units: str
+    ) -> pd.DataFrame:
+        """
+        Generate a set of summary statistics for a time series. This assumes that the timeseries is
+        ordered. It also assumes that there are associated uncertainties.
+
+        Parameters
+        ----------
+        timeseries : pd.DataFrame
+            The time series.
+        observation_name : str
+            The name of the observation.
+        observation_units : str
+            The units of the observation.
+
+        Returns
+        -------
+        pd.DataFrame
+            A set of summary statistics.
+        """
+        start = timeseries["aggregation"].iloc[0]
+        start_uncertainty = timeseries["uncertainty"].iloc[0]
+        end = timeseries["aggregation"].iloc[-1]
+        end_uncertainty = timeseries["uncertainty"].iloc[-1]
+        difference = end - start
+        difference_uncertainty = self.combine_uncertainties_quadrature(start_uncertainty, end_uncertainty)
+
+        value_maximum = timeseries["aggregation"].max()
+        value_maximum_uncertainty = timeseries.loc[timeseries["aggregation"].idxmax(), "uncertainty"]
+
+        value_minimum = timeseries["aggregation"].min()
+        value_minimum_uncertainty = timeseries.loc[timeseries["aggregation"].idxmin(), "uncertainty"]
+
+        coverage_maximum = timeseries["coverage"].max()
+        coverage_minimum = timeseries["coverage"].min()
+        coverage_range = coverage_maximum - coverage_minimum
+        coverage_mean = timeseries["coverage"].mean()
+        coverage_std = timeseries["coverage"].std()
+        coverage_median = timeseries["coverage"].median()
+
+        observation_uncertainty_corr = np.corrcoef(
+            timeseries["aggregation"].values.flatten(), timeseries["uncertainty"].values.flatten()
+        )[0, -1]
+        linearity_corr = np.corrcoef(np.arange(timeseries.shape[0]), timeseries["aggregation"].values.flatten())[0, -1]
+
+        data = np.zeros((13, 3))
+
+        # Start
+        data[0, 0] = start
+        data[0, 1] = start - start_uncertainty
+        data[0, 2] = start + start_uncertainty
+
+        # End
+        data[1, 0] = end
+        data[1, 1] = end - end_uncertainty
+        data[1, 2] = end + end_uncertainty
+
+        # Difference
+        data[2, 0] = difference
+        data[2, 1] = difference - difference_uncertainty
+        data[2, 2] = difference + difference_uncertainty
+
+        # Maximum
+        data[3, 0] = value_maximum
+        data[3, 1] = value_maximum - value_maximum_uncertainty
+        data[3, 2] = value_maximum + value_maximum_uncertainty
+
+        # Minimum
+        data[4, 0] = value_minimum
+        data[4, 1] = value_minimum - value_minimum_uncertainty
+        data[4, 2] = value_minimum + value_minimum_uncertainty
+
+        # Coverage Maximum
+        data[5, 0] = coverage_maximum
+        data[5, 1] = np.nan
+        data[5, 2] = np.nan
+
+        # Coverage Minimum
+        data[6, 0] = coverage_minimum
+        data[6, 1] = np.nan
+        data[6, 2] = np.nan
+
+        # Coverage Range
+        data[7, 0] = coverage_range
+        data[7, 1] = np.nan
+        data[7, 2] = np.nan
+
+        # Coverage Mean
+        data[8, 0] = coverage_mean
+        data[8, 1] = np.nan
+        data[8, 2] = np.nan
+
+        # Coverage Median
+        data[9, 0] = coverage_median
+        data[9, 1] = np.nan
+        data[9, 2] = np.nan
+
+        # Coverage Std
+        data[10, 0] = coverage_std
+        data[10, 1] = np.nan
+        data[10, 2] = np.nan
+
+        # observation_uncertainty_corr
+        data[11, 0] = observation_uncertainty_corr
+        data[11, 1] = np.nan
+        data[11, 2] = np.nan
+
+        # linearity_corr
+        data[12, 0] = linearity_corr
+        data[12, 1] = np.nan
+        data[12, 2] = np.nan
+
+        indexes = [
+            f"{observation_name} - Initial Value ({observation_units})",
+            f"{observation_name} - Final Value ({observation_units})",
+            f"{observation_name} - Difference ({observation_units})",
+            f"{observation_name} - Maximum Value ({observation_units})",
+            f"{observation_name} - Minimum Value ({observation_units})",
+            "Coverage Maximum (%)",
+            "Coverage Minimum (%)",
+            "Coverage Range (%)",
+            "Coverage Mean (%)",
+            "Coverage Median (%)",
+            "Coverage Standard Deviation (%)",
+            "Observation/Uncertainty Correlation",
+            "Observation Linearity (correlation coef.)",
+        ]
+
+        summary_statistics = pd.DataFrame(
+            data=data, index=indexes, columns=["Value", "Lower Uncertainty Bound", "Upper Uncertainty Bound"]
+        )
+
+        return summary_statistics

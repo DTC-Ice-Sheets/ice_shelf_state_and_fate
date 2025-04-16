@@ -397,10 +397,10 @@ def test_calculate_aggregate_timeseries_3d_mean(
         aggregate="mean",
     )
     assert data_df.index.to_list() == [10, 11, 12]
-    assert list(data_df.columns) == ["mean", "data_std", "mean_n"]
-    assert np.allclose(data_df["mean"].values, np.array([11.5, 14, 14.25]), rtol=1e-2)
+    assert list(data_df.columns) == ["aggregation", "data_std", "aggregation_n"]
+    assert np.allclose(data_df["aggregation"].values, np.array([11.5, 14, 14.25]), rtol=1e-2)
     assert np.allclose(data_df["data_std"].values, np.array([5.123, 8.635, 7.902]), rtol=1e-2)
-    assert np.allclose(data_df["mean_n"].values, np.array([6, 7, 8]), rtol=1e-2)
+    assert np.allclose(data_df["aggregation_n"].values, np.array([6, 7, 8]), rtol=1e-2)
 
 
 def test_calculate_aggregate_timeseries_3d_median(
@@ -414,7 +414,7 @@ def test_calculate_aggregate_timeseries_3d_median(
     )
 
     assert data_df.index.to_list() == [10, 11, 12]
-    assert list(data_df.columns) == ["median", "data_IQR", "median_n"]
+    assert list(data_df.columns) == ["aggregation", "data_IQR", "aggregation_n"]
 
 
 def test_combine_uncertainties_quadrature(uncertainty_vector_fixture):
