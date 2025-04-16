@@ -3,6 +3,7 @@
 import json
 import os
 import os.path as path
+from enum import Enum
 from typing import Any, List, Tuple, Union
 
 import numpy as np
@@ -11,7 +12,12 @@ import xarray as xr
 import zarr
 import zarr.storage
 
-from use_case_3.create_datasets.create_dataset_helper_functions import ZarrStorage
+
+class ZarrStorage(Enum):
+    """Specifies the Zarr file storage types available."""
+
+    local_store = "local_store"
+    memory_store = "memory_store"
 
 
 class GeoZarr:
@@ -24,7 +30,6 @@ class GeoZarr:
         zarr_format: int = 2,
         n_chunks: int = 1,
         overwrite: bool = True,
-        datum: str = "1970-01-01T00:00:00",
     ) -> None:
         """
         Initialise the GeoZarr object.
@@ -40,15 +45,11 @@ class GeoZarr:
         n_chunks : int, optional
             The number of chunks that the data will be chunked into a long each dimension. The actual number of
             chunks for an array of n_dims will be n_chunks^n_dims.
-        overwrite : bool
-            pass
-        datum : str
-            pass
 
         Raises
         ------
         TypeError
-            Raised when no storage directory is specified when the 'ZarrSorage.local_store' parameter is passed.
+            Raised when no storage directory is specified when the 'ZarrStorage.local_store' parameter is passed.
         """
         self.zarr_format = zarr_format
         self.n_chunks = n_chunks
@@ -64,7 +65,6 @@ class GeoZarr:
         # This is where the zarr file is created according to the storage type chosen
         self.root = zarr.create_group(store=self.store, zarr_format=self.zarr_format, overwrite=overwrite)
         self.create_dimensions_config()
-        self.datum = datum
 
     def create_dimensions_config(self) -> None:
         """
@@ -90,37 +90,10 @@ class GeoZarr:
                 "basal_melt_rate_uncertainty",
                 "projection_x_coordinate",
                 "projection_y_coordinate",
-                "lake_discharge",
             ],
-            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y", "None"],
-            "bounds": [
-                "time_bnds",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-            ],
-            "calendar": [
-                "standard",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None",
-            ],
+            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y"],
+            "bounds": ["time_bnds", "None", "None", "None", "None", "None", "None", "None", "None", "None", "None"],
+            "calendar": ["standard", "None", "None", "None", "None", "None", "None", "None", "None", "None", "None"],
             "long_name": [
                 "time",
                 "grid_latitude",
@@ -133,7 +106,6 @@ class GeoZarr:
                 "basel_melt_rate_uncertainty",
                 "projection_x_coordinate",
                 "projection_y_coordinate",
-                "subglacial_lake_discharge",
             ],
             "units": [
                 "seconds since 1970-01-01T00:00:00",
@@ -147,7 +119,6 @@ class GeoZarr:
                 "m/s",
                 "m",
                 "m",
-                "m^3/s",
             ],
         }
 
@@ -155,7 +126,7 @@ class GeoZarr:
 
     @staticmethod
     def _reshape_data(
-        data: pd.DataFrame, target_column: str, coord_columns: List[str], y_affine_negative: bool = False
+        data: pd.DataFrame, target_column: str, coord_columns: List[str]
     ) -> Tuple[np.ndarray, list[np.ndarray]]:
         """
         Reshape a 2-dimensional array into an N-dimensional array based on a specified number of coordinate columns.
@@ -193,23 +164,19 @@ class GeoZarr:
         coords_idx = []  # This holds the coordinate indexes for each coordinate variable.
         data_coords = []  # used to store the final coordinate vectors which are resampled.
         for i, coord in enumerate(coords_list):
-            # Only do this for none time based coordinates:
-            if coord_columns[i] != "time":
-                # This calculates the difference between the coordinates for each variable, if it is not spaced evenly,
-                # then this is resampled. This assumes that the data to be resampled is an integer!
-                if not np.all(np.diff(np.unique(np.sort(coord))) == np.diff(np.unique(np.sort(coord)))[0]):
-                    period = np.min(
-                        np.gcd(
-                            np.diff(np.unique(np.sort(coord))).astype(int),
-                            np.diff(np.unique(np.sort(coord)))[0].astype(int),
-                        )
+            # This calculates the difference between the coordinates for each variable, if it is not spaced evenly,
+            # then this is resampled. This assumes that the data to be resampled is an integer!
+            if not np.all(np.diff(np.unique(np.sort(coord))) == np.diff(np.unique(np.sort(coord)))[0]):
+                period = np.min(
+                    np.gcd(
+                        np.diff(np.unique(np.sort(coord))).astype(int),
+                        np.diff(np.unique(np.sort(coord)))[0].astype(int),
                     )
-                else:
-                    period = np.diff(np.unique(np.sort(coord)))[0]
-                # Create a sorted list of unique coordinate values.
-                coords_list_unique.append(np.arange(np.min(coord), np.max(coord) + period, period))
+                )
             else:
-                coords_list_unique.append(np.unique(np.sort(coord)))
+                period = np.diff(np.unique(np.sort(coord)))[0]
+            # Create a sorted list of unique coordinate values.
+            coords_list_unique.append(np.arange(np.min(coord), np.max(coord) + period, period))
             coords_idx.append(np.zeros(coords_list[i].shape))
             data_coords.append(coords_list_unique[i])
 
@@ -217,9 +184,6 @@ class GeoZarr:
         # N-dim tensor.
         for i in range(len(coords_list)):
             coords_idx[i] = coords_list_unique[i].searchsorted(coords_list[i])
-            # If this is y_affine_negative, then we need to invert the y indexes
-            if coord_columns[i] == "projection_y_coordinate" and y_affine_negative:
-                coords_idx[i] = (coords_idx[i] - np.max(coords_idx[i])) * -1
 
         # Get the expected shape of the N-dim tensor.
         shape_matrix = [n.shape[0] for n in coords_list_unique]
@@ -276,10 +240,10 @@ class GeoZarr:
     def dataframe2geozarr(
         self,
         data: pd.DataFrame,
-        data_columns: List,
-        coordinate_columns: List,
+        data_columns: List[str],
+        coordinate_columns: List[str],
         auxiliary_columns: Union[List, None],
-        metadata: Union[dict, None] = None,
+        map_projection: str,
     ) -> Union[None, zarr.Group]:
         """
         Convert a pandas dataframe to geozarr. Note this currently assumes that the column names will follow
@@ -297,9 +261,8 @@ class GeoZarr:
             The column names specifiying the coordinate columns.
         auxiliary_columns : Union[List, None]
             The columns names specifying any Auxiliary columns to be included.
-        metadata : Union[dict, None]
-            Additional metadata for informational purposes only, this will be stored under
-            the _INFO key in the root zarr attribute file.
+        map_projection : str
+            The projection code used.
 
         Returns
         -------
@@ -311,15 +274,22 @@ class GeoZarr:
         ValueError
             Raised when column names are not in theself.dimensions_config dict.
         """
+        # Sort the column names alphabetically:
+        data_columns = sorted(data_columns)
+        coordinate_columns = sorted(coordinate_columns)
+        auxiliary_columns = sorted(auxiliary_columns)
+
         # Order the columns alpabetically between the different column groups
         data = pd.concat([data[data_columns], data[coordinate_columns], data[auxiliary_columns]], axis=1)
 
+        # Sort the data by the coordinate columns
+        data = data.sort_values(coordinate_columns)
+
         # Create the necessary GeoZarr attributes for the coordinate columns.
         self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
-        if metadata is not None:
-            self.root.attrs["_INFO"] = metadata
+        self.root.attrs["MAP_PROJECTION"] = map_projection
 
-        # Create the N-Dim array for each sepcified data column - According to GeoZarr this should be geospacial
+        # Create the N-Dim array for each sepcified data column - According to GeoZarr this should be geospatial
         # observations.
         for column in data_columns:
             standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == column]
@@ -345,7 +315,7 @@ class GeoZarr:
                 chunk_shape=self._calculate_chunk_dims(data_reshape.shape),
             )
 
-        # Process the coordinate coluumns
+        # Process the coordinate columns
         for i, column in enumerate(coordinate_columns):
             standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == column]
             if standard_dimensions.shape[0] > 0:
@@ -397,7 +367,6 @@ class GeoZarr:
         self.root.create_array(
             name=name, shape=data.shape, attributes=json.loads(json.dumps(attributes)), dtype=dtype, chunks=chunk_shape
         )
-        # self.root[name].attrs["_CRS"] = self.root.attrs["_CRS"]
 
         data_slice = []
         for dim in data.shape:
@@ -460,213 +429,3 @@ class GeoZarr:
             The xarray of the zarr file
         """
         return xr.open_zarr(store=file_path, zarr_format=self.zarr_format)
-
-    @staticmethod
-    def _convert_x_coord_name(coord_name: str) -> str:
-        if coord_name == "x" or coord_name == "X":
-            return "projection_x_coordinate"
-
-    @staticmethod
-    def _convert_y_coord_name(coord_name: str) -> str:
-        if coord_name == "y" or coord_name == "Y":
-            return "projection_y_coordinate"
-
-    def _write_coord_names_to_attrs(self, data_column: str, data_column_attrs: dict) -> dict:
-        data_column_attrs["_ARRAY_DIMENSIONS"] = []
-
-        for dimension in data_column.dims:
-            dimension_name = self._convert_x_coord_name(dimension)
-            if dimension_name is None:
-                dimension_name = self._convert_y_coord_name(dimension)
-            if dimension_name is None:
-                dimension_name = dimension
-
-            data_column_attrs["_ARRAY_DIMENSIONS"].append(dimension_name)
-
-        return data_column_attrs
-
-    def _convert_variable_name(self, column_name:str) -> str:
-        variable_name = self._convert_x_coord_name(column_name)
-        if variable_name is None:
-            variable_name = self._convert_y_coord_name(column_name)
-        if variable_name is None:
-            variable_name = column_name
-        return variable_name
-
-    def convert_netcdf_to_geo_zarr(
-        self, filepath: str, target_columns: str, coordinate_columns: str, crs: Union[dict, None] = None
-    ) -> None:
-        """
-        Convert a netcdf file to a geozarr file.
-
-        Parameters
-        ----------
-        filepath : str
-            _description_
-        target_columns : str
-            _description_
-        coordinate_columns : str
-            _description_
-        crs : Union[dict, None], optional
-            _description_, by default None
-        """
-        data = xr.open_dataset(filepath)
-
-        # This sets the coordinate reference system
-        if crs is not None:
-            self.root.attrs["_CRS"] = crs
-
-        # Create the necessary GeoZarr attributes for the coordinate columns.
-        self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
-
-        # First process the coordinate columns
-        for column in coordinate_columns:
-            variable_name = self._convert_variable_name(column_name=column)
-            data_column = data[column]
-            data_column_attrs = data[column].attrs
-            for attribute in data_column_attrs.keys():
-                if isinstance(data_column_attrs[attribute], np.ndarray):
-                    # if type(data_column_attrs[attribute]) == np.ndarray:
-                    data_column_attrs[attribute] = data_column_attrs[attribute].tolist()
-
-            # Need to convert the time to the correct format
-            if column == "time":
-                data_column = data_column - np.datetime64(self.datum)
-                data_column_attrs["units"] = f"seconds since {self.datum}"
-                data_column_attrs["long_name"] = f"time in seconds since {self.datum}"
-
-                data_column = data_column.astype("float")
-
-            # data_column_attrs["_ARRAY_DIMENSIONS"] = data_column.dims
-            data_column_attrs = self._write_coord_names_to_attrs(
-                data_column=data_column, data_column_attrs=data_column_attrs
-            )
-
-            self._add_data_array(
-                data=data_column,
-                dtype=data_column.dtype,
-                name=variable_name,
-                attributes=data_column_attrs,
-                chunk_shape=self._calculate_chunk_dims(data_column.shape),
-            )
-
-        # Next process the data columns
-        for column in target_columns:
-            data_column = data[column]
-            data_column_attrs = data[column].attrs
-            for attribute in data_column_attrs.keys():
-                if isinstance(data_column_attrs[attribute], np.ndarray):
-                    data_column_attrs[attribute] = data_column_attrs[attribute].tolist()
-
-            data_column_attrs = self._write_coord_names_to_attrs(
-                data_column=data_column, data_column_attrs=data_column_attrs
-            )
-
-            self._add_data_array(
-                data=data_column,
-                dtype=data_column.dtype,
-                name=column,
-                attributes=data_column_attrs,
-                chunk_shape=self._calculate_chunk_dims(data_column.shape),
-            )
-
-        zarr.consolidate_metadata(self.store)
-
-    def create_coordinate_reference_system(
-        self: Any,
-        grid_mapping_name: str = None,
-        straight_vertical_longitude_from_pole: float = None,
-        latitude_of_projection_origin: float = None,
-        false_easting: float = None,
-        false_northing: float = None,
-        semi_major_axis: float = None,
-        inverse_flattening: float = None,
-        geotransform: str = None,
-        srid: str = None,
-        proj4text: str = None,
-        standard_parallel: float = None,
-        crs_wkt: str = None,
-        add_attributes: bool = True,
-    ) -> dict:
-        """
-        Create the Coordinate Reference System (CRS).
-
-        Parameters
-        ----------
-        self : Any
-            _description_
-        grid_mapping_name : str, optional
-            _description_, by default None
-        straight_vertical_longitude_from_pole : float, optional
-            _description_, by default None
-        latitude_of_projection_origin : float, optional
-            _description_, by default None
-        false_easting : float, optional
-            _description_, by default None
-        false_northing : float, optional
-            _description_, by default None
-        semi_major_axis : float, optional
-            _description_, by default None
-        inverse_flattening : float, optional
-            _description_, by default None
-        geoTransform : str, optional
-            _description_, by default None
-        srid : str, optional
-            _description_, by default None
-        proj4text : str, optional
-            _description_, by default None
-        standard_parallel : float, optional
-            _description_, by default None
-        crs_wkt : str, optional
-            _description_, by default None
-        add_attributes : bool, optional
-            _description_, by default True
-
-        Returns
-        -------
-        dict
-            _description_
-        """
-        crs = {}
-
-        if grid_mapping_name is not None:
-            crs["grid_mapping_name"] = grid_mapping_name
-
-        if straight_vertical_longitude_from_pole is not None:
-            crs["straight_vertical_longitude_from_pole"] = straight_vertical_longitude_from_pole
-
-        if latitude_of_projection_origin is not None:
-            crs["latitude_of_projection_origin"] = latitude_of_projection_origin
-
-        if false_easting is not None:
-            crs["false_easting"] = false_easting
-
-        if false_northing is not None:
-            crs["false_northing"] = false_northing
-
-        if semi_major_axis is not None:
-            crs["semi_major_axis"] = semi_major_axis
-
-        if inverse_flattening is not None:
-            crs["inverse_flattening"] = inverse_flattening
-
-        if geotransform is not None:
-            crs["GeoTransform"] = geotransform
-
-        if srid is not None:
-            crs["srid"] = srid
-
-        if proj4text is not None:
-            crs["proj4text"] = proj4text
-
-        if standard_parallel is not None:
-            crs["standard_parallel"] = standard_parallel
-
-        if crs_wkt is not None:
-            crs["crs_wkt"] = crs_wkt
-
-        if add_attributes:
-            # This sets the coordinate reference system
-            self.root.attrs["_CRS"] = crs
-
-        return crs

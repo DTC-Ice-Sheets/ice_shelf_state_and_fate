@@ -7,7 +7,6 @@ from typing import Union
 
 import affine
 import geopandas as gpd
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import rasterio
@@ -115,7 +114,7 @@ def load_tiffs2dataframe(
     file_path_mask : str
         file path pointing at where the mask file is stored
     dem_diff : bool
-        A boolean value idenifying whether the elevation data should be a DEMdiff or absolue elevation.
+        A boolean value identifying whether the elevation data should be a DEMdiff or absolue elevation.
 
     Returns
     -------
@@ -196,7 +195,7 @@ def load_tiffs2dataframe(
 
 
 def load_tiffs2dataframe_basalmelt(
-    file_path_obvs: str,
+    file_path_obvservations: str,
     file_path_errors: str,
     file_path_mask: Union[str, None] = None,
     glacier_name: Union[str, None] = None,
@@ -222,14 +221,14 @@ def load_tiffs2dataframe_basalmelt(
         and timepoint. Note that currently this assumes that the x and y variables are the longitude and the latitude.
         This will need to be revisited.
     """
-    data = RasterNp.load_from_tiff(file_path=file_path_obvs)
+    data = RasterNp.load_from_tiff(file_path=file_path_obvservations)
 
     observation_col_name = "basal_melt_rate"
 
     # On the first iteration create the mask to be used as a raster.
     if file_path_mask is not None:
         mask = get_mask_from_shapefile(
-            file_path_raster=file_path_obvs, file_path_mask=file_path_mask, glacier_name=glacier_name
+            file_path_raster=file_path_obvservations, file_path_mask=file_path_mask, glacier_name=glacier_name
         )
 
     # Mask the data if there is a mask available.
@@ -333,14 +332,8 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
         bounds = (src.bounds[0], src.bounds[1], src.bounds[2], src.bounds[3])  # minx, miny, maxx, maxy
         bounding_box = BoundingBox(min_x=bounds[0], min_y=bounds[1], max_x=bounds[2], max_y=bounds[3])
 
-        plt.imshow(mask, extent=[bounds[0], bounds[2], bounds[1], bounds[3]])
-        plt.show()
-
     resolution = (bounds[2] - bounds[0]) / mask.shape[1]
     mask = RasterNp(input_array=mask, bounding_box=bounding_box, resolution=resolution)
-
-    plt.imshow(mask, extent=[bounds[0], bounds[2], bounds[1], bounds[3]])
-    plt.show()
 
     return mask
 
@@ -361,7 +354,7 @@ def get_gdal_geotransform(geotransform_affine: affine.Affine) -> str:
     In a North up image the GeoTransform (GT):
         - GT(0), GT(3) position is the top left corner of the top left pixel of the raster
         - GT(1), GT(5) is the pixel size
-        - GT(2), GT(4) coeffients are 0
+        - GT(2), GT(4) coefficients are 0
 
     Parameters
     ----------
