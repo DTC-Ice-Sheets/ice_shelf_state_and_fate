@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "use_case_3"
-version = "0.0.12"
+version = "0.0.17"
 description = "DTC-IS State and fate of Antarctic Ice Shelves demonstrator will enable the stakeholders to gain information on the State and fate of Antarctic Ice Shelves"
 authors = ["Earthwave Ltd <info@earthwave.co.uk>"]
 license = "MIT"
@@ -15,13 +15,13 @@ packages = [{ include = "use_case_3", from = "src" }]
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
 numpy = "^2.2"
-pydantic = "^2.11.2"
+pydantic = "^2.11.3"
 pandas = "^2.2.3"
 matplotlib = "^3.10.1"
 affine = "^2.4.0"
 rasterio = "^1.4.3"
-xarray = "^2025.1.2"
-zarr = "^3.0.5"
+xarray = "^2025.3.1"
+zarr = "^3.0.6"
 fiona = "^1.10.1"
 geopandas = "^1.0.1"
 tqdm = "^4.67.1"
@@ -31,13 +31,13 @@ netcdf4 = "^1.7.2"
 pytest = "^8.3.4"
 typeguard = "^4.4.2"
 pre-commit = "^4.2"
-ruff = "^0.11.4"
+ruff = "^0.11.5"
 bandit = "^1.8.3"
 pytest-cov = "^6.1.1"
 sphinx = "^8.2.3"
 sphinx-rtd-theme = "^3.0.2"
 sphinx-copybutton = "^0.5.2"
-commitizen = "^4.5.0"
+commitizen = "^4.6.0"
 
 [tool.ruff]
 line-length = 120
