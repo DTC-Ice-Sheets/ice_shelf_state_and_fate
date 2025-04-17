@@ -25,6 +25,7 @@ zarr = "^3.0.6"
 fiona = "^1.10.1"
 geopandas = "^1.0.1"
 tqdm = "^4.67.1"
+netcdf4 = "^1.7.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

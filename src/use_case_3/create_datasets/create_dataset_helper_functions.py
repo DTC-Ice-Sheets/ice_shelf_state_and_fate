@@ -5,7 +5,9 @@ import os.path as path
 import re
 from typing import Union
 
+import affine
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import rasterio
 import rasterio.mask
@@ -100,7 +102,7 @@ def extract_date_string_from_filename(file_name: str, date_format: str = "YYYY-m
     if date_format in acceptable_formats[:2]:
         match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", file_name)  # look for YYYY-mm-dd or YYYY-dd-mm pattern
     elif date_format in acceptable_formats[2:]:
-        match = re.search(r"\b\d{2}-\d{2}-\d{4}\b", file_name)  # look for dd-mm-YYYY or m-dd-YYYY pattern
+        match = re.search(r"\b\d{2}-\d{2}-\d{4}\b", file_name)  # look for dd-mm-YYYY or mm-dd-YYYY pattern
 
     if match:
         return match.group(0)
@@ -131,7 +133,7 @@ def load_tiffs2dataframe(
     file_path_mask : str
         file path pointing at where the mask file is stored
     dem_diff : bool
-        A boolean value idenifying whether the elevation data should be a DEMdiff or absolue elevation.
+        A boolean value identifying whether the elevation data should be a DEMdiff or absolute elevation.
     glacier_name : Union[str, None]
         The glacier of interest.
 
@@ -139,7 +141,7 @@ def load_tiffs2dataframe(
     -------
     pd.DataFrame
         A Pandas DataFrame object containing the elevation data and associated errors at every coordinate
-        and timepoint. Note that currently this assumes that the x and y variables are the longitude and the latitude.
+        and time point. Note that currently this assumes that the x and y variables are the longitude and the latitude.
         This will need to be revisited.
     """
     # A list used to hold the df for each time point. These will be concatenated at the end.
@@ -206,7 +208,7 @@ def load_tiffs2dataframe(
 
 
 def load_tiffs2dataframe_basalmelt(
-    file_path_obvservations: str,
+    file_path_observations: str,
     file_path_errors: str,
     file_path_mask: Union[str, None] = None,
     glacier_name: Union[str, None] = None,
@@ -217,7 +219,7 @@ def load_tiffs2dataframe_basalmelt(
 
     Parameters
     ----------
-    file_path_obvservations: str
+    file_path_observations: str
         folder path pointing to where the observations are stored.
     file_path_errors: str
         folder path pointing to where the observation error data is stored.
@@ -230,17 +232,17 @@ def load_tiffs2dataframe_basalmelt(
     -------
     pd.DataFrame
         A Pandas DataFrame object containing the basal melt data and associated errors at every coordinate
-        and timepoint. Note that currently this assumes that the x and y variables are the longitude and the latitude.
+        and time point. Note that currently this assumes that the x and y variables are the longitude and the latitude.
         This will need to be revisited.
     """
-    data = RasterNp.load_from_tiff(file_path=file_path_obvservations)
+    data = RasterNp.load_from_tiff(file_path=file_path_observations)
 
     observation_col_name = "basal_melt_rate"
 
     # On the first iteration create the mask to be used as a raster.
     if file_path_mask is not None:
         mask = get_mask_from_shapefile(
-            file_path_raster=file_path_obvservations, file_path_mask=file_path_mask, glacier_name=glacier_name
+            file_path_raster=file_path_observations, file_path_mask=file_path_mask, glacier_name=glacier_name
         )
 
     # Mask the data if there is a mask available.
@@ -341,3 +343,91 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
     mask = RasterNp(input_array=mask, bounding_box=bounding_box, resolution=resolution)
 
     return mask
+
+
+def get_gdal_geotransform(geotransform_affine: affine.Affine) -> str:
+    """
+    Take the Affine transformation matrix and converts it to the form expected by
+    GDAL's SetGeoTransform() with the same coefficient order in a string format.
+
+    # From https://gdal.org/en/stable/tutorials/geotransforms_tut.html
+    GT(0) x-coordinate of the upper-left corner of the upper-left pixel.
+    GT(1) w-e pixel resolution / pixel width.
+    GT(2) row rotation (typically zero).
+    GT(3) y-coordinate of the upper-left corner of the upper-left pixel.
+    GT(4) column rotation (typically zero).
+    GT(5) n-s pixel resolution / pixel height (negative value for a north-up image).
+
+    In a North up image the GeoTransform (GT):
+        - GT(0), GT(3) position is the top left corner of the top left pixel of the raster
+        - GT(1), GT(5) is the pixel size
+        - GT(2), GT(4) coefficients are 0
+
+    Parameters
+    ----------
+    geotransform_affine : affine.Affine
+        The affine transformation matrix
+
+    Returns
+    -------
+    str
+        A string representation of the geotransform expected by GDAL.
+    """
+    return " ".join([str(coord) for coord in geotransform_affine.to_gdal()])
+
+
+def convert_decimal_dates(decimal_dates: pd.Series) -> pd.Series:
+    """
+    Convert a series of dates as decimal year to a series of pd.Timestamp.
+
+    Parameters
+    ----------
+    decimal_date : pd.Series
+        The decimal year.
+
+    Returns
+    -------
+    pd.Series
+        The converted timestamp
+    """
+    fractional_years = decimal_dates.values.reshape((-1, 1))
+
+    years = np.floor(fractional_years).astype(int).reshape((-1, 1))
+    remainders = fractional_years - years
+
+    # Vectorized start-of-year and next-year timestamps
+    start_of_year = pd.to_datetime(
+        pd.DataFrame(np.hstack((years, np.ones(years.shape), np.ones(years.shape))), columns=["year", "month", "day"])
+    )
+    start_of_next_year = pd.to_datetime(
+        pd.DataFrame(
+            np.hstack((years + 1, np.ones(years.shape), np.ones(years.shape))), columns=["year", "month", "day"]
+        )
+    )
+
+    # Compute length of year in seconds (handles leap years correctly)
+    seconds_in_year = (start_of_next_year - start_of_year).dt.total_seconds()
+
+    # Add fraction of the year as timedelta
+    datetimes = start_of_year + pd.to_timedelta(remainders.flatten() * seconds_in_year, unit="s")
+
+    return pd.Series(datetimes)
+
+
+def convert_datetime_seconds(datetimes: pd.Series, datum: pd.Timestamp) -> pd.Series:
+    """
+    Convert a series of pd.Timestamp's to seconds using a datum.
+
+    Parameters
+    ----------
+    datetimes : pd.Series
+        A series of timestamps
+    datum : pd.Timestamp
+        The datum timestamp to be used
+
+    Returns
+    -------
+    pd.Series
+        The times in seconds from the datum.
+    """
+    return (datetimes - datum).dt.total_seconds()

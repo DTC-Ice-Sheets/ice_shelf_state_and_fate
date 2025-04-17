@@ -72,7 +72,6 @@ class RasterNp(np.ndarray):
         expected_x_count = round((bounding_box.max_x - bounding_box.min_x) / resolution)
         expected_y_count = round((bounding_box.max_y - bounding_box.min_y) / resolution)
         if self.shape[1] - expected_x_count == 1 and self.shape[0] - expected_y_count == 1:
-            # print("Extending extent by resolution/2 - assuming extent was given for centre points")
             bounding_box.min_x = bounding_box.min_x - resolution / 2
             bounding_box.max_x = bounding_box.max_x + resolution / 2
             bounding_box.min_y = bounding_box.min_y - resolution / 2
@@ -376,7 +375,6 @@ class RasterNp(np.ndarray):
             If requested extent does not overlap the file extent.
         """
         with rasterio.open(file_path) as rst:
-
             if bounding_box is None:
                 data = rst.read(band)
                 transform = rst.transform
