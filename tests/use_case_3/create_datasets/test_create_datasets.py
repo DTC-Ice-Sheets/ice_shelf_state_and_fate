@@ -3,9 +3,11 @@
 import os.path as path
 
 import geopandas as gpd
+import pandas as pd
 from shapely import Polygon
 
 from use_case_3.create_datasets.create_dataset_helper_functions import (
+    convert_decimal_dates,
     extract_date_string_from_filename,
     get_list_of_tiffs_from_folder,
     get_mask_from_shapefile,
@@ -120,3 +122,20 @@ def test_get_mask_from_shapefile():
 
     assert not data_mask[1, 1]
     assert not data_mask[2, 2]
+
+
+def test_convert_decimal_date():
+    decimal_dates = pd.Series([2012.0, 2012.5, 2013.5, 2014.5])
+    timestamps = convert_decimal_dates(decimal_dates=decimal_dates)
+
+    expected_timestamps = pd.Series(
+        [
+            pd.Timestamp(year=2012, month=1, day=1, hour=0),
+            pd.Timestamp(year=2012, month=7, day=2, hour=0),
+            pd.Timestamp(year=2013, month=7, day=2, hour=12),
+            pd.Timestamp(year=2014, month=7, day=2, hour=12),
+        ],
+        name="datetime",
+    )
+
+    assert timestamps.equals(expected_timestamps)

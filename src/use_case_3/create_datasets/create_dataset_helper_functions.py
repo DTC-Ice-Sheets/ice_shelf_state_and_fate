@@ -376,13 +376,13 @@ def get_gdal_geotransform(geotransform_affine: affine.Affine) -> str:
     return " ".join([str(coord) for coord in geotransform_affine.to_gdal()])
 
 
-def convert_decimal_date(decimal_dates: float) -> pd.Series:
+def convert_decimal_dates(decimal_dates: pd.Series) -> pd.Series:
     """
     Convert a series of dates as decimal year to a series of pd.Timestamp.
 
     Parameters
     ----------
-    decimal_date : float
+    decimal_date : pd.Series
         The decimal year.
 
     Returns
@@ -390,26 +390,28 @@ def convert_decimal_date(decimal_dates: float) -> pd.Series:
     pd.Series
         The converted timestamp
     """
-    years = decimal_dates.astype(int).values.reshape((-1, 1))
-    base = pd.to_datetime(
-        pd.DataFrame(np.hstack([years, np.ones(years.shape), np.ones(years.shape)]), columns=["year", "month", "day"])
-    ).to_frame(name="date_time_year")
+    fractional_years = decimal_dates.values.reshape((-1, 1))
 
-    base["years"] = years
-    base["decimal_years"] = decimal_dates
-    base["remainder"] = 0.0
-    base.loc[base[base["date_time_year"].dt.is_leap_year].index, "remainder"] = (
-        (base["decimal_years"] - base["years"]) * 366 * 24 * 3600
+    years = np.floor(fractional_years).astype(int).reshape((-1, 1))
+    remainders = fractional_years - years
+
+    # Vectorized start-of-year and next-year timestamps
+    start_of_year = pd.to_datetime(
+        pd.DataFrame(np.hstack((years, np.ones(years.shape), np.ones(years.shape))), columns=["year", "month", "day"])
     )
-    base.loc[base[base["date_time_year"].dt.is_leap_year].index, "remainder"] = (
-        (base["decimal_years"] - base["years"]) * 365 * 24 * 3600
+    start_of_next_year = pd.to_datetime(
+        pd.DataFrame(
+            np.hstack((years + 1, np.ones(years.shape), np.ones(years.shape))), columns=["year", "month", "day"]
+        )
     )
 
-    base["remainder"] = pd.to_timedelta(base["remainder"], "s")
+    # Compute length of year in seconds (handles leap years correctly)
+    seconds_in_year = (start_of_next_year - start_of_year).dt.total_seconds()
 
-    base["datetime"] = base["date_time_year"] + base["remainder"]
+    # Add fraction of the year as timedelta
+    datetimes = start_of_year + pd.to_timedelta(remainders.flatten() * seconds_in_year, unit="s")
 
-    return base["datetime"]
+    return pd.Series(datetimes)
 
 
 def convert_datetime_seconds(datetimes: pd.Series, datum: pd.Timestamp) -> pd.Series:

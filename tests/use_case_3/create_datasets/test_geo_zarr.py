@@ -99,7 +99,6 @@ def test__reshape_data_simple(geozarr_local_store: GeoZarr):
     )
 
     # Check the coordinate variables
-    # assert np.array_equal(data_coordinates[1], np.arange(19, 6, -1))
     assert np.array_equal(data_coordinates[0], np.arange(7, 20))
     assert np.array_equal(data_coordinates[1], np.arange(1, 19))
     assert np.array_equal(data_coordinates[2], np.array([0, 5, 11, 15, 17]))
@@ -146,12 +145,6 @@ def test__reshape_data_duplicate(geozarr_local_store: GeoZarr):
     )
 
     coord_columns = ["projection_y_coordinate", "projection_x_coordinate", "time"]
-    # coord_columns = sorted(coord_columns)
-
-    # # Order the columns alpabetically between the different column groups
-    # data = pd.concat([data["target"], data[coord_columns]], axis=1)
-
-    # data = data.sort_values(coord_columns)
 
     assert data.iloc[0, 0] == 8
     assert data.iloc[2, 2] == 11
@@ -187,6 +180,8 @@ def test_create_dimensions_config(geozarr_local_store: GeoZarr):
 def test_calculate_chunk_dims(geozarr_local_store: GeoZarr, data_shape, n_chunks, chunk_shape):
     geozarr_local_store.n_chunks = n_chunks
     assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
+
+    geozarr_local_store.create_coordinate_reference_system()
 
 
 def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):

@@ -202,7 +202,7 @@ class GeoZarr:
         coords_idx = []  # This holds the coordinate indexes for each coordinate variable.
         data_coords = []  # used to store the final coordinate vectors which are resampled.
         for i, coord in enumerate(coords_list):
-            # Only do this for none time based coordinates:
+            # Only do this for non time based coordinates:
             if coord_columns[i] != "time":
                 # This calculates the difference between the coordinates for each variable, if it is not spaced evenly,
                 # then this is resampled. This assumes that the data to be resampled is an integer!
@@ -546,7 +546,6 @@ class GeoZarr:
             data_column_attrs = data[column].attrs
             for attribute in data_column_attrs.keys():
                 if isinstance(data_column_attrs[attribute], np.ndarray):
-                    # if type(data_column_attrs[attribute]) == np.ndarray:
                     data_column_attrs[attribute] = data_column_attrs[attribute].tolist()
 
             # Need to convert the time to the correct format
@@ -575,7 +574,6 @@ class GeoZarr:
             data_column_attrs = data[column].attrs
             for attribute in data_column_attrs.keys():
                 if isinstance(data_column_attrs[attribute], np.ndarray):
-                    # if type(data_column_attrs[attribute]) == np.ndarray:
                     data_column_attrs[attribute] = data_column_attrs[attribute].tolist()
 
             data_column_attrs = self._write_coord_names_to_attrs(
@@ -592,7 +590,7 @@ class GeoZarr:
 
         zarr.consolidate_metadata(self.store)
 
-    def create_coordinate_reference_system(  # noqa:C901
+    def create_coordinate_reference_system(
         self: Any,
         grid_mapping_name: Union[None, str] = None,
         straight_vertical_longitude_from_pole: Union[None, float] = None,
@@ -645,43 +643,13 @@ class GeoZarr:
         dict
             The coordinate reference system
         """
-        crs = {}
+        crs = vars()  # Collect all the method parameters and clean unneeded ones.
+        del crs["self"]
+        del crs["add_attributes"]
+        if "memo" in crs.keys():
+            del crs["memo"]
 
-        if grid_mapping_name is not None:
-            crs["grid_mapping_name"] = grid_mapping_name
-
-        if straight_vertical_longitude_from_pole is not None:
-            crs["straight_vertical_longitude_from_pole"] = straight_vertical_longitude_from_pole
-
-        if latitude_of_projection_origin is not None:
-            crs["latitude_of_projection_origin"] = latitude_of_projection_origin
-
-        if false_easting is not None:
-            crs["false_easting"] = false_easting
-
-        if false_northing is not None:
-            crs["false_northing"] = false_northing
-
-        if semi_major_axis is not None:
-            crs["semi_major_axis"] = semi_major_axis
-
-        if inverse_flattening is not None:
-            crs["inverse_flattening"] = inverse_flattening
-
-        if geotransform is not None:
-            crs["GeoTransform"] = geotransform
-
-        if srid is not None:
-            crs["srid"] = srid
-
-        if proj4text is not None:
-            crs["proj4text"] = proj4text
-
-        if standard_parallel is not None:
-            crs["standard_parallel"] = standard_parallel
-
-        if crs_wkt is not None:
-            crs["crs_wkt"] = crs_wkt
+        crs = {k: v for k, v in crs.items() if v is not None}  # Remove keys which are None
 
         if add_attributes:
             # This sets the coordinate reference system
