@@ -4,9 +4,12 @@ from typing import Any, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import skgstat as skg
 import xarray as xr
 from scipy.stats import bootstrap
 from sklearn.linear_model import LinearRegression
+
+# from use_case_3.helper_functions import *
 
 
 class TimeSeriesModule:
@@ -226,14 +229,60 @@ class TimeSeriesModule:
 
         return aggregate_spread, count_n
 
+    def mask_data_cube(
+        self: Any, data_cube: np.ndarray, data_mask: np.ndarray, dimension_names: List[str], modify: bool
+    ) -> Tuple[np.ndarray, bool]:
+        """
+        Mask a data cube based on a given mask. This makes some strong assumptions on the data and mask:
+            - 1) The data mask and the data are both in the same projection.
+            - 2) The data mask and the data are both either y_affine_negative or y_affine_positive.
+
+        Parameters
+        ----------
+        data_cube : np.ndarray
+            The data cube to be masked.
+        data_mask : np.ndarray
+            The rasterised data mask.
+        dimension_names : List[str]
+            A list of the dimension names. These need to be in the order that they index the axes of the datacube.
+        modify : bool
+            Whether to modify the dimensions of the datacube.
+
+        Returns
+        -------
+        np.ndarray
+            The masked data cube.
+        """
+        data_cube, dimension_names = self._expand_dimensions(
+            data=data_cube, dimension_names=dimension_names, modify_dimension_names=modify
+        )
+
+        data_cube = self._move_axes_time(data=data_cube, dimension_names=dimension_names)
+        dimension_names = self._move_axes_time_labels(dimension_names=dimension_names)
+
+        nan_array = np.empty((data_cube.shape[1], data_cube.shape[2]))
+        nan_array[:] = np.nan
+
+        if data_mask.shape != (data_cube.shape[1], data_cube.shape[2]):
+            raise ValueError("Check your data and mask shape")
+
+        data_cube_masked = np.where(data_mask, nan_array, data_cube)
+
+        if modify:
+            modify = False
+
+        return data_cube_masked, modify
+
     def process_timeseries(
         self: Any,
         data_observations: np.ndarray,
         data_uncertainties: Union[None, np.ndarray],
         data_mask: Union[None, np.ndarray],
+        apply_mask: bool,
         dimension_data: dict,
         dimension_names: List[str],
         aggregate: str = "mean",
+        percentiles: Tuple[float, float] = (25, 75),
         period: Union[None, str] = None,
         uncertainty: Union[None, str] = None,
         independent: Union[None, bool] = None,
@@ -260,6 +309,8 @@ class TimeSeriesModule:
                 - mean: standard deviation
                 - median: IQR
                 - max/min: None
+        percentiles : Tuple[float, float]
+            The upper and lower percentiles to calculate. These are of the form (percentile_lower, and percentile_upper)
         period : Union[None, str], optional
             The time period over which to aggregate, by default None
         uncertainty : Union[None, str], optional
@@ -274,6 +325,14 @@ class TimeSeriesModule:
         pd.DataFrame
             The aggregated 1D time series.
         """
+        if apply_mask:
+            data_observations, modify = self.mask_data_cube(
+                data_cube=data_observations, data_mask=data_mask, dimension_names=dimension_names, modify=True
+            )
+            data_uncertainties, modify = self.mask_data_cube(
+                data_cube=data_uncertainties, data_mask=data_mask, dimension_names=dimension_names, modify=modify
+            )
+
         data_agg = self.calculate_aggregate_timeseries(
             data_observations=data_observations,
             dimension_data=dimension_data,
@@ -281,6 +340,7 @@ class TimeSeriesModule:
             aggregate=aggregate,
             period=period,
             t0_normalisation=t0_normalisation,
+            modify=modify,
         )
 
         data_coverage_agg = self.calculate_coverage_timeseries(
@@ -291,8 +351,16 @@ class TimeSeriesModule:
             period=period,
         )
 
-        data_timeseries = pd.merge(data_agg, data_coverage_agg, left_index=True, right_index=True)
+        data_quartiles_agg = self.calculate_percentiles_timeseries(
+            data_observations=data_observations,
+            dimension_data=dimension_data,
+            dimension_names=dimension_names,
+            period=period,
+            percentiles=percentiles,
+        )
 
+        data_timeseries = pd.merge(data_agg, data_coverage_agg, left_index=True, right_index=True)
+        data_timeseries = pd.merge(data_timeseries, data_quartiles_agg, left_index=True, right_index=True)
         if data_uncertainties is not None:
             data_uncertainties_agg = self.propagate_uncertainties_timeseries(
                 data_observations=data_observations,
@@ -304,6 +372,7 @@ class TimeSeriesModule:
                 period=period,
                 independent=independent,
                 t0_normalisation=t0_normalisation,
+                modify=modify,
             )
             data_timeseries = pd.merge(data_timeseries, data_uncertainties_agg, left_index=True, right_index=True)
 
@@ -317,6 +386,7 @@ class TimeSeriesModule:
         aggregate: str = "mean",
         period: Union[None, str] = None,
         t0_normalisation: Union[None, str] = None,
+        modify: bool = False,
     ) -> pd.DataFrame:
         """
         Aggregate 2D or 3D data variable into a 1D time series using a specified aggregation. A 3D
@@ -352,7 +422,7 @@ class TimeSeriesModule:
             raise ValueError(f"The aggregation type {aggregate} is not one of {self.aggregation_types}")
 
         data_observations, dimension_names = self._expand_dimensions(
-            data=data_observations, dimension_names=dimension_names, modify_dimension_names=True
+            data=data_observations, dimension_names=dimension_names, modify_dimension_names=modify
         )
 
         data_observations = self._move_axes_time(data=data_observations, dimension_names=dimension_names)
@@ -400,6 +470,7 @@ class TimeSeriesModule:
         period: Union[None, str] = None,
         independent: bool = False,
         t0_normalisation: Union[None, str] = None,
+        modify: bool = False,
     ) -> pd.DataFrame:
         """
         Propagate the uncertainties. A 3D dataset will result in a 1D timeseries, while a 2D dataset will
@@ -444,10 +515,10 @@ class TimeSeriesModule:
             raise ValueError(f"The aggregation type {uncertainty} is not one of {self.uncertainty_types}")
 
         data_observations, dimension_names = self._expand_dimensions(
-            data=data_observations, dimension_names=dimension_names, modify_dimension_names=False
+            data=data_observations, dimension_names=dimension_names, modify_dimension_names=modify
         )
         data_uncertainties, dimension_names = self._expand_dimensions(
-            data=data_uncertainties, dimension_names=dimension_names, modify_dimension_names=True
+            data=data_uncertainties, dimension_names=dimension_names, modify_dimension_names=modify
         )
 
         data_observations = self._move_axes_time(data=data_observations, dimension_names=dimension_names)
@@ -630,7 +701,13 @@ class TimeSeriesModule:
                         np.sqrt(np.nansum(np.square(data_uncertainties[time_min:time_max, :, :]))) / data_agg_n[i]
                     )
                 else:
-                    data_agg.append(np.nansum(data_uncertainties[time_min:time_max, :, :]) / data_agg_n[i])
+                    data_propagated_space = np.zeros((time_max - time_min))
+                    for time_idx in range(time_min, time_max):
+                        data_agg_n_time_point = np.count_nonzero(~np.isnan(data_uncertainties[time_idx, :, :]))
+                        data_propagated_space[time_idx - time_min] = (
+                            np.nansum(data_uncertainties[time_min:time_max, :, :]) / data_agg_n_time_point
+                        )
+                    data_agg.append(np.sqrt(np.nansum(np.square(data_propagated_space))) / (time_max - time_min))
 
         return np.array(data_agg), time_coords_agg
 
@@ -834,6 +911,102 @@ class TimeSeriesModule:
         """
         return np.sqrt(np.square(data_uncertainties_1) + np.square(data_uncertainties_2))
 
+    def calculate_percentiles_timeseries(
+        self: Any,
+        data_observations: np.ndarray,
+        dimension_data: dict,
+        dimension_names: List[str],
+        period: Union[None, str] = None,
+        percentiles: Tuple[float, float] = (25, 75),
+    ) -> pd.DataFrame:
+        """
+        Calculate the upper and lower percentiles of a datacube of observations.
+
+        Parameters
+        ----------
+        data_observations : np.ndarray
+            The datacube of observations.
+        dimension_data : dict
+            The coordinate data.
+        dimension_names : List[str]
+            The dimension names
+        period : Union[None, str], optional
+            The period over which the data is aggregated, by default None
+        percentiles : Tuple[float, float], optional
+            The lower and upper percentile to be calculated for a datacube. These must be a tuple of floats in the range
+            [0.0, 100.0], by default (25, 75)
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe of the upper/lower percentiles and the number of data points considered in each time slice. The
+            index of the dataframe is the first time point for a given time slice.
+        """
+        data_observations, dimension_names = self._expand_dimensions(
+            data=data_observations, dimension_names=dimension_names, modify_dimension_names=True
+        )
+
+        data_observations = self._move_axes_time(data=data_observations, dimension_names=dimension_names)
+        dimension_names = self._move_axes_time_labels(dimension_names=dimension_names)
+
+        time_idx = self.process_time_indexes(
+            dimension_names=dimension_names, dimension_data=dimension_data, period=period
+        )
+
+        data_percentile_lower, time_agg = self.determine_percentiles(
+            data_observations=data_observations, time_index=time_idx, percentile=percentiles[0]
+        )
+
+        data_percentile_upper, _ = self.determine_percentiles(
+            data_observations=data_observations, time_index=time_idx, percentile=percentiles[1]
+        )
+
+        data_percentile_n = self.count_nan_elements(data=data_observations, non_nan=True, time_index=time_idx)
+
+        return pd.DataFrame(
+            np.hstack(
+                (
+                    data_percentile_lower.reshape((-1, 1)),
+                    data_percentile_upper.reshape((-1, 1)),
+                    data_percentile_n.reshape((-1, 1)),
+                )
+            ),
+            columns=[f"percentile_{percentiles[0]}", f"percentile_{percentiles[1]}", "percentile_n"],
+            index=time_agg,
+        )
+
+    def determine_percentiles(
+        self: Any, data_observations: np.ndarray, time_index: Union[None, dict], percentile: float
+    ) -> Tuple[np.ndarray, list]:
+        """
+        Calculate the percentile for a given datacube and time index.
+
+        Parameters
+        ----------
+        data_observations : np.ndarray
+            The data cube of observations.
+        time_index : Union[None, dict]
+            The time indexes for each time slice to be processed.
+        percentile : float
+            The percentile to be calculated. This needs to be a float in the range [0.0, 100.0] inclusive.
+
+        Returns
+        -------
+        Tuple[np.ndarray, list]
+            The percentiles and associated time coordinates for each percentile.
+        """
+        if time_index is None:
+            time_index = {0: [0]}
+
+        data_percentile = []
+        time_coords_agg = []
+        for time_point in time_index.keys():
+            time_min = time_index[time_point][0]
+            time_max = time_index[time_point][-1] + 1
+            time_coords_agg.append(time_point)
+            data_percentile.append(np.nanpercentile(data_observations[time_min:time_max, :, :], percentile))
+        return np.array(data_percentile), time_coords_agg
+
     def calculate_coverage_timeseries(
         self: Any,
         data_observations: np.ndarray,
@@ -1006,7 +1179,11 @@ class TimeSeriesModule:
 
         value_minimum = timeseries["aggregation"].min()
         value_minimum_uncertainty = timeseries.loc[timeseries["aggregation"].idxmin(), "uncertainty"]
-
+        percentile_90 = np.percentile(timeseries["aggregation"], 90)
+        percentile_75 = np.percentile(timeseries["aggregation"], 75)
+        percentile_50 = np.percentile(timeseries["aggregation"], 50)
+        percentile_25 = np.percentile(timeseries["aggregation"], 25)
+        percentile_10 = np.percentile(timeseries["aggregation"], 10)
         coverage_maximum = timeseries["coverage"].max()
         coverage_minimum = timeseries["coverage"].min()
         coverage_range = coverage_maximum - coverage_minimum
@@ -1019,7 +1196,7 @@ class TimeSeriesModule:
         )[0, -1]
         linearity_corr = np.corrcoef(np.arange(timeseries.shape[0]), timeseries["aggregation"].values.flatten())[0, -1]
 
-        data = np.zeros((13, 3))
+        data = np.zeros((18, 3))
 
         # Start
         data[0, 0] = start
@@ -1046,45 +1223,66 @@ class TimeSeriesModule:
         data[4, 1] = value_minimum - value_minimum_uncertainty
         data[4, 2] = value_minimum + value_minimum_uncertainty
 
-        # Coverage Maximum
-        data[5, 0] = coverage_maximum
+        # Percentiles (0.9, 0.75, 0.5, 0.25, 0.1)
+        data[5, 0] = percentile_10
         data[5, 1] = np.nan
         data[5, 2] = np.nan
 
-        # Coverage Minimum
-        data[6, 0] = coverage_minimum
+        data[6, 0] = percentile_25
         data[6, 1] = np.nan
         data[6, 2] = np.nan
 
-        # Coverage Range
-        data[7, 0] = coverage_range
+        data[7, 0] = percentile_50
         data[7, 1] = np.nan
         data[7, 2] = np.nan
 
-        # Coverage Mean
-        data[8, 0] = coverage_mean
+        data[8, 0] = percentile_75
         data[8, 1] = np.nan
         data[8, 2] = np.nan
 
-        # Coverage Median
-        data[9, 0] = coverage_median
+        data[9, 0] = percentile_90
         data[9, 1] = np.nan
         data[9, 2] = np.nan
 
-        # Coverage Std
-        data[10, 0] = coverage_std
+        # Coverage Maximum
+        data[10, 0] = coverage_maximum
         data[10, 1] = np.nan
         data[10, 2] = np.nan
 
-        # observation_uncertainty_corr
-        data[11, 0] = observation_uncertainty_corr
+        # Coverage Minimum
+        data[11, 0] = coverage_minimum
         data[11, 1] = np.nan
         data[11, 2] = np.nan
 
-        # linearity_corr
-        data[12, 0] = linearity_corr
+        # Coverage Range
+        data[12, 0] = coverage_range
         data[12, 1] = np.nan
         data[12, 2] = np.nan
+
+        # Coverage Mean
+        data[13, 0] = coverage_mean
+        data[13, 1] = np.nan
+        data[13, 2] = np.nan
+
+        # Coverage Median
+        data[14, 0] = coverage_median
+        data[14, 1] = np.nan
+        data[14, 2] = np.nan
+
+        # Coverage Std
+        data[15, 0] = coverage_std
+        data[15, 1] = np.nan
+        data[15, 2] = np.nan
+
+        # observation_uncertainty_corr
+        data[16, 0] = observation_uncertainty_corr
+        data[16, 1] = np.nan
+        data[16, 2] = np.nan
+
+        # linearity_corr
+        data[17, 0] = linearity_corr
+        data[17, 1] = np.nan
+        data[17, 2] = np.nan
 
         indexes = [
             f"{observation_name} - Initial Value ({observation_units})",
@@ -1092,6 +1290,11 @@ class TimeSeriesModule:
             f"{observation_name} - Difference ({observation_units})",
             f"{observation_name} - Maximum Value ({observation_units})",
             f"{observation_name} - Minimum Value ({observation_units})",
+            f"{observation_name} - 10th Percentile Value ({observation_units})",
+            f"{observation_name} - 25th Percentile Value ({observation_units})",
+            f"{observation_name} - 50th Percentile Value ({observation_units})",
+            f"{observation_name} - 75th Percentile Value ({observation_units})",
+            f"{observation_name} - 90th Percentile Value ({observation_units})",
             "Coverage Maximum (%)",
             "Coverage Minimum (%)",
             "Coverage Range (%)",
@@ -1107,3 +1310,103 @@ class TimeSeriesModule:
         )
 
         return summary_statistics
+
+    def process_spatial_correlation(
+        self: Any,
+        data_observations: np.ndarray,
+        dimension_data: dict,
+        dimension_names: List[str],
+    ) -> np.ndarray:  # noqa
+        """
+        Calculate the spatial correlation for each time point.
+
+        Parameters
+        ----------
+        data_observations : np.ndarray
+            The datacube.
+        dimension_data : dict
+            The dimension data.
+        dimension_names : List[str]
+            The
+
+        Returns
+        -------
+        np.ndarray
+            The spatial dependency index for each timepoint.
+        """
+        data_observations, dimension_names = self._expand_dimensions(
+            data=data_observations, dimension_names=dimension_names, modify_dimension_names=True
+        )
+
+        data_observations = self._move_axes_time(data=data_observations, dimension_names=dimension_names)
+        dimension_names = self._move_axes_time_labels(dimension_names=dimension_names)
+
+        data_slices = self.flatten_data_cube(
+            data_cube=data_observations, dimension_data=dimension_data, dimension_names=dimension_names
+        )
+
+        sdi = np.zeros((len(data_slices), 1))
+        for i, data_slice in enumerate(data_slices):
+            variogram = skg.Variogram(data_slice[:, :2], data_slice[:, -1], use_nugget=True, n_lags=50, maxlag="median")
+            sdi[i] = (variogram.parameters[1] / (variogram.parameters[-1] + variogram.parameters[1])) * 100
+
+        return sdi
+
+    def flatten_data_cube(
+        self: Any, data_cube: np.ndarray, dimension_data: dict, dimension_names: List[str], exclude_nan: bool = True
+    ) -> List[np.ndarray]:
+        """
+        Flatten a data_cube from a 3d array to a 2d array of the form (time, [x, y, value]).
+
+        Parameters
+        ----------
+        data_cube : np.ndarray
+            The input datacube of the form time, projection_y_coordinate, projection_x_coordinate.
+        dimension_data : dict
+            The dimension data
+        dimension_names : List[str]
+            The dimension names.
+        exclude_nan : bool, optional
+            Whether any nan values should be ignored, by default True
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        # flatten the data spatially but not in time, assuming the time dimension is first.
+        data_slices = []
+
+        for i in range(data_cube.shape[0]):
+            data_slice = data_cube[i, :, :].flatten().reshape((-1, 1))
+            coord_1 = (
+                np.resize(
+                    dimension_data[dimension_names[1]],
+                    new_shape=(
+                        dimension_data[dimension_names[1]].shape[0],
+                        dimension_data[dimension_names[2]].shape[0],
+                    ),
+                )
+                .flatten(order="F")
+                .reshape((-1, 1))
+            )
+
+            coord_2 = (
+                np.resize(
+                    dimension_data[dimension_names[2]],
+                    new_shape=(
+                        dimension_data[dimension_names[2]].shape[0],
+                        dimension_data[dimension_names[1]].shape[0],
+                    ),
+                )
+                .flatten(order="C")
+                .reshape((-1, 1))
+            )
+
+            data_slice = np.hstack((coord_1, coord_2, data_slice))
+            if exclude_nan:
+                data_slice = data_slice[~np.isnan(data_slice).any(axis=1)]
+            if data_slice.shape[0] > 0:
+                data_slices.append(data_slice)
+
+        return data_slices

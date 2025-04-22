@@ -100,10 +100,10 @@ def test_get_mask_from_shapefile():
     # Need to create a mask to load from a .gpkg
     test_mask_input_path = path.join(path.dirname(__file__), "test_inputs", "toy_mask_4x4.gpkg")
 
-    coords = ((100., 1200.), ( 300., 1200.), (300., 1300.), (100., 1300.))
+    coords = ((100.0, 1200.0), (300.0, 1200.0), (300.0, 1300.0), (100.0, 1300.0))
     polygon = Polygon(coords)
 
-    d =  {"Name": ["test"], "geometry": [polygon]}
+    d = {"Name": ["test"], "geometry": [polygon]}
 
     gdf = gpd.GeoDataFrame(d)
     gdf.to_file(test_mask_input_path)
@@ -111,7 +111,7 @@ def test_get_mask_from_shapefile():
     test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
 
     data_mask = get_mask_from_shapefile(
-        file_path_raster=test_file_path, file_path_mask=test_mask_input_path, glacier_name="test"
+        file_path_raster=test_file_path, file_path_mask=test_mask_input_path, ice_sheet_name="test"
     )
 
     assert data_mask[0, 0]

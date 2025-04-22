@@ -58,14 +58,8 @@ def dimension_names_1d_fixture():
 
 @pytest.fixture
 def mask_fixture():
-    nested_list = [[[True, False, False], [False, False, False], [False, False, False]]]
+    nested_list = [[True, False, False], [False, False, False], [False, False, False]]
     return np.array(nested_list)
-
-
-# @pytest.fixture
-# def mask_fixture_2():
-#     nested_list = [[[False, False, False], [False, False, False], [False, False, False]]]
-#     return np.array(nested_list)
 
 
 @pytest.fixture
@@ -117,7 +111,14 @@ def uncertainty_vector_fixture():
     return np.array([0.4, 0.5, 0.6])
 
 
-def test__move_axis_time(data_array_3d_fixture, dimension_names_3d_fixture):
+@pytest.fixture
+def time_series_fixture():
+    return pd.DataFrame(
+        np.array([[6, 0.5, 100], [7, 0.5, 75], [8, 0.5, 50]]), columns=["aggregation", "uncertainty", "coverage"]
+    )
+
+
+def test__move_axes_time(data_array_3d_fixture, dimension_names_3d_fixture):
     data_reordered = TimeSeriesModule._move_axes_time(
         data=data_array_3d_fixture, dimension_names=dimension_names_3d_fixture
     )
@@ -127,7 +128,7 @@ def test__move_axis_time(data_array_3d_fixture, dimension_names_3d_fixture):
     assert data_reordered[0, 2, 1] == 22
 
 
-def test__move_axis_time_labels(dimension_names_3d_fixture):
+def test__move_axes_time_labels(dimension_names_3d_fixture):
     dimensions_reordered = TimeSeriesModule._move_axes_time_labels(dimension_names=dimension_names_3d_fixture)
     assert dimensions_reordered == ["time", "X", "Y"]
 
@@ -263,6 +264,32 @@ def test_spread_calculation_type():
     assert TimeSeriesModule.spread_calculation_type("median") == ("IQR", True)
     assert TimeSeriesModule.spread_calculation_type("max") == (None, False)
     assert TimeSeriesModule.spread_calculation_type("min") == (None, False)
+
+
+def test_mask_data_cube(
+    time_series_module_fixture, data_array_nans_fixture, mask_fixture, dimension_names_ordered_3d_fixture
+):
+    # print(data_array_nans_fixture.shape, np.squeeze(mask_fixture).shape)
+    data_masked, modify = time_series_module_fixture.mask_data_cube(
+        data_cube=data_array_nans_fixture,
+        data_mask=mask_fixture,
+        dimension_names=dimension_names_ordered_3d_fixture,
+        modify=True,
+    )
+
+    assert np.array_equal(
+        np.array(
+            [
+                [[np.nan, 2, 3], [4, 5, 6], [7, 8, 9]],
+                [[np.nan, np.nan, 12], [13, 14, 15], [16, np.nan, 18]],
+                [[np.nan, 20, np.nan], [np.nan, 23, 24], [np.nan, 26, 27]],
+            ]
+        ),
+        data_masked,
+        equal_nan=True,
+    )
+
+    assert modify is False
 
 
 def test_aggregate_statistic(
@@ -435,6 +462,24 @@ def test_combine_uncertainties_quadrature(uncertainty_vector_fixture):
     )
 
 
+def test_calculate_coverage_timeseries(
+    time_series_module_fixture,
+    data_array_nans_fixture,
+    mask_fixture,
+    dimension_data_fixture_dates,
+    dimension_names_ordered_3d_fixture,
+):
+    coverage = time_series_module_fixture.calculate_coverage_timeseries(
+        data_observations=data_array_nans_fixture,
+        dimension_data=dimension_data_fixture_dates,
+        dimension_names=dimension_names_ordered_3d_fixture,
+        data_mask=mask_fixture,
+        period="month",
+    )
+
+    assert np.allclose(np.array([[100, 8], [87.5, 7], [75, 6]]), coverage)
+
+
 def test_t0_normalisation(time_series_module_fixture, data_array_1d_fixture):
     data_norm = time_series_module_fixture.t0_normalisation(
         data_observation=data_array_1d_fixture[0], normalisation_type="first"
@@ -458,7 +503,7 @@ def test_t0_normalisation_uncertainties(time_series_module_fixture, uncertainty_
     )
 
 
-def test_propagate_uncertainties(
+def test_propagate_uncertainties_timeseries(
     time_series_module_fixture,
     data_array_nans_fixture,
     data_array_uncertainties_nans_fixture,
@@ -511,3 +556,89 @@ def test_determine_coverage_point(time_series_module_fixture, mask_fixture, data
 def test_determine_count_pixels(mask_fixture, data_array_nans_fixture):
     assert TimeSeriesModule.count_pixels(mask_fixture) == 8
     assert TimeSeriesModule.count_pixels(data_array_nans_fixture) == 21
+
+
+def test_flatten_data_cube(
+    time_series_module_fixture, data_array_3d_fixture, dimension_data_fixture, dimension_names_ordered_3d_fixture
+):
+    data_slices = time_series_module_fixture.flatten_data_cube(
+        data_array_3d_fixture, dimension_data_fixture, dimension_names_ordered_3d_fixture
+    )
+
+    assert data_slices[0][0, 0] == 0
+    assert data_slices[0][0, 1] == 0
+    assert data_slices[0][0, 2] == 1
+
+    assert data_slices[0][5, 0] == 1
+    assert data_slices[0][5, 1] == 2
+    assert data_slices[0][5, 2] == 6
+
+    assert data_slices[2][0, 0] == 0
+    assert data_slices[2][0, 1] == 0
+    assert data_slices[2][0, 2] == 19
+
+    assert data_slices[2][5, 0] == 1
+    assert data_slices[2][5, 1] == 2
+    assert data_slices[2][5, 2] == 24
+
+
+def test_summary_statistics(time_series_module_fixture, time_series_fixture):
+    summary_stats = time_series_module_fixture.summary_statistics(
+        timeseries=time_series_fixture, observation_name="test", observation_units="m"
+    )
+
+    assert summary_stats.loc["test - Initial Value (m)", "Value"] == 6
+    assert summary_stats.loc["test - Initial Value (m)", "Lower Uncertainty Bound"] == 5.5
+    assert summary_stats.loc["test - Initial Value (m)", "Upper Uncertainty Bound"] == 6.5
+
+    assert summary_stats.loc["test - Final Value (m)", "Value"] == 8
+    assert summary_stats.loc["test - Final Value (m)", "Lower Uncertainty Bound"] == 7.5
+    assert summary_stats.loc["test - Final Value (m)", "Upper Uncertainty Bound"] == 8.5
+
+    assert summary_stats.loc["test - Difference (m)", "Value"] == 2
+    assert np.isclose(summary_stats.loc["test - Difference (m)", "Lower Uncertainty Bound"], 2 - 0.707107)
+    assert np.isclose(summary_stats.loc["test - Difference (m)", "Upper Uncertainty Bound"], 2 + 0.707107)
+
+    assert summary_stats.loc["test - Maximum Value (m)", "Value"] == 8
+    assert summary_stats.loc["test - Maximum Value (m)", "Lower Uncertainty Bound"] == 7.5
+    assert summary_stats.loc["test - Maximum Value (m)", "Upper Uncertainty Bound"] == 8.5
+
+    assert summary_stats.loc["test - Minimum Value (m)", "Value"] == 6
+    assert summary_stats.loc["test - Minimum Value (m)", "Lower Uncertainty Bound"] == 5.5
+    assert summary_stats.loc["test - Minimum Value (m)", "Upper Uncertainty Bound"] == 6.5
+
+    assert summary_stats.loc["test - 10th Percentile Value (m)", "Value"] == 6.2
+    assert summary_stats.loc["test - 25th Percentile Value (m)", "Value"] == 6.5
+    assert summary_stats.loc["test - 50th Percentile Value (m)", "Value"] == 7
+    assert summary_stats.loc["test - 75th Percentile Value (m)", "Value"] == 7.5
+    assert summary_stats.loc["test - 90th Percentile Value (m)", "Value"] == 7.8
+
+    assert summary_stats.loc["Coverage Maximum (%)", "Value"] == 100.0
+    assert summary_stats.loc["Coverage Minimum (%)", "Value"] == 50.0
+    assert summary_stats.loc["Coverage Range (%)", "Value"] == 50.0
+    assert summary_stats.loc["Coverage Mean (%)", "Value"] == 75.0
+    assert summary_stats.loc["Coverage Median (%)", "Value"] == 75.0
+    assert np.isnan(summary_stats.loc["Observation/Uncertainty Correlation", "Value"])
+
+    assert np.isclose(summary_stats.loc["Observation Linearity (correlation coef.)", "Value"], 1.0)
+
+
+def test_calculate_percentiles_timeseries(
+    time_series_module_fixture,
+    data_array_nans_fixture,
+    dimension_data_fixture_dates,
+    dimension_names_ordered_3d_fixture,
+):
+    percentiles = time_series_module_fixture.calculate_percentiles_timeseries(
+        data_observations=data_array_nans_fixture,
+        dimension_data=dimension_data_fixture_dates,
+        dimension_names=dimension_names_ordered_3d_fixture,
+        period="month",
+        percentiles=(25, 75),
+    )
+
+    assert np.allclose(np.array([[3.75, 7.25, 8], [12.5, 15.5, 7], [20.75, 25.5, 6]]), percentiles.values)
+
+
+def test_determine_percentiles():
+    pass

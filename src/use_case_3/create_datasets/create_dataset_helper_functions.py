@@ -3,7 +3,7 @@
 import os
 import os.path as path
 from enum import Enum
-from typing import Union
+from typing import List, Union
 
 import affine
 import geopandas as gpd
@@ -97,7 +97,7 @@ def load_tiffs2dataframe(
     folder_path_errors: str,
     file_path_mask: Union[str, None] = None,
     dem_diff: bool = True,
-    glacier_name: Union[str, None] = None,
+    ice_sheet_name: Union[List[str], str, None] = None,
 ) -> pd.DataFrame:
     """
     Load a set of .tif files correspond to both the elevation (DEMdiff) and associated errors. Return
@@ -112,9 +112,13 @@ def load_tiffs2dataframe(
     folder_path_errors: str
         folder path pointing to where the elevation error data is stored.
     file_path_mask : str
-        file path pointing at where the mask file is stored
+        file path pointing at where the mask file is stored.
     dem_diff : bool
-        A boolean value identifying whether the elevation data should be a DEMdiff or absolue elevation.
+        A boolean value identifying whether the elevation data should be a DEMdiff or absolute elevation.
+    ice_sheet_name: Union[List[str], str, None]
+        The ice sheet/s of interest, these will be used to mask out any unnecessary data. This can either be a list of
+        strings, if multiple ice sheets are of interest, a single string for either a specific ice sheet or "all" ice
+        sheets, or None if no masking is to be applied.
 
     Returns
     -------
@@ -144,7 +148,7 @@ def load_tiffs2dataframe(
         # On the first iteration create the mask to be used as a raster.
         if i == 0 and file_path_mask is not None:
             mask = get_mask_from_shapefile(
-                file_path_raster=file_path_elevation, file_path_mask=file_path_mask, glacier_name=glacier_name
+                file_path_raster=file_path_elevation, file_path_mask=file_path_mask, ice_sheet_name=ice_sheet_name
             )
 
         # Mask the data if there is a mask available.
@@ -198,7 +202,7 @@ def load_tiffs2dataframe_basalmelt(
     file_path_obvservations: str,
     file_path_errors: str,
     file_path_mask: Union[str, None] = None,
-    glacier_name: Union[str, None] = None,
+    ice_sheet_name: Union[str, None] = None,
 ) -> pd.DataFrame:
     """
     Load a .tif files for the  and associated errors. Return
@@ -212,7 +216,10 @@ def load_tiffs2dataframe_basalmelt(
         folder path pointing to where the observation error data is stored.
     file_path_mask : str
         file path pointing at where the mask file is stored
-    glacier_name
+    ice_sheet_name: Union[List[str], str, None]
+        The ice sheet/s of interest, these will be used to mask out any unnecessary data. This can either be a list of
+        strings, if multiple ice sheets are of interest, a single string for either a specific ice sheet or "all" ice
+        sheets, or None if no masking is to be applied.
 
     Returns
     -------
@@ -228,7 +235,7 @@ def load_tiffs2dataframe_basalmelt(
     # On the first iteration create the mask to be used as a raster.
     if file_path_mask is not None:
         mask = get_mask_from_shapefile(
-            file_path_raster=file_path_obvservations, file_path_mask=file_path_mask, glacier_name=glacier_name
+            file_path_raster=file_path_obvservations, file_path_mask=file_path_mask, ice_sheet_name=ice_sheet_name
         )
 
     # Mask the data if there is a mask available.
@@ -301,7 +308,9 @@ class ZarrStorage(Enum):
     memory_store = "memory_store"
 
 
-def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_name: str) -> RasterNp:
+def get_mask_from_shapefile(
+    file_path_raster: str, file_path_mask: str, ice_sheet_name: Union[List[str], str]
+) -> RasterNp:
     """
     Convert a shapefile with a polygon defining a mask to a mask in a RasterNp object.
     In this case the mask is boolean with the same extent as the tif to be masked. Where a pixel
@@ -314,9 +323,9 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
         File path to the raster to be masked.
     file_path_mask : str
         File path to the mask store, stored as a .gpkg. The 'Name' column specifies the
-        glacier names and the 'geometry' column specifies the mask polygon.
-    glacier_name : str
-        The glacier of interest.
+        ice sheet names and the 'geometry' column specifies the mask polygon.
+    ice_sheets_name : Union[List[str], str]
+        The ice sheets of interest.
 
     Returns
     -------
@@ -324,7 +333,10 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
         a RasterNp object containing the mask.
     """
     shapes = gpd.read_file(file_path_mask)
-    shape = shapes[shapes["Name"] == glacier_name]
+    if ice_sheet_name == "all":
+        shape = shapes
+    else:
+        shape = shapes[shapes["Name"] == ice_sheet_name]
 
     with rasterio.open(file_path_raster) as src:
         mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False)
