@@ -2,8 +2,10 @@
 
 from typing import Any, List, Tuple, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import skgstat as skg
 import xarray as xr
 from scipy.stats import bootstrap
@@ -21,6 +23,7 @@ class TimeSeriesModule:
         self.uncertainty_types = ("std", "max", "min", "IQR")
         self.periods = ("month", "year")
         self.normalisation_types = ("first", "linear_regression")
+        self.plot_spread = (None, "uncertainties", "percentiles")
 
     @staticmethod
     def _move_axes_time(data: np.ndarray, dimension_names: List[str]) -> np.ndarray:
@@ -1442,3 +1445,108 @@ class TimeSeriesModule:
                 data_slices.append(data_slice)
 
         return data_slices
+
+    def plot(
+        self: Any,
+        data_timeseries: pd.DataFrame,
+        spread: Union[None, str],
+        percentiles: Union[None, Tuple[int, int]] = None,
+        x_label: Union[None, str] = None,
+        y_label: Union[None, str] = None,
+    )->None:
+        """
+        Plot the timeseries data.
+
+        Parameters
+        ----------
+        data_timeseries : pd.DataFrame
+            The timeseries.
+        spread : Union[None, str]
+            The spread to display on the line plot. This can be one of None, "uncertainties" and "percentiles".
+        percentiles : Union[None, Tuple[int, int]], optional
+            The percentiles, by default None
+        x_label : Union[None, str], optional
+            A X-axis label to use, by default None
+        y_label : Union[None, str], optional
+            A Y-axis label to use, by default None
+
+        Raises
+        ------
+        ValueError
+            f"the spread needs to be one of {self.plot_spread}"
+        ValueError
+            "Percentiles need to be specified!"
+        ValueError
+            "Percentiles do not match the columns in the timeseries!"
+        """
+        error_pos = None
+        error_neg = None
+
+        if spread not in self.plot_spread:
+            raise ValueError(f"the spread needs to be one of {self.plot_spread}")
+
+        if spread == "uncertainties":
+            error_pos = data_timeseries["aggregation"] + data_timeseries["uncertainty"]
+            error_neg = data_timeseries["aggregation"] - data_timeseries["uncertainty"]
+        elif spread == "percentiles":
+            if percentiles is None:
+                raise ValueError("Percentiles need to be specified!")
+
+            if (
+                f"percentile_{percentiles[0]}" not in data_timeseries.columns
+                or f"percentile_{percentiles[1]}" not in data_timeseries.columns
+            ):
+                raise ValueError("Percentiles do not match the columns in the timeseries!")
+            error_pos = data_timeseries[f"percentile_{percentiles[0]}"]
+            error_neg = data_timeseries[f"percentile_{percentiles[1]}"]
+
+        fig, axes = plt.subplots(1, 1)
+        sns.lineplot(
+            x=data_timeseries.index,
+            y=data_timeseries["aggregation"],
+            color="black",
+            ax=axes,
+            linewidth=0.5,
+        )
+        sns.scatterplot(
+            x=data_timeseries.index,
+            y=data_timeseries["aggregation"],
+            color="black",
+            ax=axes,
+            s=10,
+            linewidth=0.5,
+        )
+
+        if spread is not None:
+            sns.lineplot(
+                x=data_timeseries.index,
+                y=error_pos,
+                color="black",
+                alpha=0.5,
+                linewidth=0.5,
+                linestyle="--",
+                ax=axes,
+            )
+
+            sns.lineplot(
+                x=data_timeseries.index,
+                y=error_neg,
+                color="black",
+                alpha=0.5,
+                linewidth=0.5,
+                linestyle="--",
+                ax=axes,
+            )
+            plt.fill_between(
+                data_timeseries.index,
+                error_pos,
+                error_neg,
+                color="black",
+                alpha=0.25,
+            )
+        plt.grid()
+        if x_label is not None:
+            plt.xlabel(x_label)
+        if y_label is not None:
+            plt.ylabel(y_label)
+        plt.show()
