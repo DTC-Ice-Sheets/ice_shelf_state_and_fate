@@ -13,13 +13,10 @@ from sklearn.linear_model import LinearRegression
 
 
 class TimeSeriesModule:
-    """The time series module for calculating and determining statistics."""
+    """The time series module for converting a datacube to a 1D time series and calculating summary statistics."""
 
     def __init__(self) -> None:
-        """
-        Needs to be able to return summary statistics with different aggregations in time. Needs to be able
-        to process and combine uncertainties.
-        """
+        # These are all uses to check whether parameters passed are allowed.
         self.aggregation_types = ("mean", "median", "max", "min")
         self.uncertainty_types = ("std", "max", "min", "IQR")
         self.periods = ("month", "year")
@@ -41,7 +38,7 @@ class TimeSeriesModule:
         Returns
         -------
         np.ndarray
-            The reordered data
+            The reordered data.
         """
         if "time" in dimension_names:
             dimension_aggregate = dimension_names.index("time")
@@ -69,7 +66,7 @@ class TimeSeriesModule:
         Returns
         -------
         List[str]
-            The reordered data and dimension names
+            The reordered data and dimension names.
         """
         if "time" in dimension_names:
             dimension_aggregate = dimension_names.index("time")
@@ -134,7 +131,7 @@ class TimeSeriesModule:
         Returns
         -------
         dict
-            Returns the dictionary mapping for each time slices to the data-cube index.
+            Returns the dictionary, mapping each time slice to the data-cube indexes.
 
         Raises
         ------
@@ -143,6 +140,7 @@ class TimeSeriesModule:
         """
         if period not in self.periods:
             raise ValueError(f"The period must be one of {self.periods}")
+
         if isinstance(time_coord.iloc[0], str):
             time_coord = time_coord.str.replace("-", "/")
             time_coord = time_coord.str.replace("_", "/")
@@ -175,7 +173,7 @@ class TimeSeriesModule:
 
         Parameters
         ----------
-        dimension_data : Union[xr.DataArray]
+        dimension_data : Union[xr.DataArray, pd.DataFrame, dict]
             The coordinate data, i.e. the grid coordinates and the time coordinates.
         period : Union[None, str]
             The time period over which to aggregate the data points. This can be 'month', 'year' or None. If no period
@@ -236,6 +234,9 @@ class TimeSeriesModule:
         Mask a data cube based on a given mask. This makes some strong assumptions on the data and mask:
             - 1) The data mask and the data are both in the same projection.
             - 2) The data mask and the data are both either y_affine_negative or y_affine_positive.
+            - 3) The data cube will be rearranged so that the time axis is the first axis, however no checks will be
+                 done that the second and third axis will be the same as the mask. There is a check on the dimensions,
+                 but in the case of the mask being square, the dimensions could be wrong.
 
         Parameters
         ----------
@@ -252,6 +253,11 @@ class TimeSeriesModule:
         -------
         np.ndarray
             The masked data cube.
+
+        Raises
+        ------
+        ValueError
+            The dimensions of the mask and the second and third axis of the datacube don't match.
         """
         data_cube, dimension_names = self._expand_dimensions(
             data=data_cube, dimension_names=dimension_names, modify_dimension_names=modify
@@ -285,11 +291,12 @@ class TimeSeriesModule:
         percentiles: Tuple[float, float] = (25, 75),
         period: Union[None, str] = None,
         uncertainty: Union[None, str] = None,
-        independent: Union[None, bool] = None,
+        independent: bool = False,
         t0_normalisation: Union[None, str] = None,
     ) -> pd.DataFrame:
         """
-        Process the input data into a time series with associated uncertainties and coverage.
+        Process the input data into a time series with associated uncertainties and coverage. This is the main method
+        processing the datacube into the time series.
 
         Parameters
         ----------
@@ -299,6 +306,9 @@ class TimeSeriesModule:
             The data uncertainties.
         data_mask : Union[None, np.ndarray]
             The data mask.
+        apply_mask : bool
+            Boolean flag whereby if True the mask supplied to the data will be used to mask the data. If False then the
+            mask is only used to calculate the coverage.
         dimension_data : dict
             The data for each of the data dimensions, i.e. coordinate values.
         dimension_names : List[str]
@@ -315,15 +325,17 @@ class TimeSeriesModule:
             The time period over which to aggregate, by default None
         uncertainty : Union[None, str], optional
             The statistic type describing the uncertainty, by default None
-        independent : Union[None, bool], optional
-            Whether the uncertainties are independent or not, by default None
+        independent : bool, optional
+            Whether the uncertainties are independent or not, by default False
         t0_normalisation : Union[None, str], optional
             Whether to normalise the time series against time zero, by default None
 
         Returns
         -------
         pd.DataFrame
-            The aggregated 1D time series.
+            The aggregated 1D time series as a DataFrame. The DataFrame contains as columns the aggregated observation,
+            the coverage calculated against the supplied mask, the upper and lower percentiles, and optionally if
+            specified then the uncertainties.
         """
         if apply_mask:
             data_observations, modify = self.mask_data_cube(
@@ -351,7 +363,7 @@ class TimeSeriesModule:
             period=period,
         )
 
-        data_quartiles_agg = self.calculate_percentiles_timeseries(
+        data_percentiles_agg = self.calculate_percentiles_timeseries(
             data_observations=data_observations,
             dimension_data=dimension_data,
             dimension_names=dimension_names,
@@ -360,7 +372,7 @@ class TimeSeriesModule:
         )
 
         data_timeseries = pd.merge(data_agg, data_coverage_agg, left_index=True, right_index=True)
-        data_timeseries = pd.merge(data_timeseries, data_quartiles_agg, left_index=True, right_index=True)
+        data_timeseries = pd.merge(data_timeseries, data_percentiles_agg, left_index=True, right_index=True)
         if data_uncertainties is not None:
             data_uncertainties_agg = self.propagate_uncertainties_timeseries(
                 data_observations=data_observations,
@@ -406,6 +418,12 @@ class TimeSeriesModule:
                 - mean: standard deviation
                 - median: IQR
                 - max/min: None
+        period : Union[None, str], optional
+            The time period over which to aggregate, by default None.
+        t0_normalisation : Union[None, str], optional
+            Whether to normalise the time series against time zero, by default None.
+        modify : bool
+            Whether to modify the dimensions of the datacube, by default False.
 
         Returns
         -------
@@ -495,6 +513,14 @@ class TimeSeriesModule:
         uncertainty : str, optional
             The type of uncertainty provided, by default "std". Currently these are limited to:
             std.
+        period : Union[None, str], optional
+            The time period over which to aggregate, by default None.
+        independent : bool, optional
+            Whether the uncertainties are independent or not, by default False
+        t0_normalisation : Union[None, str], optional
+            Whether to normalise the time series against time zero, by default None.
+        modify : bool
+            Whether to modify the dimensions of the datacube, by default False.
 
         Returns
         -------
@@ -580,6 +606,8 @@ class TimeSeriesModule:
         non_nan : bool, optional
             If False then the number of NaN values are counted, if True then the number of non-NaN values are
             counted, by default False.
+        time_index : Union[None, dict], optional
+            The time indexes over which to do the aggregations, by default None
 
         Returns
         -------
@@ -616,8 +644,18 @@ class TimeSeriesModule:
         data : np.ndarray
             The input n-dim data array. When the array is 1d along the time axis this will be returned with no
             aggregation.
-        dims : list
+        aggregate : str, optional
+            The type of aggregation performed on the data, by default "mean". Currently these are limited to:
+            mean, median, max, min. Note, the aggregation chosen determines the spread according to the following rules:
+                - mean: standard deviation
+                - median: IQR
+                - max/min: NaN
+        time_index : Union[None, dict], optional
+            The time indexes over which to do the aggregations, by default None
+        dimension_names : list
             Specification of the dimension names.
+        dimension_aggregate : Union[None, int, Tuple[int]], optional
+            The dimension of the data array to aggregate against, by default None.
 
         Returns
         -------
@@ -672,10 +710,8 @@ class TimeSeriesModule:
             Input data uncertainties with axes ordered according to the dimension names.
         uncertainty : str
             The type of uncertainty, currently only std is supported.
-        dimension_names : Union[None, List[str]], optional
-            List of dimension names with indexes corresponding to the axes in data., by default None.
-        dimension_aggregate : Union[None, int, Tuple[int]], optional
-            The dimension of the data array to aggregate against, by default None.
+        time_index : Union[None, dict], optional
+            The time indexes over which to do the aggregations, by default None
         independent : bool, optional
             Whether the errors are treated as independent when propagating. If they are assumed to be
             independent then they are propagated using quatrature, if they are not independent, then the errors are
@@ -784,10 +820,8 @@ class TimeSeriesModule:
             Input data uncertainties with axes ordered according to the dimension names.
         uncertainty : str
             The type of uncertainty, currently only std is supported.
-        dimension_names : Union[None, List[str]], optional
-            List of dimension names with indexes corresponding to the axes in data., by default None.
-        dimension_aggregate : Union[None, int, Tuple[int]], optional
-            The dimension of the data array to aggregate against, by default None.
+        time_index : Union[None, dict], optional
+            The time indexes over which to do the aggregations, by default None
 
         Returns
         -------
@@ -899,14 +933,14 @@ class TimeSeriesModule:
 
         Parameters
         ----------
-        data_uncertainties_1 : np.ndarray
+        data_uncertainties_1 : Union[np.float64, np.ndarray]
             The first vector of uncertainties.
-        data_uncertainties_2 : np.ndarray
+        data_uncertainties_2 : Union[np.float64, np.ndarray]
             The second vector of uncertainties.
 
         Returns
         -------
-        np.ndarray
+        Union[np.float64, np.ndarray]
             The combined uncertainty vector.
         """
         return np.sqrt(np.square(data_uncertainties_1) + np.square(data_uncertainties_2))
@@ -1061,7 +1095,7 @@ class TimeSeriesModule:
         )
 
     def determine_coverage(
-        self, data_observations: np.ndarray, time_index: Union[None, dict], mask_raster: Union[None, np.ndarray]
+        self, data_observations: np.ndarray, time_index: Union[None, dict], mask_raster: np.ndarray
     ) -> Tuple[np.ndarray, list]:
         """
         Calculate the spatial coverage for each time slice. The spatial coverage is defined as the number of pixels with
@@ -1098,9 +1132,7 @@ class TimeSeriesModule:
             )
         return np.array(data_coverage), time_coords_agg
 
-    def determine_coverage_point(
-        self: Any, data_observations: np.ndarray, mask_raster: Union[None, np.ndarray]
-    ) -> float:
+    def determine_coverage_point(self: Any, data_observations: np.ndarray, mask_raster: np.ndarray) -> float:
         """
         Calculate the coverage for a specific data cube. If no mask is provided the coverage is calculated against the
         total pixels.
@@ -1327,7 +1359,7 @@ class TimeSeriesModule:
         dimension_data : dict
             The dimension data.
         dimension_names : List[str]
-            The
+            The dimension names indexing the datacube and the dimension_data.
 
         Returns
         -------
@@ -1371,8 +1403,8 @@ class TimeSeriesModule:
 
         Returns
         -------
-        _type_
-            _description_
+        List[np.ndarray]
+            The flattened datacube. This is a list containing the flattened data for each time point.
         """
         # flatten the data spatially but not in time, assuming the time dimension is first.
         data_slices = []

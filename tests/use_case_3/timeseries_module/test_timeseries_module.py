@@ -640,5 +640,10 @@ def test_calculate_percentiles_timeseries(
     assert np.allclose(np.array([[3.75, 7.25, 8], [12.5, 15.5, 7], [20.75, 25.5, 6]]), percentiles.values)
 
 
-def test_determine_percentiles():
-    pass
+def test_determine_percentiles(time_series_module_fixture, data_array_nans_fixture, time_index_fixture):
+    percentiles, time_coords_agg = time_series_module_fixture.determine_percentiles(
+        data_observations=data_array_nans_fixture, time_index=time_index_fixture, percentile=25
+    )
+
+    assert np.allclose(percentiles, np.array([3.75, 12.5, 20.75]))
+    assert time_coords_agg == [0, 1, 2]
