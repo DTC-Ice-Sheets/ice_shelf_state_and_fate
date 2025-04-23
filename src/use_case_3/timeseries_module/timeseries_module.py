@@ -347,6 +347,8 @@ class TimeSeriesModule:
             data_uncertainties, modify = self.mask_data_cube(
                 data_cube=data_uncertainties, data_mask=data_mask, dimension_names=dimension_names, modify=modify
             )
+        else:
+            modify = True
 
         data_agg = self.calculate_aggregate_timeseries(
             data_observations=data_observations,
@@ -1453,7 +1455,7 @@ class TimeSeriesModule:
         percentiles: Union[None, Tuple[int, int]] = None,
         x_label: Union[None, str] = None,
         y_label: Union[None, str] = None,
-    )->None:
+    ) -> None:
         """
         Plot the timeseries data.
 
