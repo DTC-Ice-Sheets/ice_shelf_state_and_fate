@@ -2778,14 +2778,14 @@ viz = ["cartopy", "matplotlib", "nc-time-axis", "seaborn"]
 
 [[package]]
 name = "zarr"
-version = "3.0.6"
+version = "3.0.7"
 description = "An implementation of chunked, compressed, N-dimensional arrays for Python"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "zarr-3.0.6-py3-none-any.whl", hash = "sha256:dba078726b6e4defb0ae6a852b7e7035ce163d89d485961681ece49191dcce82"},
-    {file = "zarr-3.0.6.tar.gz", hash = "sha256:6ef23c740e34917a2a1099471361537732942e49f0cabe95c9b7124cd0d6d84f"},
+    {file = "zarr-3.0.7-py3-none-any.whl", hash = "sha256:db0ca28f12a59be681813ac719e4d5436591e2b315e89c5ae6e2d255715be960"},
+    {file = "zarr-3.0.7.tar.gz", hash = "sha256:c06da406e08da9565ba368ac0337a4466d7743f643acac2873beee4458b6e5e1"},
 ]
 
 [package.dependencies]
@@ -2799,10 +2799,11 @@ typing-extensions = ">=4.9"
 docs = ["astroid (<4)", "numcodecs[msgpack]", "numpydoc", "pydata-sphinx-theme", "rich", "s3fs", "sphinx (==8.1.3)", "sphinx-autoapi (==3.4.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-copybutton", "sphinx-design", "sphinx-issues", "sphinx-reredirects", "towncrier"]
 gpu = ["cupy-cuda12x"]
 optional = ["rich", "universal-pathlib"]
-remote = ["fsspec (>=2023.10.0)"]
-test = ["botocore", "coverage", "fsspec (>=2023.10.0)", "hypothesis", "moto[s3,server]", "mypy", "pytest", "pytest-accept", "pytest-asyncio", "pytest-cov", "requests", "rich", "s3fs", "universal-pathlib"]
+remote = ["fsspec (>=2023.10.0)", "obstore (>=0.5.1)"]
+remote-tests = ["botocore", "fsspec (>=2023.10.0)", "moto[s3,server]", "obstore (>=0.5.1)", "requests", "s3fs"]
+test = ["coverage", "hypothesis", "mypy", "pytest", "pytest-accept", "pytest-asyncio", "pytest-cov", "rich"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "8997bcf63646e01465ba11b13fe94138eb601d837ddccbb0dcacef27f797011d"
+content-hash = "597b3837cb1dc10612a98df092e9d5fe6fb90f2ec10dc4708be87e58b04b63c1"
