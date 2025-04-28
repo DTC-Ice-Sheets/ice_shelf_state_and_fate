@@ -12,6 +12,8 @@ import xarray as xr
 import zarr
 import zarr.storage
 
+from use_case_3.raster_tools.raster_np import RasterNp
+
 
 class ZarrStorage(Enum):
     """Specifies the Zarr file storage types available."""
@@ -90,9 +92,9 @@ class GeoZarr:
                 "grid_latitude",
                 "grid_longitude",
                 "height_above_mean_sea_level",
-                "height_difference_from_dem",
+                "height_difference_from_reference_elevation",
                 "height_above_mean_sea_level_uncertainty",
-                "height_difference_from_dem_uncertainty",
+                "height_difference_from_reference_elevation_uncertainty",
                 "basal_melt_rate",
                 "basal_melt_rate_uncertainty",
                 "projection_x_coordinate",
@@ -133,9 +135,9 @@ class GeoZarr:
                 "grid_latitude",
                 "grid_longitude",
                 "height_above_mean_sea_level",
-                "height_difference_from_dem",
+                "height_difference_from_reference_elevation",
                 "height_above_mean_sea_level_uncertainty",
-                "height_difference_from_dem_uncertainty",
+                "height_difference_from_reference_elevation_uncertainty",
                 "basel_melt_rate",
                 "basel_melt_rate_uncertainty",
                 "projection_x_coordinate",
@@ -294,10 +296,14 @@ class GeoZarr:
         y_affine_negative: bool,
         auxiliary_columns: Union[List, None],
         metadata: Union[dict, None] = None,
+        uncenter_cols: Union[None, list] = None,
+        resolution: Union[int, float, None] = None,
     ) -> Union[None, zarr.Group]:
         """
-        Convert a pandas dataframe to Geozarr. Note this currently assumes that the column names will follow
-        CF naming conventions.
+        Convert a pandas dataframe to Geozarr.
+
+        Notes: - This currently assumes that the column names will follow CF naming conventions.
+               - This also assumes that the dataframe contains centred data
 
         TODO: Auxiliary data is currently not handled.
 
@@ -316,6 +322,11 @@ class GeoZarr:
         metadata : Union[dict, None]
             Additional metadata for informational purposes only, this will be stored under
             the _INFO key in the root zarr attribute file.
+        uncenter_cols: Union[None, list]
+            The columns to uncenter.
+        resolution : Union[int, float, None]
+            The resolution of the raster data. This is used to uncenter the data.
+
 
         Returns
         -------
@@ -327,6 +338,10 @@ class GeoZarr:
         ValueError
             Raised when column names are not in the self.dimensions_config dict.
         """
+        if uncenter_cols is not None:
+            for coord_col in uncenter_cols:
+                data[coord_col] = data[coord_col] - resolution / 2
+
         # Order the columns alpabetically between the different column groups
         data = pd.concat([data[data_columns], data[coordinate_columns], data[auxiliary_columns]], axis=1)
 
@@ -656,3 +671,41 @@ class GeoZarr:
             self.root.attrs["_CRS"] = crs
 
         return crs
+
+    def add_raster(
+        self, raster_data: RasterNp, data_coords: dict, coord_names: List[str], attributes: dict, name: str
+    ) -> None:
+        """
+        Add a raster to the Geozarr. An example of a use case for this is to store a rasterised mask used within a
+        Geozarr.
+
+        Parameters
+        ----------
+        raster_data : RasterNp
+            The raster data.
+        data_coords : dict
+            The coordinate values.
+        coord_names : List[str]
+            _The coordinate names.
+        attributes : dict
+            Any attributes to be stored.
+        name : str
+            The name used to store the raster in the geozarr.
+
+        Raises
+        ------
+        ValueError
+            Raise an error if the raster dimensions are not the same as the coordinates stored in the geozarr already.
+        """
+        for coord_name in coord_names:
+            if coord_name in self.root.attrs["_ARRAY_DIMENSIONS"]:
+                if not np.allclose(data_coords[coord_name], self.root[coord_name][:]):
+                    raise ValueError("Coordinate values must match those already stored")
+
+        self._add_data_array(
+            data=np.array(raster_data),
+            dtype=raster_data.dtype,
+            name=name,
+            attributes=attributes,
+            chunk_shape=self._calculate_chunk_dims(raster_data.shape),
+        )

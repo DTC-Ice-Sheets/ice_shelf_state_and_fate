@@ -50,37 +50,60 @@ def test_load_tiffs2dataframe():
 
     combined_tifs = return_common_elements_from_two_lists(list_1=elevation_tifs, list_2=error_tifs, ascending=True)
 
-    data = load_tiffs2dataframe(
+    coord_names = ["projection_x_coordinate", "projection_y_coordinate", "time"]
+    reference_time = pd.Timestamp(year=1970, month=1, day=1)
+    observation_names = {
+        "value": "height_difference_from_reference_elevation",
+        "x": "projection_x_coordinate",
+        "y": "projection_y_coordinate",
+    }
+
+    data, mask_raster = load_tiffs2dataframe(
         file_names=combined_tifs,
-        folder_path_elevations=test_folder_path,
+        folder_path_observations=test_folder_path,
+        observation_names=observation_names,
+        coord_names=coord_names,
+        reference_time=reference_time,
+        error_file_names=combined_tifs,
         folder_path_errors=test_folder_path,
-        dem_diff=True,
+        file_path_mask=None,
+        create_raster_mask=False,
+        geometry_name=None,
+        process_datetimes=True,
+        process_filenames_as_dates=True,
     )
+
+    # data = load_tiffs2dataframe(
+    #     file_names=combined_tifs,
+    #     folder_path_elevations=test_folder_path,
+    #     folder_path_errors=test_folder_path,
+    #     dem_diff=True,
+    # )
 
     assert data.shape == (48, 5)
     assert list(data.columns) == [
         "projection_x_coordinate",
         "projection_y_coordinate",
         "time",
-        "height_difference_from_dem",
-        "height_difference_from_dem_uncertainty",
+        "height_difference_from_reference_elevation",
+        "height_difference_from_reference_elevation_uncertainty",
     ]
 
-    data = load_tiffs2dataframe(
-        file_names=combined_tifs,
-        folder_path_elevations=test_folder_path,
-        folder_path_errors=test_folder_path,
-        dem_diff=False,
-    )
+    # data = load_tiffs2dataframe(
+    #     file_names=combined_tifs,
+    #     folder_path_elevations=test_folder_path,
+    #     folder_path_errors=test_folder_path,
+    #     dem_diff=False,
+    # )
 
-    assert data.shape == (48, 5)
-    assert list(data.columns) == [
-        "projection_x_coordinate",
-        "projection_y_coordinate",
-        "time",
-        "height_above_mean_sea_level",
-        "height_above_mean_sea_level_uncertainty",
-    ]
+    # assert data.shape == (48, 5)
+    # assert list(data.columns) == [
+    #     "projection_x_coordinate",
+    #     "projection_y_coordinate",
+    #     "time",
+    #     "height_above_mean_sea_level",
+    #     "height_above_mean_sea_level_uncertainty",
+    # ]
 
 
 def test_load_tiffs2dataframe_basalmelt():
@@ -113,7 +136,7 @@ def test_get_mask_from_shapefile():
     test_file_path = path.join(path.dirname(__file__), "test_inputs", "rasters", "2015-01-01.tif")
 
     data_mask = get_mask_from_shapefile(
-        file_path_raster=test_file_path, file_path_mask=test_mask_input_path, glacier_name="test"
+        file_path_raster=test_file_path, file_path_mask=test_mask_input_path, geometry_name="test"
     )
 
     assert data_mask[0, 0]

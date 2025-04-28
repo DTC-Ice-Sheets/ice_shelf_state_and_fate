@@ -3,7 +3,7 @@
 import os
 import os.path as path
 import re
-from typing import Union
+from typing import Dict, List, Tuple, Union
 
 import affine
 import geopandas as gpd
@@ -65,12 +65,19 @@ def return_common_elements_from_two_lists(list_1: list, list_2: list, ascending:
     if not isinstance(ascending, bool):
         raise TypeError("sorting must be one of either True or False...")
 
-    set_1 = set(list_1)
-    set_2 = set(list_2)
+    if len(list_1) > 0 and len(list_2) == 0:
+        return sorted(list_1, reverse=not ascending)
+    elif len(list_1) == 0 and len(list_2) > 0:
+        return sorted(list_2, reverse=not ascending)
+    elif len(list_1) > 0 and len(list_2) > 0:
+        set_1 = set(list_1)
+        set_2 = set(list_2)
 
-    list_intersection = sorted(set_1.intersection(set_2), reverse=not ascending)
+        list_intersection = sorted(set_1.intersection(set_2), reverse=not ascending)
 
-    return list_intersection
+        return list_intersection
+    else:
+        return None
 
 
 def extract_date_string_from_filename(file_name: str, date_format: str = "YYYY-mm-dd") -> str:
@@ -112,99 +119,183 @@ def extract_date_string_from_filename(file_name: str, date_format: str = "YYYY-m
 
 def load_tiffs2dataframe(
     file_names: list[str],
-    folder_path_elevations: str,
-    folder_path_errors: str,
+    folder_path_observations: str,
+    observation_names: Dict[str, str],
+    coord_names: List[str],
+    reference_time: Union[None, pd.Timestamp],
+    error_file_names: Union[list[str], None] = None,
+    folder_path_errors: Union[str, None] = None,
     file_path_mask: Union[str, None] = None,
-    dem_diff: bool = True,
-    glacier_name: Union[str, None] = None,
-) -> pd.DataFrame:
+    create_raster_mask: bool = False,
+    geometry_name: Union[str, None] = None,
+    process_datetimes: bool = False,
+    process_filenames_as_dates: bool = False,
+) -> Tuple[pd.DataFrame, Union[RasterNp, None]]:
     """
-    Load a set of .tif files correspond to both the elevation (DEMdiff) and associated errors. Return
-    the loaded .tif files as a pd.DataFrame.
+    Load a set of .tif files and associated errors. Return the loaded .tif files as a centered pd.DataFrame.
 
     Parameters
     ----------
-    file_names: list[str]
-        A list of filenames which are common to both the medians and the errors.
-    folder_path_elevations: str
-        folder path pointing to where the elevation data is stored.
-    folder_path_errors: str
-        folder path pointing to where the elevation error data is stored.
-    file_path_mask : str
-        file path pointing at where the mask file is stored
-    dem_diff : bool
-        A boolean value identifying whether the elevation data should be a DEMdiff or absolute elevation.
-    glacier_name : Union[str, None]
-        The glacier of interest.
+    file_names : list[str]
+        A lit of filenames for the observations.
+    folder_path_observations : str
+        Folder path pointing to where the observation data is stored.
+    observation_names : Dict[str, str]
+        A mapping for the observation names.
+    coord_names : List[str]
+        The list of coordinate names.
+    reference_time : Union[None, pd.Timestamp]
+        A reference time which is used to convert the timestamps to a time unit in seconds.
+    error_file_names : Union[list[str], None], optional
+        The file names of the errors.
+    folder_path_errors : Union[str, None], optional
+        The folder path pointing to where the observation error data is stored.
+    file_path_mask : Union[str, None], optional
+        The path to where the file path is stored.
+    create_raster_mask : bool, optional
+        Whether a rasterised mask should be created from the shapefile.
+    geometry_name : Union[str, None], optional
+        Whether a specific geometry name should be used.
+    process_datetimes : bool, optional
+        Whether the datetimes should be processed.
+    process_filenames_as_dates : bool, optional
+        Whether the filenames are to be interpreted as dates.
 
     Returns
     -------
-    pd.DataFrame
-        A Pandas DataFrame object containing the elevation data and associated errors at every coordinate
-        and time point. Note that currently this assumes that the x and y variables are the longitude and the latitude.
-        This will need to be revisited.
+    Tuple[pd.DataFrame, Union[RasterNp, None]]
+        A Pandas DataFrame object containing the observation data and associated errors at every coordinate
+        and time point. A rasterised version of the mask used.
+    """
+    data_observations, mask_raster = process_variable(
+        file_names=file_names,
+        folder_path_variable=folder_path_observations,
+        variable_names=observation_names,
+        coord_names=coord_names,
+        reference_time=reference_time,
+        file_path_mask=file_path_mask,
+        create_raster_mask=create_raster_mask,
+        geometry_name=geometry_name,
+        process_datetimes=process_datetimes,
+        process_filenames_as_dates=process_filenames_as_dates,
+    )
+
+    if folder_path_errors is not None:
+        observation_names["value"] = observation_names["value"] + "_uncertainty"
+
+        if error_file_names is None:
+            error_file_names = file_names
+
+        data_errors, _ = process_variable(
+            file_names=error_file_names,
+            folder_path_variable=folder_path_errors,
+            variable_names=observation_names,
+            coord_names=coord_names,
+            reference_time=reference_time,
+            file_path_mask=file_path_mask,
+            create_raster_mask=create_raster_mask,
+            geometry_name=geometry_name,
+            process_datetimes=process_datetimes,
+            process_filenames_as_dates=process_filenames_as_dates,
+        )
+
+        data_observations = pd.merge(data_observations, data_errors, on=coord_names)
+
+    return data_observations, mask_raster
+
+
+def process_variable(
+    file_names: list[str],
+    folder_path_variable: str,
+    variable_names: Dict[str, str],
+    coord_names: List[str],
+    reference_time: Union[None, pd.Timestamp],
+    file_path_mask: Union[str, None] = None,
+    create_raster_mask: bool = False,
+    geometry_name: Union[str, None] = None,
+    process_datetimes: bool = False,
+    process_filenames_as_dates: bool = False,
+) -> Tuple[pd.DataFrame, Union[RasterNp, None]]:
+    """
+    _summary_.
+
+    Parameters
+    ----------
+    file_names : list[str]
+        A lit of filenames for the observations.
+    folder_path_observations : str
+        Folder path pointing to where the observation data is stored.
+    variable_names : Dict[str, str]
+        A mapping for the variable names.
+    coord_names : List[str]
+        The list of coordinate names.
+    reference_time : Union[None, pd.Timestamp]
+        A reference time which is used to convert the timestamps to a time unit in seconds.
+    file_path_mask : Union[str, None], optional
+        The path to where the file path is stored.
+    create_raster_mask : bool, optional
+        Whether a rasterised mask should be created from the shapefile.
+    geometry_name : Union[str, None], optional
+        Whether a specific geometry name should be used.
+    process_datetimes : bool, optional
+        Whether the datetimes should be processed.
+    process_filenames_as_dates : bool, optional
+        Whether the filenames are to be interpreted as dates.
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, Union[RasterNp, None]]
+        _description_
     """
     # A list used to hold the df for each time point. These will be concatenated at the end.
-    data_elevation_list = []
-
-    if dem_diff:
-        elevation_col_name = "height_difference_from_dem"
-    else:
-        elevation_col_name = "height_above_mean_sea_level"
-
-    # Reference datum - Note CF standards expects time in the format: Time unit since reference datum.
-    initial_time = pd.Timestamp(year=1970, month=1, day=1)
-
+    data_variable_list = []
     # Process each file.
     for i, file_name in enumerate(file_names):
-        date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
-
-        file_path_elevation = path.join(folder_path_elevations, file_name)
-        data_elevation = RasterNp.load_from_tiff(file_path=file_path_elevation)
+        if process_filenames_as_dates:
+            date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
+        file_path_variable = path.join(folder_path_variable, file_name)
+        data_variable = RasterNp.load_from_tiff(file_path=file_path_variable)
 
         # On the first iteration create the mask to be used as a raster.
         if i == 0 and file_path_mask is not None:
             mask = get_mask_from_shapefile(
-                file_path_raster=file_path_elevation, file_path_mask=file_path_mask, glacier_name=glacier_name
+                file_path_raster=file_path_variable, file_path_mask=file_path_mask, geometry_name=geometry_name
             )
+            if create_raster_mask:
+                shapes = gpd.read_file(file_path_mask)
+                if geometry_name == "all":
+                    shape = shapes
+                else:
+                    shape = shapes[shapes["Name"] == geometry_name]
+                # Note that we need to remove one row and column from the raster as the process of creating a dataframe
+                # centers the data and therefore loses one row and column.
+                mask_raster = RasterNp.rasterise_mask_from_geometry(
+                    geometries=shape,
+                    y_min=data_variable.bounding_box.min_y,
+                    y_max=data_variable.bounding_box.max_y - data_variable.resolution,
+                    x_min=data_variable.bounding_box.min_x,
+                    x_max=data_variable.bounding_box.max_x - data_variable.resolution,
+                    resolution=data_variable.resolution,
+                    y_affine_negative=True,
+                )
+        elif i == 0 and file_path_mask is None:
+            mask_raster = None
 
         # Mask the data if there is a mask available.
         if file_path_mask is not None:
-            data_elevation.mask_from_raster_np(mask, include_mask_value=False)
+            data_variable.mask_from_raster_np(mask, include_mask_value=False)
 
         # Convert elevation data to a DataFrame and rename columns as necessary.
-        data_elevation = data_elevation.convert_to_dataframe()
-        data_elevation["time"] = (pd.to_datetime(date_time) - initial_time).total_seconds()
+        data_variable = data_variable.convert_to_dataframe()
+        if process_datetimes:
+            data_variable["time"] = (pd.to_datetime(date_time) - reference_time).total_seconds()
 
-        data_elevation = data_elevation.rename(
-            {"value": elevation_col_name, "x": "projection_x_coordinate", "y": "projection_y_coordinate"}, axis=1
-        )
-        data_elevation = data_elevation.set_index(["projection_x_coordinate", "projection_y_coordinate", "time"])
+        data_variable = data_variable.rename(variable_names, axis=1)
+        data_variable = data_variable.set_index(coord_names)
 
-        # Process the errors
-        file_path_errors = path.join(folder_path_errors, file_name)
-        data_error = RasterNp.load_from_tiff(file_path=file_path_errors)
-        if file_path_mask is not None:
-            data_error.mask_from_raster_np(mask, include_mask_value=False)
+        data_variable_list.append(data_variable)
 
-        data_error = data_error.convert_to_dataframe()
-        data_error["time"] = (pd.to_datetime(date_time) - initial_time).total_seconds()
-
-        data_error = data_error.rename(
-            {
-                "value": elevation_col_name + "_uncertainty",
-                "x": "projection_x_coordinate",
-                "y": "projection_y_coordinate",
-            },
-            axis=1,
-        )
-        data_error = data_error.set_index(["projection_x_coordinate", "projection_y_coordinate", "time"])
-
-        # Join the elevation and error data together
-        data_elevation = data_elevation.join(data_error, how="inner")
-        data_elevation_list.append(data_elevation)
-
-    return pd.concat(data_elevation_list, axis=0).reset_index(drop=False)
+    return pd.concat(data_variable_list, axis=0).reset_index(drop=False), mask_raster
 
 
 def load_tiffs2dataframe_basalmelt(
@@ -308,7 +399,9 @@ def load_netcdf(folder_path: str, file_name: str) -> pd.DataFrame:
     return data
 
 
-def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_name: str) -> RasterNp:
+def get_mask_from_shapefile(
+    file_path_raster: str, file_path_mask: str, geometry_name: Union[List[str], str]
+) -> RasterNp:
     """
     Convert a shapefile with a polygon defining a mask to a mask in a RasterNp object.
     In this case the mask is boolean with the same extent as the tif to be masked. Where a pixel
@@ -321,9 +414,9 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
         File path to the raster to be masked.
     file_path_mask : str
         File path to the mask store, stored as a .gpkg. The 'Name' column specifies the
-        glacier names and the 'geometry' column specifies the mask polygon.
-    glacier_name : str
-        The glacier of interest.
+        ice sheet names and the 'geometry' column specifies the mask polygon.
+    geometry_name : Union[List[str], str]
+        The geometry of interest. if "all" is used then this is all geometries in the mask database supplied.
 
     Returns
     -------
@@ -331,7 +424,10 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
         a RasterNp object containing the mask.
     """
     shapes = gpd.read_file(file_path_mask)
-    shape = shapes[shapes["Name"] == glacier_name]
+    if geometry_name == "all":
+        shape = shapes
+    else:
+        shape = shapes[shapes["Name"] == geometry_name]
 
     with rasterio.open(file_path_raster) as src:
         mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False)
