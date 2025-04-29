@@ -1503,6 +1503,7 @@ class TimeSeriesModule:
             error_neg = data_timeseries[f"percentile_{percentiles[1]}"]
 
         fig, axes = plt.subplots(1, 1)
+        # sns.set(font_scale=2)
         sns.lineplot(
             x=data_timeseries.index,
             y=data_timeseries["aggregation"],
