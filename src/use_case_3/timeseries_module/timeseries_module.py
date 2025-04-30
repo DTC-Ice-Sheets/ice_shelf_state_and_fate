@@ -231,7 +231,11 @@ class TimeSeriesModule:
         return aggregate_spread, count_n
 
     def mask_data_cube(
-        self: Any, data_cube: np.ndarray, data_mask: np.ndarray, dimension_names: List[str], modify: bool
+        self: Any,
+        data_cube: np.ndarray,
+        data_mask: np.ndarray,
+        dimension_names: List[str],
+        modify: bool,
     ) -> Tuple[np.ndarray, bool]:
         """
         Mask a data cube based on a given mask. This makes some strong assumptions on the data and mask:
