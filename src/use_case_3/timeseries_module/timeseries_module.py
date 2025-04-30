@@ -277,7 +277,9 @@ class TimeSeriesModule:
         nan_array[:] = np.nan
 
         if data_mask.shape != (data_cube.shape[1], data_cube.shape[2]):
-            raise ValueError("Check your data and mask shape")
+            raise ValueError(
+                f"Your data {data_cube.shape[1], data_cube.shape[2]} and mask {data_mask.shape} shapes are different"
+            )
 
         data_cube_masked = np.where(data_mask, nan_array, data_cube)
 
