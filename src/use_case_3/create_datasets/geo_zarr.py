@@ -565,7 +565,7 @@ class GeoZarr:
 
             # Need to convert the time to the correct format
             if column == "time":
-                data_column = data_column - np.datetime64(self.datum)
+                data_column = (data_column - np.datetime64(self.datum)) / np.timedelta64(1, "s")
                 data_column_attrs["units"] = f"seconds since {self.datum}"
                 data_column_attrs["long_name"] = f"time in seconds since {self.datum}"
 
