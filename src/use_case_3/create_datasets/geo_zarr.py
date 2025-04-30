@@ -551,12 +551,12 @@ class GeoZarr:
             self.root.attrs["_CRS"] = crs
 
         # Create the necessary GeoZarr attributes for the coordinate columns.
-        self.root.attrs["_ARRAY_DIMENSIONS"] = []
+        array_dims = []
 
         # First process the coordinate columns
         for column in coordinate_columns:
             variable_name = self._convert_variable_name(column_name=column)
-            self.root.attrs["_ARRAY_DIMENSIONS"].append(variable_name)
+            array_dims.append(variable_name)
             data_column = data[column]
             data_column_attrs = data[column].attrs
             for attribute in data_column_attrs.keys():
@@ -582,6 +582,8 @@ class GeoZarr:
                 attributes=data_column_attrs,
                 chunk_shape=self._calculate_chunk_dims(data_column.shape),
             )
+
+        self.root.attrs["_ARRAY_DIMENSIONS"] = array_dims
 
         # Next process the data columns
         for column in target_columns:
