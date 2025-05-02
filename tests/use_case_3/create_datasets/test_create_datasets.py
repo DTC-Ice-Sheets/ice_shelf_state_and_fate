@@ -70,15 +70,8 @@ def test_load_tiffs2dataframe():
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates=True,
+        process_filenames_as_dates="dates",
     )
-
-    # data = load_tiffs2dataframe(
-    #     file_names=combined_tifs,
-    #     folder_path_elevations=test_folder_path,
-    #     folder_path_errors=test_folder_path,
-    #     dem_diff=True,
-    # )
 
     assert data.shape == (48, 5)
     assert list(data.columns) == [
@@ -88,22 +81,6 @@ def test_load_tiffs2dataframe():
         "height_difference_from_reference_elevation",
         "height_difference_from_reference_elevation_uncertainty",
     ]
-
-    # data = load_tiffs2dataframe(
-    #     file_names=combined_tifs,
-    #     folder_path_elevations=test_folder_path,
-    #     folder_path_errors=test_folder_path,
-    #     dem_diff=False,
-    # )
-
-    # assert data.shape == (48, 5)
-    # assert list(data.columns) == [
-    #     "projection_x_coordinate",
-    #     "projection_y_coordinate",
-    #     "time",
-    #     "height_above_mean_sea_level",
-    #     "height_above_mean_sea_level_uncertainty",
-    # ]
 
 
 def test_load_tiffs2dataframe_basalmelt():

@@ -70,7 +70,7 @@ def example_df_fixture() -> pd.DataFrame:
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates=True,
+        process_filenames_as_dates="dates",
     )
 
     return data

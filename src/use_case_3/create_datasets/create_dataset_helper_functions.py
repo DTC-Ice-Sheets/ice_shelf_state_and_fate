@@ -16,7 +16,9 @@ import xarray as xr
 from use_case_3.raster_tools.raster_np import BoundingBox, RasterNp
 
 
-def get_list_of_tiffs_from_folder(folder_path: str) -> list[str]:
+def get_list_of_tiffs_from_folder(
+    folder_path: str, prefix: Union[None, str] = None, suffix: Union[None, str] = None
+) -> list[str]:
     """
     Return a list of filenames ending in the .tif extension. Note this doesn't check for duplicates.
 
@@ -24,6 +26,11 @@ def get_list_of_tiffs_from_folder(folder_path: str) -> list[str]:
     ----------
     folder_path: str
         The folder_path that will be scanned for .tif files.
+    prefix: str, optional
+        Whether the returned files must start with the specified prefix.
+    suffix: str, optional
+        Whether the returned files must end with the specified suffix. Noe that the specified suffix must include any
+        file extension.
 
     Returns
     -------
@@ -31,6 +38,12 @@ def get_list_of_tiffs_from_folder(folder_path: str) -> list[str]:
         The list of .tif files from the given folder.
     """
     files = os.listdir(folder_path)
+
+    if prefix is not None:
+        files = [file for file in files if file.startswith(prefix)]
+
+    if suffix is not None:
+        files = [file for file in files if file.endswith(suffix)]
 
     return [file for file in files if file.endswith(".tif")]
 
@@ -117,6 +130,25 @@ def extract_date_string_from_filename(file_name: str, date_format: str = "YYYY-m
         raise ValueError(f"No date of format {date_format} found in the filename {file_name}.")
 
 
+def parse_dates_eolis_filename(file_name: str) -> str:
+    """
+    Parse the date from an EOLIS filename which is in a standard format.
+
+    Parameters
+    ----------
+    file_name : str
+        The file name which contains a date.
+
+    Returns
+    -------
+    str
+        The date in the format YYYY-mm-dd.
+    """
+    date = file_name.split("_")[4]
+
+    return date[:4] + "-" + date[4:6] + "-" + date[6:]
+
+
 def load_tiffs2dataframe(
     file_names: list[str],
     folder_path_observations: str,
@@ -129,7 +161,7 @@ def load_tiffs2dataframe(
     create_raster_mask: bool = False,
     geometry_name: Union[str, None] = None,
     process_datetimes: bool = False,
-    process_filenames_as_dates: bool = False,
+    process_filenames_as_dates: str = "dates",
 ) -> Tuple[pd.DataFrame, Union[RasterNp, None]]:
     """
     Load a set of .tif files and associated errors. Return the loaded .tif files as a centered pd.DataFrame.
@@ -158,7 +190,7 @@ def load_tiffs2dataframe(
         Whether a specific geometry name should be used.
     process_datetimes : bool, optional
         Whether the datetimes should be processed.
-    process_filenames_as_dates : bool, optional
+    process_filenames_as_dates : str, optional
         Whether the filenames are to be interpreted as dates.
 
     Returns
@@ -214,10 +246,10 @@ def process_variable(
     create_raster_mask: bool = False,
     geometry_name: Union[str, None] = None,
     process_datetimes: bool = False,
-    process_filenames_as_dates: bool = False,
+    process_filenames_as_dates: str = "dates",
 ) -> Tuple[pd.DataFrame, Union[RasterNp, None]]:
     """
-    _summary_.
+    Process a given variable into a dataframe and mask.
 
     Parameters
     ----------
@@ -239,20 +271,22 @@ def process_variable(
         Whether a specific geometry name should be used.
     process_datetimes : bool, optional
         Whether the datetimes should be processed.
-    process_filenames_as_dates : bool, optional
+    process_filenames_as_dates : str, optional
         Whether the filenames are to be interpreted as dates.
 
     Returns
     -------
     Tuple[pd.DataFrame, Union[RasterNp, None]]
-        _description_
+        The processed data frame and mask.
     """
     # A list used to hold the df for each time point. These will be concatenated at the end.
     data_variable_list = []
     # Process each file.
     for i, file_name in enumerate(file_names):
-        if process_filenames_as_dates:
+        if process_filenames_as_dates == "dates":
             date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
+        elif process_filenames_as_dates == "eolis":
+            date_time = parse_dates_eolis_filename(file_name=file_name)
         file_path_variable = path.join(folder_path_variable, file_name)
         data_variable = RasterNp.load_from_tiff(file_path=file_path_variable)
 
