@@ -306,14 +306,17 @@ def process_variable(
                 mask_raster = RasterNp.rasterise_mask_from_geometry(
                     geometries=shape,
                     y_min=data_variable.bounding_box.min_y,
-                    y_max=data_variable.bounding_box.max_y - data_variable.resolution,
+                    y_max=data_variable.bounding_box.max_y,
+                    # y_max=data_variable.bounding_box.max_y - data_variable.resolution,
                     x_min=data_variable.bounding_box.min_x,
-                    x_max=data_variable.bounding_box.max_x - data_variable.resolution,
+                    x_max=data_variable.bounding_box.max_x,
+                    # x_max=data_variable.bounding_box.max_x - data_variable.resolution,
                     resolution=data_variable.resolution,
                     y_affine_negative=True,
                 )
         elif i == 0 and file_path_mask is None:
             mask_raster = None
+        # print(mask_raster.shape)
 
         # Mask the data if there is a mask available.
         if file_path_mask is not None:
@@ -464,7 +467,7 @@ def get_mask_from_shapefile(
         shape = shapes[shapes["Name"] == geometry_name]
 
     with rasterio.open(file_path_raster) as src:
-        mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False)
+        mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False, all_touched=True)
 
         bounds = (src.bounds[0], src.bounds[1], src.bounds[2], src.bounds[3])  # minx, miny, maxx, maxy
         bounding_box = BoundingBox(min_x=bounds[0], min_y=bounds[1], max_x=bounds[2], max_y=bounds[3])
