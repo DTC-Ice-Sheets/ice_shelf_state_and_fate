@@ -1,8 +1,8 @@
 """Module containing a set of helper functions for creating datasets."""
 
 import os
-import os.path as path
 from enum import Enum
+from os import path
 from typing import List, Union
 
 import affine
@@ -244,7 +244,6 @@ def load_tiffs2dataframe_basalmelt(
 
     # Convert elevation data to a DataFrame and rename columns as necessary.
     data = data.convert_to_dataframe()
-    data["value"] = data["value"]
     data = data.rename(
         {"value": observation_col_name, "x": "projection_x_coordinate", "y": "projection_y_coordinate"}, axis=1
     )
