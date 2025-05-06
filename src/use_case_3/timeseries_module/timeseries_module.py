@@ -350,9 +350,10 @@ class TimeSeriesModule:
             data_observations, modify = self.mask_data_cube(
                 data_cube=data_observations, data_mask=data_mask, dimension_names=dimension_names, modify=True
             )
-            data_uncertainties, modify = self.mask_data_cube(
-                data_cube=data_uncertainties, data_mask=data_mask, dimension_names=dimension_names, modify=modify
-            )
+            if data_uncertainties is not None:
+                data_uncertainties, modify = self.mask_data_cube(
+                    data_cube=data_uncertainties, data_mask=data_mask, dimension_names=dimension_names, modify=modify
+                )
         else:
             modify = True
 

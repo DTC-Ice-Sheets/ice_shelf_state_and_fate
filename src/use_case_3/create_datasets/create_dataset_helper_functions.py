@@ -309,7 +309,7 @@ class ZarrStorage(Enum):
 
 
 def get_mask_from_shapefile(
-    file_path_raster: str, file_path_mask: str, ice_sheet_name: Union[List[str], str]
+    file_path_raster: str, file_path_mask: str, ice_sheet_name: Union[List[str], str], extent: Union[dict, None] = None
 ) -> RasterNp:
     """
     Convert a shapefile with a polygon defining a mask to a mask in a RasterNp object.
@@ -346,6 +346,13 @@ def get_mask_from_shapefile(
 
     resolution = (bounds[2] - bounds[0]) / mask.shape[1]
     mask = RasterNp(input_array=mask, bounding_box=bounding_box, resolution=resolution)
+
+    if extent is not None:
+        bounding_box = BoundingBox(
+            min_x=extent["min_x"], min_y=extent["min_y"], max_x=extent["max_x"], max_y=extent["max_y"]
+        )
+
+        mask = mask.new_extent_copy(bounding_box=bounding_box, fill_to_extent=True, fill_value=np.nan).astype(bool)
 
     return mask
 
