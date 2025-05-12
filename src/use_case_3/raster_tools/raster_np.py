@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any, List, Optional, Tuple, Union
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
@@ -589,7 +590,7 @@ class RasterNp(np.ndarray):
 
     @staticmethod
     def rasterise_mask_from_geometry(
-        geometries: list,
+        geometries: Union[list, gpd.GeoDataFrame],
         y_min: Union[int, float],
         y_max: Union[int, float],
         x_min: Union[int, float],
@@ -602,7 +603,7 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        geometries : list
+        geometries : Union[list, gpd.G
             A list of multipolygons
         y_min : Union[int, float]
             The extent y_min.
@@ -631,8 +632,9 @@ class RasterNp(np.ndarray):
             bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
         )
 
-        mask = geometry_mask(geometries=geometries, out_shape=(y, x), transform=transform, invert=True).astype(int)
-
+        mask = geometry_mask(
+            geometries=geometries["geometry"], out_shape=(y, x), transform=transform, invert=True, all_touched=True
+        ).astype(int)
         mask = RasterNp(
             input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
         )
