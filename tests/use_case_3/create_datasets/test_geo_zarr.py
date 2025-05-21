@@ -182,7 +182,7 @@ def test_calculate_chunk_dims(geozarr_local_store: GeoZarr, data_shape, n_chunks
     assert geozarr_local_store._calculate_chunk_dims(data_shape=data_shape) == chunk_shape
 
     geozarr_local_store.create_coordinate_reference_system()
-  
+
 
 def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):
     geozarr_local_store.dataframe2geozarr(
@@ -322,4 +322,3 @@ def test_create_coordinate_reference_system(geozarr_local_store):
     )
     assert crs == {"grid_mapping_name": "test"}
     assert geozarr_local_store.root.attrs["_CRS"] == {"grid_mapping_name": "test"}
-

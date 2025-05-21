@@ -11,7 +11,6 @@ import rasterio
 import rasterio.transform as tr
 from affine import Affine
 from numpy.typing import NDArray
-from rasterio.features import geometry_mask
 from rasterio.windows import Window, from_bounds
 
 from use_case_3.raster_tools.bounding_box import BoundingBox
@@ -585,4 +584,3 @@ class RasterNp(np.ndarray):
             mask_values = mask_values[::-1]
 
         self[~mask_values] = outside_mask_return_value
-
