@@ -12,6 +12,7 @@ import pandas as pd
 import rasterio
 import rasterio.mask
 import xarray as xr
+from tqdm import tqdm
 
 from use_case_3.raster_tools.raster_np import BoundingBox, RasterNp
 
@@ -172,6 +173,7 @@ def load_tiff2datacube(
     geometry_name: Union[list, gpd.GeoDataFrame, str, None] = None,
     process_datetimes: bool = False,
     process_filenames_as_dates: str = "dates",
+    extent: Union[dict, None] = None,
 ) -> Tuple[np.ndarray, Union[np.ndarray, None], dict, Union[RasterNp, None]]:
     """
     Load a set of .tif files and associated errors. Return the loaded .tif files as a datacube.
@@ -214,6 +216,7 @@ def load_tiff2datacube(
         geometry_name=geometry_name,
         process_datetimes=process_datetimes,
         process_filenames_as_dates=process_filenames_as_dates,
+        extent=extent,
     )
 
     if folder_path_errors is not None:
@@ -229,6 +232,7 @@ def load_tiff2datacube(
             geometry_name=geometry_name,
             process_datetimes=process_datetimes,
             process_filenames_as_dates=process_filenames_as_dates,
+            extent=extent,
         )
     else:
         data_errors = None
@@ -290,6 +294,7 @@ def process_variable_datacube(  # noqa
     geometry_name: Union[list, gpd.GeoDataFrame, str, None] = None,
     process_datetimes: bool = False,
     process_filenames_as_dates: str = "dates",
+    extent: Union[dict, None] = None,
 ) -> Tuple[np.ndarray, dict, Union[RasterNp, None]]:
     """
     Process a given variable into a data cube and mask.
@@ -325,13 +330,20 @@ def process_variable_datacube(  # noqa
     data_timepoint_list = []
     data_coords = {}
     # Process each file.
-    for i, file_name in enumerate(file_names):
+    # for i, file_name in enumerate(file_names):
+    for i, file_name in tqdm(enumerate(file_names), total=len(file_names)):
         if process_filenames_as_dates == "dates":
             date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
         elif process_filenames_as_dates == "eolis":
             date_time = parse_dates_eolis_filename(file_name=file_name)
         file_path_variable = path.join(folder_path_variable, file_name)
-        data_variable = RasterNp.load_from_tiff(file_path=file_path_variable)
+        if extent is None:
+            bounding_box = None
+        else:
+            bounding_box = BoundingBox(
+                min_x=extent["min_x"], max_x=extent["max_x"], min_y=extent["min_y"], max_y=extent["max_y"]
+            )
+        data_variable = RasterNp.load_from_tiff(file_path=file_path_variable, bounding_box=bounding_box)
 
         # Add the coordinates to the data_coords dict
         if i == 0:
@@ -564,6 +576,8 @@ def process_variable_dataframe(
 
         data_variable = data_variable.rename(variable_names, axis=1)
         data_variable = data_variable.set_index(coord_names)
+
+        # display(data_variable)
 
         data_variable_list.append(data_variable)
 

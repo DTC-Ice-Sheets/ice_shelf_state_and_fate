@@ -100,10 +100,14 @@ class GeoZarr:
                 "projection_x_coordinate",
                 "projection_y_coordinate",
                 "lake_discharge",
+                "firn_air_content",
+                "surface mass balance",
             ],
-            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y", "None"],
+            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y", "None", "None", "None"],
             "bounds": [
                 "time_bnds",
+                "None",
+                "None",
                 "None",
                 "None",
                 "None",
@@ -129,6 +133,8 @@ class GeoZarr:
                 "None",
                 "None",
                 "None",
+                "None",
+                "None",
             ],
             "long_name": [
                 "time",
@@ -143,6 +149,8 @@ class GeoZarr:
                 "projection_x_coordinate",
                 "projection_y_coordinate",
                 "subglacial_lake_discharge",
+                "firn_air_content",
+                "surface mass balance",
             ],
             "units": [
                 "seconds since 1970-01-01T00:00:00",
@@ -157,6 +165,8 @@ class GeoZarr:
                 "m",
                 "m",
                 "m^3/s",
+                "m^3",
+                "#",
             ],
         }
 
@@ -558,7 +568,12 @@ class GeoZarr:
             The shape of a single chunk.
         """
         self.root.create_array(
-            name=name, shape=data.shape, attributes=json.loads(json.dumps(attributes)), dtype=dtype, chunks=chunk_shape
+            name=name,
+            shape=data.shape,
+            attributes=json.loads(json.dumps(attributes)),
+            dtype=dtype,
+            chunks=chunk_shape,
+            overwrite=True,
         )
 
         data_slice = []
@@ -835,7 +850,7 @@ class GeoZarr:
         for coord_name in coord_names:
             if coord_name in self.root.attrs["_ARRAY_DIMENSIONS"]:
                 if not np.allclose(data_coords[coord_name], self.root[coord_name][:]):
-                    raise ValueError("Coordinate values must match those already stored")
+                    raise ValueError(f"Coordinate values must match those already stored - {coord_name}")
 
         self._add_data_array(
             data=np.array(raster_data.astype(float)),
