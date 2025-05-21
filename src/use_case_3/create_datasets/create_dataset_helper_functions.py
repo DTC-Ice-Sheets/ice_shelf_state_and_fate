@@ -200,6 +200,8 @@ def load_tiff2datacube(
         Whether the datetimes should be processed.
     process_filenames_as_dates : str, optional
         Whether the filenames are to be interpreted as dates.
+    extent : Union[Dict[str, Union[int, float]], None], optional
+        The extent of the bounding box which will be used to crop GeoTiff files.
 
     Returns
     -------
@@ -319,6 +321,8 @@ def process_variable_datacube(  # noqa
         Whether the datetimes should be processed.
     process_filenames_as_dates : str, optional
         Whether the filenames are to be interpreted as dates.
+    extent : Union[Dict[str, Union[int, float]], None], optional
+        The extent of the bounding box which will be used to crop GeoTiff files.
 
     Returns
     -------
