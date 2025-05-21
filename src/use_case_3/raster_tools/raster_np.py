@@ -86,7 +86,6 @@ class RasterNp(np.ndarray):
         expected_x_count = round((bounding_box.max_x - bounding_box.min_x) / resolution)
         expected_y_count = round((bounding_box.max_y - bounding_box.min_y) / resolution)
         if self.shape[1] - expected_x_count == 1 and self.shape[0] - expected_y_count == 1:
-            # print("Extending extent by resolution/2 - assuming extent was given for centre points")
             bounding_box.min_x = bounding_box.min_x - resolution / 2
             bounding_box.max_x = bounding_box.max_x + resolution / 2
             bounding_box.min_y = bounding_box.min_y - resolution / 2
@@ -94,6 +93,7 @@ class RasterNp(np.ndarray):
 
         expected_x_count = round((bounding_box.max_x - bounding_box.min_x) / resolution)
         expected_y_count = round((bounding_box.max_y - bounding_box.min_y) / resolution)
+
         if expected_x_count != self.shape[1] or expected_y_count != self.shape[0]:
             raise ValueError("Extent and resolution do not match array dimensions")
         return bounding_box
@@ -527,10 +527,10 @@ class RasterNp(np.ndarray):
         file_path : str
             File path of mask file.
         include_mask_value : Optional[float]
-            The in-mask value in the mask geotiff, by default 1
+            The in-mask value in the mask geotiff, by default 1.
         outside_mask_return_value : Optional[float]
             The value assinged to data found outside of the mask, by default np.nan. note - the default
-            outside_mask_return_value value of np.nan does not work with int-based arrays
+            outside_mask_return_value value of np.nan does not work with int-based arrays.
         """
         # For each point in current file, get mask value and mask nan accordingly
         y, x = self.yx_gridpoints()
@@ -550,54 +550,39 @@ class RasterNp(np.ndarray):
 
         self[~mask_values] = outside_mask_return_value
 
-    @staticmethod
-    def rasterise_mask_from_geometry(
-        geometries: list,
-        y_min: Union[int, float],
-        y_max: Union[int, float],
-        x_min: Union[int, float],
-        x_max: Union[int, float],
-        resolution: Union[int, float],
-        y_affine_negative: bool = False,
-    ) -> RasterNp:
+
+    def mask_from_raster_np(self: RasterNp,
+                            mask: RasterNp,
+                            include_mask_value: Optional[Union[float, bool]] = 1,
+                            outside_mask_return_value: Optional[float] = np.nan) -> None:
         """
-        Rasterise a mask based on a geometry.
+        Mask object in place from a np.ndarray mask.
 
         Parameters
         ----------
-        geometries : list
-            A list of multipolygons
-        y_min : Union[int, float]
-            The extent y_min.
-        y_max : Union[int, float]
-            The extent y_max.
-        x_min : Union[int, float]
-            The extent x_min.
-        x_max : Union[int, float]
-            The extent x_max.
-        resolution : Union[int, float]
-            The resolution.
-        y_affine_negative : bool, optional
-            Whether the raster is y affine negative, by default False
+        mask : RasterNp
+            The mask represented as a RasterNp.
+        include_mask_value : Optional[float]
+            The in-mask value in the mask geotiff, by default 1.
+        outside_mask_return_value : Optional[float]
+            The value assigned to data found outside of the mask, by default np.nan. note - the default
+            outside_mask_return_value value of np.nan does not work with int-based arrays.
 
-        Returns
-        -------
-        RasterNp
-            The raster mask.
+        TODO: Check and return error when using int-based arrays.
         """
-        y = int(np.ceil((y_max - y_min) / resolution)) + 1
-        x = int(np.ceil((x_max - x_min) / resolution)) + 1
+        # For each point in current file, get mask value and mask nan accordingly
+        y, x = self.yx_gridpoints()
+        x, y = make_grid_mesh_xy(x, y)
 
-        bounding_box = BoundingBox(min_y=y_min, max_y=y_max, min_x=x_min, max_x=x_max)
+        # Now force mask extent to cover the same area as self.extent
+        mask = mask.new_extent_copy(self.bounding_box, fill_to_extent=True, fill_value=outside_mask_return_value)
+        mask_values = mask.at_yx(y, x)
+        mask_values = mask_values.reshape(-1, self.shape[0]).swapaxes(0, 1)
+        mask_values = (mask_values == include_mask_value)
 
-        transform = RasterNp._get_transform(
-            bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
-        )
+        # Apply mask
+        if self.y_affine_negative:
+            mask_values = mask_values[::-1]
 
-        mask = geometry_mask(geometries=geometries, out_shape=(y, x), transform=transform, invert=True).astype(int)
+        self[~mask_values] = outside_mask_return_value
 
-        mask = RasterNp(
-            input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
-        )
-
-        return mask
