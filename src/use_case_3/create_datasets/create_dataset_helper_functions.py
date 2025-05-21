@@ -1,9 +1,9 @@
 """Module containing a set of helper functions for creating datasets."""
 
 import os
-from enum import Enum
+import re
 from os import path
-from typing import List, Union
+from typing import Union
 
 import affine
 import geopandas as gpd
