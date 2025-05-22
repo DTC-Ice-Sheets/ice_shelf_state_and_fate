@@ -330,7 +330,7 @@ def test_correlation_coefficient(timeseries_1_fixture, timeseries_2_fixture):
     assert np.isclose(corr, 1)
 
 
-def test_covariance_normalised(timeseries_1_fixture):
+def test_covariance(timeseries_1_fixture):
     covariate_analyser = CovariateAnalyser(
         timeseries={
             timeseries_1_fixture[1]: timeseries_1_fixture[0],
@@ -340,7 +340,7 @@ def test_covariance_normalised(timeseries_1_fixture):
             timeseries_1_fixture[1]: timeseries_1_fixture[2],
         },
     )
-    corr = covariate_analyser.covariance_normalised([timeseries_1_fixture[1], timeseries_1_fixture[1]])
+    corr = covariate_analyser.covariance([timeseries_1_fixture[1], timeseries_1_fixture[1]], normalisation="corrcoef")
     assert np.allclose(corr, np.array([[1, 1], [1, 1]]))
 
 

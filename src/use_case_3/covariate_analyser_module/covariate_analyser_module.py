@@ -491,7 +491,7 @@ class CovariateAnalyser:
 
         return corr.statistic, corr.pvalue
 
-    def covariance_normalised(self: Any, timeseries_labels: List[str]) -> pd.DataFrame:
+    def covariance(self: Any, timeseries_labels: List[str], normalisation: Union[None, str] = None) -> pd.DataFrame:
         """
         Calculate the normalised covariance matrix.
 
@@ -499,15 +499,23 @@ class CovariateAnalyser:
         ----------
         time_series : List[pd.Series]
             The list of time series.
+        normalisation : normalisation: Union[None, str], optional
+            The type of normalisation applied, this can be None, mean_centered and correlation coefficient.
 
         Returns
         -------
         pd.DataFrame
             The covariance matrix.
         """
-        timeseries = [self.timeseries[label] for label in timeseries_labels]
+        if normalisation == "mean_centered":
+            timeseries = [self.timeseries[label] - self.timeseries[label].mean() for label in timeseries_labels]
+        else:
+            timeseries = [self.timeseries[label] for label in timeseries_labels]
         df = pd.concat(timeseries, axis=1)
-        return pd.DataFrame(np.corrcoef(df.T), columns=df.columns, index=df.columns)
+        if normalisation == "corrcoef":
+            return pd.DataFrame(np.corrcoef(df.T), columns=df.columns, index=df.columns)
+        else:
+            return pd.DataFrame(np.cov(df.T), columns=df.columns, index=df.columns)
 
     def crosscorrelation(self: Any, timeseries_label_1: str, timeseries_label_2: str) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -831,7 +839,12 @@ class CovariateAnalyser:
                     axes[row, col].set_xlabel("")
                     axes[row, col].set_ylabel("")
                     axes[row, col].grid()
-                    axes[row, col].set_title(f"corr:{corr[0]:.2f}, p:{corr[1]:.2f}, \n lag:{lag} {freq}", y=0.75)
+                    title = f"corr:{corr[0]:.2f}, p:{corr[1]:.2f}"
+                    y_offset = 0.85
+                    if crosscorr:
+                        title += f", \n lag:{lag} {freq}"
+                        y_offset = 0.75
+                    axes[row, col].set_title(title, y=y_offset)
                     if corr[1] > self.alpha:
                         axes[row, col].set_facecolor("mistyrose")
                 else:
