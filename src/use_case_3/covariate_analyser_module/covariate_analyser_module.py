@@ -761,7 +761,7 @@ class CovariateAnalyser:
             reg_2.estimator_.intercept_,
         )
 
-    def jointplot(self, timeseries_label_1: str, timeseries_label_2: str) -> None:
+    def jointplot(self, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True) -> None:
         """
         Visualise a joint plot between two time series.
 
@@ -778,15 +778,16 @@ class CovariateAnalyser:
         )
 
         joint = sns.jointplot(x=self.timeseries[timeseries_label_1], y=self.timeseries[timeseries_label_2])
-        joint.ax_joint.plot(
-            joint.ax_joint.get_xlim(),
-            [
-                (joint.ax_joint.get_xlim()[0] * reg_1.coef_[0]) + reg_1.intercept_,
-                (joint.ax_joint.get_xlim()[1] * reg_1.coef_[0]) + reg_1.intercept_,
-            ],
-            color="grey",
-            linestyle="--",
-        )
+        if linear:
+            joint.ax_joint.plot(
+                joint.ax_joint.get_xlim(),
+                [
+                    (joint.ax_joint.get_xlim()[0] * reg_1.coef_[0]) + reg_1.intercept_,
+                    (joint.ax_joint.get_xlim()[1] * reg_1.coef_[0]) + reg_1.intercept_,
+                ],
+                color="grey",
+                linestyle="--",
+            )
         plt.grid()
         plt.show()
 
@@ -834,6 +835,7 @@ class CovariateAnalyser:
 
                     if np.abs(lag) != 1:
                         freq = freq + "s"
+
                     corr = self.correlation_coefficient(timeseries_col, timeseries_row)
                     sns.regplot(x=timeseries_col, y=timeseries_row, ax=axes[row, col])
                     axes[row, col].set_xlabel("")
@@ -851,14 +853,15 @@ class CovariateAnalyser:
                     axes[row, col].set_facecolor("lightgrey")
 
             # plot the histograms
-            sns.histplot(data=timeseries[row].to_frame(), y=timeseries[row].to_frame().columns[0], ax=axes[row, -1])
+            timeseries_col.to_frame().columns[0]
+            sns.histplot(data=timeseries_row.to_frame(), y=timeseries_row.to_frame().columns[0], ax=axes[row, -1])
             axes[row, -1].spines["top"].set_visible(False)
             axes[row, -1].spines["right"].set_visible(False)
             axes[row, -1].spines["bottom"].set_visible(False)
             axes[row, -1].set_xlabel("")
             axes[row, -1].get_xaxis().set_ticks([])
 
-            sns.histplot(data=timeseries[row].to_frame(), x=timeseries[row].to_frame().columns[0], ax=axes[-1, row])
+            sns.histplot(data=timeseries_row.to_frame(), x=timeseries_row.to_frame().columns[0], ax=axes[-1, row])
             axes[-1, row].spines["top"].set_visible(False)
             axes[-1, row].spines["right"].set_visible(False)
             axes[row, -1].spines["bottom"].set_visible(False)
