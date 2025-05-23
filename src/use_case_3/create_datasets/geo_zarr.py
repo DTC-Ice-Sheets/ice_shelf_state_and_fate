@@ -859,3 +859,7 @@ class GeoZarr:
             attributes=attributes,
             chunk_shape=self._calculate_chunk_dims(raster_data.shape),
         )
+
+        # Encouraged by XArray to increase the speed at which the Zarr file can be loaded. This consolidates all
+        # metadata to the root metadata file.
+        zarr.consolidate_metadata(self.store)
