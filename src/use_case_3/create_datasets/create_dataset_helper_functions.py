@@ -151,9 +151,9 @@ def parse_dates_eolis_filename(file_name: str) -> str:
         An invalid EOLIS filename was provided.
     """
     date_component = [
-        date[:4] + "-" + date[4:6] + "-" + date[6:]
+        date.replace(".tif", "")[:4] + "-" + date.replace(".tif", "")[4:6] + "-" + date.replace(".tif", "")[6:]
         for date in file_name.split("_")
-        if len(date) == 8 and date.isdigit()
+        if len(date.replace(".tif", "")) == 8 and date.replace(".tif", "").isdigit()
     ]
 
     if len(date_component) == 1:
