@@ -2293,14 +2293,14 @@ files = [
 
 [[package]]
 name = "scikit-gstat"
-version = "1.0.19"
+version = "1.0.21"
 description = "Geostatistical expansion in the scipy style"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "scikit_gstat-1.0.19-py3-none-any.whl", hash = "sha256:0e94b6767c21e4a1b3caf3c5a2838214b2740fe43b1e82635ffaaad8dc7f2a81"},
-    {file = "scikit_gstat-1.0.19.tar.gz", hash = "sha256:38b4954cf8fe3eb1ab551d9f61562b3e2ae252e959c067a0472f39f839354036"},
+    {file = "scikit_gstat-1.0.21-py3-none-any.whl", hash = "sha256:bd1d4de10714bd17098f4f12ea223c17fe3cde257091026ee15577a7d9cc681b"},
+    {file = "scikit_gstat-1.0.21.tar.gz", hash = "sha256:9271290154a421dd8b08ddc514a2c69e8083d64a4d81202b6c52b5104825e739"},
 ]
 
 [package.dependencies]
@@ -2311,6 +2311,7 @@ numpy = "*"
 pandas = "*"
 scikit-learn = "*"
 scipy = "*"
+setuptools = "*"
 tqdm = "*"
 
 [package.extras]
@@ -2463,7 +2464,7 @@ version = "75.8.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "setuptools-75.8.2-py3-none-any.whl", hash = "sha256:558e47c15f1811c1fa7adbd0096669bf76c1d3f433f58324df69f3f5ecac4e8f"},
     {file = "setuptools-75.8.2.tar.gz", hash = "sha256:4880473a969e5f23f2a2be3646b2dfd84af9028716d398e46192f84bc36900d2"},
@@ -2991,4 +2992,4 @@ test = ["coverage", "hypothesis", "mypy", "pytest", "pytest-accept", "pytest-asy
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "340460d7ba24f93afd77ca0f47add4c5f615748a97a39e9433c332ddd2e1836c"
+content-hash = "589a6e59e9612a7fde15e69c45de1385b3fafa2186eb3ae69a654e2f320b4488"
