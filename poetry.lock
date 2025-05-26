@@ -2964,14 +2964,14 @@ viz = ["cartopy", "matplotlib", "nc-time-axis", "seaborn"]
 
 [[package]]
 name = "zarr"
-version = "3.0.7"
+version = "3.0.8"
 description = "An implementation of chunked, compressed, N-dimensional arrays for Python"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "zarr-3.0.7-py3-none-any.whl", hash = "sha256:db0ca28f12a59be681813ac719e4d5436591e2b315e89c5ae6e2d255715be960"},
-    {file = "zarr-3.0.7.tar.gz", hash = "sha256:c06da406e08da9565ba368ac0337a4466d7743f643acac2873beee4458b6e5e1"},
+    {file = "zarr-3.0.8-py3-none-any.whl", hash = "sha256:7f81e7aec086437d98882aa432209107114bd7f3a9f4958b2af9c6b5928a70a7"},
+    {file = "zarr-3.0.8.tar.gz", hash = "sha256:88505d095af899a88ae8ac4db02f4650ef0801d2ff6f65b6d1f0a45dcf760a6d"},
 ]
 
 [package.dependencies]
@@ -2982,14 +2982,14 @@ packaging = ">=22.0"
 typing-extensions = ">=4.9"
 
 [package.extras]
-docs = ["astroid (<4)", "numcodecs[msgpack]", "numpydoc", "pydata-sphinx-theme", "rich", "s3fs", "sphinx (==8.1.3)", "sphinx-autoapi (==3.4.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-copybutton", "sphinx-design", "sphinx-issues", "sphinx-reredirects", "towncrier"]
+docs = ["astroid (<4)", "numcodecs[msgpack]", "numpydoc", "pydata-sphinx-theme", "rich", "s3fs (>=2023.10.0)", "sphinx (==8.1.3)", "sphinx-autoapi (==3.4.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-copybutton", "sphinx-design", "sphinx-issues", "sphinx-reredirects", "towncrier"]
 gpu = ["cupy-cuda12x"]
 optional = ["rich", "universal-pathlib"]
 remote = ["fsspec (>=2023.10.0)", "obstore (>=0.5.1)"]
-remote-tests = ["botocore", "fsspec (>=2023.10.0)", "moto[s3,server]", "obstore (>=0.5.1)", "requests", "s3fs"]
+remote-tests = ["botocore", "fsspec (>=2023.10.0)", "moto[s3,server]", "obstore (>=0.5.1)", "requests", "s3fs (>=2023.10.0)"]
 test = ["coverage", "hypothesis", "mypy", "pytest", "pytest-accept", "pytest-asyncio", "pytest-cov", "rich"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "589a6e59e9612a7fde15e69c45de1385b3fafa2186eb3ae69a654e2f320b4488"
+content-hash = "ab9b2aa9eaa377f5c34c870890767128d44365de2f9c47f21a6bb878c4211e7e"
