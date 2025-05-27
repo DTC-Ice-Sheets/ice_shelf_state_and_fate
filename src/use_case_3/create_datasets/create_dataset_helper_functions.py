@@ -333,6 +333,9 @@ def get_mask_from_shapefile(file_path_raster: str, file_path_mask: str, glacier_
     shapes = gpd.read_file(file_path_mask)
     shape = shapes[shapes["Name"] == glacier_name]
 
+    if glacier_name == "all":
+        shape = shapes
+
     with rasterio.open(file_path_raster) as src:
         mask, _, _ = rasterio.mask.raster_geometry_mask(src, shape["geometry"], crop=False)
 
