@@ -159,7 +159,7 @@ def parse_dates_eolis_filename(file_name: str) -> str:
     if len(date_component) == 1:
         return date_component[0]
     else:
-        raise ValueError("Invalid EOLIS filename provided, two elements could be interpreted as a date")
+        raise ValueError("Invalid EOLIS filename provided, multiple elements could be interpreted as a date")
 
 
 def load_tiff2datacube(
@@ -334,7 +334,6 @@ def process_variable_datacube(  # noqa
     data_timepoint_list = []
     data_coords = {}
     # Process each file.
-    # for i, file_name in enumerate(file_names):
     for i, file_name in tqdm(enumerate(file_names), total=len(file_names)):
         if process_filenames_as_dates == "dates":
             date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
@@ -536,7 +535,7 @@ def process_variable_dataframe(
     # A list used to hold the df for each time point. These will be concatenated at the end.
     data_variable_list = []
     # Process each file.
-    for i, file_name in enumerate(file_names):
+    for i, file_name in tqdm(enumerate(file_names), total=len(file_names)):
         if process_filenames_as_dates == "dates":
             date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
         elif process_filenames_as_dates == "eolis":
