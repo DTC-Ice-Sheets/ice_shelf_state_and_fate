@@ -1,0 +1,15 @@
+standard_name,axis,bounds,calendar,long_name,units
+time,T,time_bnds,standard,time,seconds since 1970-01-01T00:00:00
+grid_latitude,Y,,,grid_latitude,degrees
+grid_longitude,X,,,grid_longitude,degrees
+height_above_mean_sea_level,,,,height_above_mean_sea_level,m
+height_difference_from_reference_elevation,,,,height_difference_from_reference_elevation,m
+height_above_mean_sea_level_uncertainty,,,,height_above_mean_sea_level_uncertainty,m
+height_difference_from_reference_elevation_uncertainty,,,,height_difference_from_reference_elevation_uncertainty,m
+basal_melt_rate,,,,basel_melt_rate,m/s
+basal_melt_rate_uncertainty,,,,basel_melt_rate_uncertainty,m/s
+projection_x_coordinate,X,,,projection_x_coordinate,m
+projection_y_coordinate,Y,,,projection_y_coordinate,m
+lake_discharge,,,,subglacial_lake_discharge,m^3/s
+firn_air_content,,,,firn_air_content,m^3
+surface mass balance,,,,surface mass balance,#
