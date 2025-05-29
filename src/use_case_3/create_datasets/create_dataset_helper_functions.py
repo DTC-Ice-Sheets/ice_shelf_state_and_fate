@@ -1,10 +1,10 @@
 """Module containing a set of helper functions for creating datasets."""
 
 import os
-import os.path as path
 import re
 from datetime import datetime
 from typing import Tuple, Union
+from os import path
 
 import affine
 import geopandas as gpd
@@ -722,7 +722,7 @@ def convert_decimal_dates(decimal_dates: pd.Series) -> pd.Series:
 
 def convert_datetime_seconds(datetimes: pd.Series, datum: pd.Timestamp) -> pd.Series:
     """
-    Convert a series of pd.Timestamp's to seconds using a datum.
+    Normalise datetimes against a datum.
 
     Parameters
     ----------
