@@ -4,13 +4,15 @@ import json
 import os
 import os.path as path
 from enum import Enum
-from typing import Any, List, Tuple, Union
+from typing import Any, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
 import zarr.storage
+
+from use_case_3.raster_tools.raster_np import RasterNp
 
 
 class ZarrStorage(Enum):
@@ -90,18 +92,22 @@ class GeoZarr:
                 "grid_latitude",
                 "grid_longitude",
                 "height_above_mean_sea_level",
-                "height_difference_from_dem",
+                "height_difference_from_reference_elevation",
                 "height_above_mean_sea_level_uncertainty",
-                "height_difference_from_dem_uncertainty",
+                "height_difference_from_reference_elevation_uncertainty",
                 "basal_melt_rate",
                 "basal_melt_rate_uncertainty",
                 "projection_x_coordinate",
                 "projection_y_coordinate",
                 "lake_discharge",
+                "firn_air_content",
+                "surface mass balance",
             ],
-            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y", "None"],
+            "axis": ["T", "Y", "X", "None", "None", "None", "None", "None", "None", "X", "Y", "None", "None", "None"],
             "bounds": [
                 "time_bnds",
+                "None",
+                "None",
                 "None",
                 "None",
                 "None",
@@ -127,20 +133,24 @@ class GeoZarr:
                 "None",
                 "None",
                 "None",
+                "None",
+                "None",
             ],
             "long_name": [
                 "time",
                 "grid_latitude",
                 "grid_longitude",
                 "height_above_mean_sea_level",
-                "height_difference_from_dem",
+                "height_difference_from_reference_elevation",
                 "height_above_mean_sea_level_uncertainty",
-                "height_difference_from_dem_uncertainty",
+                "height_difference_from_reference_elevation_uncertainty",
                 "basel_melt_rate",
                 "basel_melt_rate_uncertainty",
                 "projection_x_coordinate",
                 "projection_y_coordinate",
                 "subglacial_lake_discharge",
+                "firn_air_content",
+                "surface mass balance",
             ],
             "units": [
                 "seconds since 1970-01-01T00:00:00",
@@ -155,6 +165,8 @@ class GeoZarr:
                 "m",
                 "m",
                 "m^3/s",
+                "m^3",
+                "#",
             ],
         }
 
@@ -162,7 +174,7 @@ class GeoZarr:
 
     @staticmethod
     def _reshape_data(
-        data: pd.DataFrame, target_column: str, coord_columns: List[str], y_affine_negative: bool = False
+        data: pd.DataFrame, target_column: str, coord_columns: list[str], y_affine_negative: bool = False
     ) -> Tuple[np.ndarray, list[np.ndarray]]:
         """
         Reshape a 2-dimensional array into an N-dimensional array based on a specified number of coordinate columns.
@@ -286,18 +298,161 @@ class GeoZarr:
 
         return tuple(chunk_dims)
 
-    def dataframe2geozarr(
+    def create_root_geozarr(
+        self: Any, coordinate_columns: list[str], metadata: Union[dict, None] = None
+    ) -> Union[None, zarr.Group]:
+        """
+        Create the root GeoZarr group.
+
+        Parameters
+        ----------
+        coordinate_columns : List[str]
+            The list of coordinate columns.
+        metadata : Union[dict, None], optional
+            Any metadata to be stored, by default None
+
+        Returns
+        -------
+        Union[None, zarr.Group]
+            None if the GeoZarr is saved to disk, or a zarr.Group if in memory is specified.
+        """
+        # Create the necessary GeoZarr attributes for the coordinate columns.
+        self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
+        if metadata is not None:
+            self.root.attrs["_INFO"] = metadata
+
+        # If the storage type chosen is memory only then return the Zarr object, else the method returns nothing.
+        if self.storage_type == ZarrStorage.memory_store:
+            return self.root
+
+    def process_coord_column(
+        self: Any, data_coord: np.ndarray, data_dtype: Union[str, np.dtype], coordinate_column: str
+    ) -> None:
+        """
+        Process and add the coordinate columns.
+
+        Parameters
+        ----------
+        data_coord : np.ndarray
+            The data coordinate to be added to the GeoZarr.
+        data_dtype : str
+            The dtype of the coordinate variable.
+        coordinate_column : str
+            The name of the coordinate column.
+
+        Raises
+        ------
+        ValueError
+            Value error if the coordinate column is not in self.dimensions_config, i.e. a CF standard name.
+        """
+        standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == coordinate_column]
+        if standard_dimensions.shape[0] > 0:
+            attributes = {key: standard_dimensions[key].iloc[0] for key in standard_dimensions.columns}
+            attributes["_ARRAY_DIMENSIONS"] = [coordinate_column]
+        else:
+            raise ValueError(f"Column {coordinate_column} is not a CF standard name, please check this")
+        self._add_data_array(
+            data=data_coord,
+            dtype=data_dtype,
+            name=coordinate_column,
+            attributes=attributes,
+            chunk_shape=self._calculate_chunk_dims(data_coord.shape),
+        )
+
+    def datacube2geozarr(
         self,
-        data: pd.DataFrame,
-        data_columns: List[str],
-        coordinate_columns: List[str],
-        y_affine_negative: bool,
-        auxiliary_columns: Union[List, None],
+        data_cube: np.ndarray,
+        data_columns: list[str],
+        data_coords: dict,
+        coordinate_columns: list[str],
+        auxiliary_columns: Union[list, None],
         metadata: Union[dict, None] = None,
     ) -> Union[None, zarr.Group]:
         """
-        Convert a pandas dataframe to Geozarr. Note this currently assumes that the column names will follow
-        CF naming conventions.
+        Convert a datacube to the GeoZarr format.
+
+        Parameters
+        ----------
+        data_cube : np.ndarray
+            The data cube containing the data. The axis are indexed by the data_column variable.
+        data_columns : List[str]
+            The list of data column names.
+        data_coords : dict
+            The data coordinated.
+        coordinate_columns : List[str]
+            The list of coordinate column names. These are ordered to index the data_cube along the correct axis.
+        auxiliary_columns : Union[List, None]
+            Any auxiliary columns.
+        metadata : Union[dict, None], optional
+            Any metadata to be included in the GeoZarr file, by default None
+
+        Returns
+        -------
+        Union[None, zarr.Group]
+            Either the zarr group if the storage type is selected as in memory or None if written to disk.
+
+        Raises
+        ------
+        ValueError
+            Value error if the coordinate column is not in self.dimensions_config, i.e. a CF standard name.
+        """
+        self.create_root_geozarr(coordinate_columns=coordinate_columns, metadata=metadata)
+
+        # Create the N-Dim array for each specified data column - According to GeoZarr this should be geospatial
+        # observations.
+        for column in data_columns:
+            standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == column]
+            if standard_dimensions.shape[0] > 0:
+                attributes = {
+                    key: standard_dimensions[key].iloc[0]
+                    for key in standard_dimensions.columns
+                    if standard_dimensions[key].iloc[0] != "None"
+                }
+                attributes["_ARRAY_DIMENSIONS"] = coordinate_columns
+            else:
+                raise ValueError(f"Column {column} is not a CF standard name, please check this")
+
+            self._add_data_array(
+                data=data_cube,
+                dtype=data_cube.dtype,
+                name=column,
+                attributes=attributes,
+                chunk_shape=self._calculate_chunk_dims(data_cube.shape),
+            )
+
+        # # Process the coordinate columns
+        for coordinate_column in coordinate_columns:
+            self.process_coord_column(
+                data_coord=data_coords[coordinate_column],
+                data_dtype=data_coords[coordinate_column].dtype,
+                coordinate_column=coordinate_column,
+            )
+
+        # Encouraged by XArray to increase the speed at which the Zarr file can be loaded. This consolidates all
+        # metadata to the root metadata file.
+        zarr.consolidate_metadata(self.store)
+
+        # If the storage type chosen is memory only then return the Zarr object, else the method returns nothing.
+        if self.storage_type == ZarrStorage.memory_store:
+            return self.root
+
+    def dataframe2geozarr(
+        self: Any,
+        data: pd.DataFrame,
+        data_columns: list[str],
+        coordinate_columns: list[str],
+        y_affine_negative: bool,
+        auxiliary_columns: Union[list, None],
+        metadata: Union[dict, None] = None,
+        uncenter_cols: Union[None, list] = None,
+        x_resolution: Union[int, float, None] = None,
+        y_resolution: Union[int, float, None] = None,
+    ) -> Union[None, zarr.Group]:
+        """
+        Convert a pandas dataframe to Geozarr.
+
+        Notes: - This currently assumes that the column names will follow CF naming conventions.
+               - This also assumes that the dataframe contains centred data
 
         TODO: Auxiliary data is currently not handled.
 
@@ -316,6 +471,13 @@ class GeoZarr:
         metadata : Union[dict, None]
             Additional metadata for informational purposes only, this will be stored under
             the _INFO key in the root zarr attribute file.
+        uncenter_cols: Union[None, list]
+            The columns to uncenter.
+        x_resolution : Union[int, float, None]
+            The x-axis resolution of the raster data. This is used to uncenter the data.
+        y_resolution : Union[int, float, None]
+            The y-axis resolution of the raster data. This is used to uncenter the data. Note if the data is y affine
+            negative, then this resolution will be negative!
 
         Returns
         -------
@@ -327,13 +489,17 @@ class GeoZarr:
         ValueError
             Raised when column names are not in the self.dimensions_config dict.
         """
+        if uncenter_cols is not None:
+            for coord_col in uncenter_cols:
+                if coord_col == "projection_x_coordinate":
+                    data[coord_col] = data[coord_col] - x_resolution / 2
+                if coord_col == "projection_y_coordinate":
+                    data[coord_col] = data[coord_col] - y_resolution / 2
+
         # Order the columns alpabetically between the different column groups
         data = pd.concat([data[data_columns], data[coordinate_columns], data[auxiliary_columns]], axis=1)
 
-        # Create the necessary GeoZarr attributes for the coordinate columns.
-        self.root.attrs["_ARRAY_DIMENSIONS"] = coordinate_columns
-        if metadata is not None:
-            self.root.attrs["_INFO"] = metadata
+        self.create_root_geozarr(coordinate_columns=coordinate_columns, metadata=metadata)
 
         # Create the N-Dim array for each specified data column - According to GeoZarr this should be geospatial
         # observations.
@@ -361,21 +527,12 @@ class GeoZarr:
                 chunk_shape=self._calculate_chunk_dims(data_reshape.shape),
             )
 
-        # Process the coordinate columns
-        for i, column in enumerate(coordinate_columns):
-            standard_dimensions = self.dimensions_config[self.dimensions_config["standard_name"] == column]
-            if standard_dimensions.shape[0] > 0:
-                attributes = {key: standard_dimensions[key].iloc[0] for key in standard_dimensions.columns}
-                attributes["_ARRAY_DIMENSIONS"] = [column]
-            else:
-                raise ValueError(f"Column {column} is not a CF standard name, please check this")
-            data_coord = data_reshape_coords[i]
-            self._add_data_array(
-                data=data_coord,
-                dtype=data[column].to_numpy().dtype,
-                name=column,
-                attributes=attributes,
-                chunk_shape=self._calculate_chunk_dims(data_coord.shape),
+        # # Process the coordinate columns
+        for i, coordinate_column in enumerate(coordinate_columns):
+            self.process_coord_column(
+                data_coord=data_reshape_coords[i],
+                data_dtype=data[column].to_numpy().dtype,
+                coordinate_column=coordinate_column,
             )
 
         # Encouraged by XArray to increase the speed at which the Zarr file can be loaded. This consolidates all
@@ -411,7 +568,12 @@ class GeoZarr:
             The shape of a single chunk.
         """
         self.root.create_array(
-            name=name, shape=data.shape, attributes=json.loads(json.dumps(attributes)), dtype=dtype, chunks=chunk_shape
+            name=name,
+            shape=data.shape,
+            attributes=json.loads(json.dumps(attributes)),
+            dtype=dtype,
+            chunks=chunk_shape,
+            overwrite=True,
         )
 
         data_slice = []
@@ -511,8 +673,8 @@ class GeoZarr:
     def convert_netcdf_to_geo_zarr(
         self: Any,
         filepath: str,
-        target_columns: List[str],
-        coordinate_columns: List[str],
+        target_columns: list[str],
+        coordinate_columns: list[str],
         crs: Union[dict, None] = None,
     ) -> None:
         """
@@ -536,12 +698,12 @@ class GeoZarr:
             self.root.attrs["_CRS"] = crs
 
         # Create the necessary GeoZarr attributes for the coordinate columns.
-        self.root.attrs["_ARRAY_DIMENSIONS"] = []
+        array_dims = []
 
         # First process the coordinate columns
         for column in coordinate_columns:
             variable_name = self._convert_variable_name(column_name=column)
-            self.root.attrs["_ARRAY_DIMENSIONS"].append(variable_name)
+            array_dims.append(variable_name)
             data_column = data[column]
             data_column_attrs = data[column].attrs
             for attribute in data_column_attrs.keys():
@@ -550,7 +712,7 @@ class GeoZarr:
 
             # Need to convert the time to the correct format
             if column == "time":
-                data_column = data_column - np.datetime64(self.datum)
+                data_column = (data_column - np.datetime64(self.datum)) / np.timedelta64(1, "s")
                 data_column_attrs["units"] = f"seconds since {self.datum}"
                 data_column_attrs["long_name"] = f"time in seconds since {self.datum}"
 
@@ -567,6 +729,8 @@ class GeoZarr:
                 attributes=data_column_attrs,
                 chunk_shape=self._calculate_chunk_dims(data_column.shape),
             )
+
+        self.root.attrs["_ARRAY_DIMENSIONS"] = array_dims
 
         # Next process the data columns
         for column in target_columns:
@@ -607,7 +771,8 @@ class GeoZarr:
         add_attributes: bool = True,
     ) -> dict:
         """
-        Create the Coordinate Reference System (CRS).
+        Create the Coordinate Reference System (CRS). This blindly iterates through all of the parameters and only
+        includes those that are not None.
 
         Parameters
         ----------
@@ -656,3 +821,45 @@ class GeoZarr:
             self.root.attrs["_CRS"] = crs
 
         return crs
+
+    def add_raster(
+        self, raster_data: RasterNp, data_coords: dict, coord_names: list[str], attributes: dict, name: str
+    ) -> None:
+        """
+        Add a raster to the Geozarr. An example of a use case for this is to store a rasterised mask used within a
+        Geozarr.
+
+        Parameters
+        ----------
+        raster_data : RasterNp
+            The raster data.
+        data_coords : dict
+            The coordinate values.
+        coord_names : List[str]
+            _The coordinate names.
+        attributes : dict
+            Any attributes to be stored.
+        name : str
+            The name used to store the raster in the geozarr.
+
+        Raises
+        ------
+        ValueError
+            Raise an error if the raster dimensions are not the same as the coordinates stored in the geozarr already.
+        """
+        for coord_name in coord_names:
+            if coord_name in self.root.attrs["_ARRAY_DIMENSIONS"]:
+                if not np.allclose(data_coords[coord_name], self.root[coord_name][:]):
+                    raise ValueError(f"Coordinate values must match those already stored - {coord_name}")
+
+        self._add_data_array(
+            data=np.array(raster_data.astype(float)),
+            dtype=float,
+            name=name,
+            attributes=attributes,
+            chunk_shape=self._calculate_chunk_dims(raster_data.shape),
+        )
+
+        # Encouraged by XArray to increase the speed at which the Zarr file can be loaded. This consolidates all
+        # metadata to the root metadata file.
+        zarr.consolidate_metadata(self.store)

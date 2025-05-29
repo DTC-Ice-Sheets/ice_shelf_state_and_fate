@@ -5,12 +5,14 @@ from __future__ import annotations
 import math
 from typing import Any, List, Optional, Tuple, Union
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
 import rasterio.transform as tr
 from affine import Affine
 from numpy.typing import NDArray
+from rasterio.features import geometry_mask
 from rasterio.windows import Window, from_bounds
 
 from use_case_3.raster_tools.bounding_box import BoundingBox
@@ -549,11 +551,12 @@ class RasterNp(np.ndarray):
 
         self[~mask_values] = outside_mask_return_value
 
-
-    def mask_from_raster_np(self: RasterNp,
-                            mask: RasterNp,
-                            include_mask_value: Optional[Union[float, bool]] = 1,
-                            outside_mask_return_value: Optional[float] = np.nan) -> None:
+    def mask_from_raster_np(
+        self: RasterNp,
+        mask: RasterNp,
+        include_mask_value: Optional[Union[float, bool]] = 1,
+        outside_mask_return_value: Optional[float] = np.nan,
+    ) -> None:
         """
         Mask object in place from a np.ndarray mask.
 
@@ -577,10 +580,63 @@ class RasterNp(np.ndarray):
         mask = mask.new_extent_copy(self.bounding_box, fill_to_extent=True, fill_value=outside_mask_return_value)
         mask_values = mask.at_yx(y, x)
         mask_values = mask_values.reshape(-1, self.shape[0]).swapaxes(0, 1)
-        mask_values = (mask_values == include_mask_value)
+        mask_values = mask_values == include_mask_value
 
         # Apply mask
         if self.y_affine_negative:
             mask_values = mask_values[::-1]
 
         self[~mask_values] = outside_mask_return_value
+
+    @staticmethod
+    def rasterise_mask_from_geometry(
+        geometries: Union[list, gpd.GeoDataFrame],
+        y_min: Union[int, float],
+        y_max: Union[int, float],
+        x_min: Union[int, float],
+        x_max: Union[int, float],
+        resolution: Union[int, float],
+        y_affine_negative: bool = False,
+    ) -> RasterNp:
+        """
+        Rasterise a mask based on a geometry.
+
+        Parameters
+        ----------
+        geometries : Union[list, gpd.G
+            A list of multipolygons
+        y_min : Union[int, float]
+            The extent y_min.
+        y_max : Union[int, float]
+            The extent y_max.
+        x_min : Union[int, float]
+            The extent x_min.
+        x_max : Union[int, float]
+            The extent x_max.
+        resolution : Union[int, float]
+            The resolution.
+        y_affine_negative : bool, optional
+            Whether the raster is y affine negative, by default False
+
+        Returns
+        -------
+        RasterNp
+            The raster mask.
+        """
+        y = int(np.ceil((y_max - y_min) / resolution))
+        x = int(np.ceil((x_max - x_min) / resolution))
+
+        bounding_box = BoundingBox(min_y=y_min, max_y=y_max, min_x=x_min, max_x=x_max)
+
+        transform = RasterNp._get_transform(
+            bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
+        )
+
+        mask = geometry_mask(
+            geometries=geometries["geometry"], out_shape=(y, x), transform=transform, invert=True, all_touched=True
+        ).astype(int)
+        mask = RasterNp(
+            input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
+        )
+
+        return mask
