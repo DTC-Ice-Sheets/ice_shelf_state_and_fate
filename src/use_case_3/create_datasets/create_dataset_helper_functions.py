@@ -3,8 +3,8 @@
 import os
 import re
 from datetime import datetime
-from typing import Tuple, Union
 from os import path
+from typing import Tuple, Union
 
 import affine
 import geopandas as gpd

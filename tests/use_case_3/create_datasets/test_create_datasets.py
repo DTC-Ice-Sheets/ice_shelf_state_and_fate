@@ -38,11 +38,6 @@ def gdal_geotransform_ypos_fixture():
     return "50.0 100.0 0.0 1050.0 0.0 100.0", 4, 4
 
 
-# def test_parse_dates_eolis_filename(eolis_filenames_fixture):
-#     assert parse_dates_eolis_filename(eolis_filenames_fixture[0]) == "2014-04-15"
-#     assert parse_dates_eolis_filename(eolis_filenames_fixture[1]) == "2010-09-15"
-
-
 def test_get_list_of_tifs_from_folder():
     test_folder_path = path.join(path.dirname(__file__), "test_inputs", "rasters")
 
@@ -63,13 +58,13 @@ def test_return_common_elements_from_two_lists():
     assert return_common_elements_from_two_lists(list_1, list_2, ascending=False) == expected_result_2
 
 
-def test_extract_date_string_from_filename():
+def test_extract_date_string_from_filename(eolis_filenames_fixture):
     eolis_filename_regex_pattern = r"(?:swath_uoe_v2_unc_|cryotempo_land_ice_ice_shelves_baseline_c_)(\d+)_.*\.tif"
     eolis_date_format = "%Y%m%d"
 
     assert (
         extract_date_string_from_filename(
-            file_name="swath_uoe_v2_unc_20140415_dif.tif",
+            file_name=eolis_filenames_fixture[0],
             file_name_regex_pattern=eolis_filename_regex_pattern,
             date_format=eolis_date_format,
         )
@@ -78,11 +73,11 @@ def test_extract_date_string_from_filename():
 
     assert (
         extract_date_string_from_filename(
-            file_name="swath_uoe_v2_unc_20140415_dif.tif",
+            file_name=eolis_filenames_fixture[1],
             file_name_regex_pattern=eolis_filename_regex_pattern,
             date_format=eolis_date_format,
         )
-        == "2014-04-15"
+        == "2010-09-15"
     )
 
     assert (
@@ -91,7 +86,6 @@ def test_extract_date_string_from_filename():
         )
         == "2015-01-01"
     )
-    # assert extract_date_string_from_filename("2015-01-01.tif") == "2015-01-01"
 
 
 def test_load_tiffs2datacube():
