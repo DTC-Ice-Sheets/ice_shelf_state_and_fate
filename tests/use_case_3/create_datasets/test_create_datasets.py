@@ -17,7 +17,6 @@ from use_case_3.create_datasets.create_dataset_helper_functions import (
     get_mask_from_shapefile,
     load_tiff2datacube,
     load_tiffs2dataframe,
-    parse_dates_eolis_filename,
     process_variable_datacube,
     process_variable_dataframe,
     return_common_elements_from_two_lists,
@@ -39,9 +38,9 @@ def gdal_geotransform_ypos_fixture():
     return "50.0 100.0 0.0 1050.0 0.0 100.0", 4, 4
 
 
-def test_parse_dates_eolis_filename(eolis_filenames_fixture):
-    assert parse_dates_eolis_filename(eolis_filenames_fixture[0]) == "2014-04-15"
-    assert parse_dates_eolis_filename(eolis_filenames_fixture[1]) == "2010-09-15"
+# def test_parse_dates_eolis_filename(eolis_filenames_fixture):
+#     assert parse_dates_eolis_filename(eolis_filenames_fixture[0]) == "2014-04-15"
+#     assert parse_dates_eolis_filename(eolis_filenames_fixture[1]) == "2010-09-15"
 
 
 def test_get_list_of_tifs_from_folder():
@@ -65,7 +64,34 @@ def test_return_common_elements_from_two_lists():
 
 
 def test_extract_date_string_from_filename():
-    assert extract_date_string_from_filename("2015-01-01.tif") == "2015-01-01"
+    eolis_filename_regex_pattern = r"(?:swath_uoe_v2_unc_|cryotempo_land_ice_ice_shelves_baseline_c_)(\d+)_.*\.tif"
+    eolis_date_format = "%Y%m%d"
+
+    assert (
+        extract_date_string_from_filename(
+            file_name="swath_uoe_v2_unc_20140415_dif.tif",
+            file_name_regex_pattern=eolis_filename_regex_pattern,
+            date_format=eolis_date_format,
+        )
+        == "2014-04-15"
+    )
+
+    assert (
+        extract_date_string_from_filename(
+            file_name="swath_uoe_v2_unc_20140415_dif.tif",
+            file_name_regex_pattern=eolis_filename_regex_pattern,
+            date_format=eolis_date_format,
+        )
+        == "2014-04-15"
+    )
+
+    assert (
+        extract_date_string_from_filename(
+            file_name="2015-01-01.tif", file_name_regex_pattern=r"(\d+-\d+-\d+)\.tif", date_format="%Y-%m-%d"
+        )
+        == "2015-01-01"
+    )
+    # assert extract_date_string_from_filename("2015-01-01.tif") == "2015-01-01"
 
 
 def test_load_tiffs2datacube():
@@ -79,6 +105,9 @@ def test_load_tiffs2datacube():
 
     reference_time = pd.Timestamp(year=1970, month=1, day=1)
 
+    file_name_regex_pattern = r"(\d+-\d+-\d+)\.tif"
+    date_format = "%Y-%m-%d"
+
     data, data_errors, data_coords, mask_raster = load_tiff2datacube(
         file_names=combined_tifs,
         folder_path_observations=test_folder_path,
@@ -89,7 +118,8 @@ def test_load_tiffs2datacube():
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates="dates",
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     assert data.shape == (3, 4, 4)
@@ -125,6 +155,8 @@ def test_process_variable_datacube():
     combined_tifs = return_common_elements_from_two_lists(list_1=elevation_tifs, list_2=[], ascending=True)
 
     reference_time = pd.Timestamp(year=1970, month=1, day=1)
+    file_name_regex_pattern = r"(\d+-\d+-\d+)\.tif"
+    date_format = "%Y-%m-%d"
 
     data, data_coords, mask_raster = process_variable_datacube(
         file_names=combined_tifs,
@@ -134,7 +166,8 @@ def test_process_variable_datacube():
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates="dates",
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     assert data.shape == (3, 4, 4)
@@ -174,6 +207,9 @@ def test_load_tiffs2dataframe():
         "y": "projection_y_coordinate",
     }
 
+    file_name_regex_pattern = r"(\d+-\d+-\d+)\.tif"
+    date_format = "%Y-%m-%d"
+
     data, mask_raster = load_tiffs2dataframe(
         file_names=combined_tifs,
         folder_path_observations=test_folder_path,
@@ -186,7 +222,8 @@ def test_load_tiffs2dataframe():
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates="dates",
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     assert data.shape == (48, 5)
@@ -217,6 +254,9 @@ def test_process_variable_dataframe():
         "y": "projection_y_coordinate",
     }
 
+    file_name_regex_pattern = r"(\d+-\d+-\d+)\.tif"
+    date_format = "%Y-%m-%d"
+
     data, mask_raster = process_variable_dataframe(
         file_names=combined_tifs,
         folder_path_variable=test_folder_path,
@@ -227,7 +267,8 @@ def test_process_variable_dataframe():
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates="dates",
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     assert data.shape == (48, 4)

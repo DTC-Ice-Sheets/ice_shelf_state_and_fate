@@ -59,6 +59,9 @@ def example_df_fixture() -> pd.DataFrame:
         "y": "projection_y_coordinate",
     }
 
+    file_name_regex_pattern = r"(\d+-\d+-\d+)\.tif"
+    date_format = "%Y-%m-%d"
+
     data, mask_raster = load_tiffs2dataframe(
         file_names=combined_tifs,
         folder_path_observations=test_folder_input_path,
@@ -70,7 +73,8 @@ def example_df_fixture() -> pd.DataFrame:
         create_raster_mask=False,
         geometry_name=None,
         process_datetimes=True,
-        process_filenames_as_dates="dates",
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     return data

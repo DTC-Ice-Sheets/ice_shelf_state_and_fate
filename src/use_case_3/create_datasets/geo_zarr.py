@@ -4,7 +4,7 @@ import json
 import os
 import os.path as path
 from enum import Enum
-from typing import Any, List, Tuple, Union
+from typing import Any, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -174,7 +174,7 @@ class GeoZarr:
 
     @staticmethod
     def _reshape_data(
-        data: pd.DataFrame, target_column: str, coord_columns: List[str], y_affine_negative: bool = False
+        data: pd.DataFrame, target_column: str, coord_columns: list[str], y_affine_negative: bool = False
     ) -> Tuple[np.ndarray, list[np.ndarray]]:
         """
         Reshape a 2-dimensional array into an N-dimensional array based on a specified number of coordinate columns.
@@ -299,7 +299,7 @@ class GeoZarr:
         return tuple(chunk_dims)
 
     def create_root_geozarr(
-        self: Any, coordinate_columns: List[str], metadata: Union[dict, None] = None
+        self: Any, coordinate_columns: list[str], metadata: Union[dict, None] = None
     ) -> Union[None, zarr.Group]:
         """
         Create the root GeoZarr group.
@@ -362,10 +362,10 @@ class GeoZarr:
     def datacube2geozarr(
         self,
         data_cube: np.ndarray,
-        data_columns: List[str],
+        data_columns: list[str],
         data_coords: dict,
-        coordinate_columns: List[str],
-        auxiliary_columns: Union[List, None],
+        coordinate_columns: list[str],
+        auxiliary_columns: Union[list, None],
         metadata: Union[dict, None] = None,
     ) -> Union[None, zarr.Group]:
         """
@@ -439,10 +439,10 @@ class GeoZarr:
     def dataframe2geozarr(
         self: Any,
         data: pd.DataFrame,
-        data_columns: List[str],
-        coordinate_columns: List[str],
+        data_columns: list[str],
+        coordinate_columns: list[str],
         y_affine_negative: bool,
-        auxiliary_columns: Union[List, None],
+        auxiliary_columns: Union[list, None],
         metadata: Union[dict, None] = None,
         uncenter_cols: Union[None, list] = None,
         x_resolution: Union[int, float, None] = None,
@@ -673,8 +673,8 @@ class GeoZarr:
     def convert_netcdf_to_geo_zarr(
         self: Any,
         filepath: str,
-        target_columns: List[str],
-        coordinate_columns: List[str],
+        target_columns: list[str],
+        coordinate_columns: list[str],
         crs: Union[dict, None] = None,
     ) -> None:
         """
@@ -823,7 +823,7 @@ class GeoZarr:
         return crs
 
     def add_raster(
-        self, raster_data: RasterNp, data_coords: dict, coord_names: List[str], attributes: dict, name: str
+        self, raster_data: RasterNp, data_coords: dict, coord_names: list[str], attributes: dict, name: str
     ) -> None:
         """
         Add a raster to the Geozarr. An example of a use case for this is to store a rasterised mask used within a

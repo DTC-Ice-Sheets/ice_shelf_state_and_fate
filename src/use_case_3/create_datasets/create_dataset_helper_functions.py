@@ -3,7 +3,8 @@
 import os
 import os.path as path
 import re
-from typing import Dict, List, Tuple, Union
+from datetime import datetime
+from typing import Tuple, Union
 
 import affine
 import geopandas as gpd
@@ -94,72 +95,46 @@ def return_common_elements_from_two_lists(list_1: list, list_2: list, ascending:
         return None
 
 
-def extract_date_string_from_filename(file_name: str, date_format: str = "YYYY-mm-dd") -> str:
+def extract_date_string_from_filename(
+    file_name: str, file_name_regex_pattern: str, date_format: str = "%Y-%m-%d"
+) -> str:
     """
-    Convert a filename containing a date to a string.
+    Extract and parse a date string from a filename using a regex pattern and date format.
 
     Parameters
     ----------
     file_name : str
         The file name which contains a date.
+    file_name_regex_pattern : str
+        A regex pattern to extract the date portion from the filename. This should extract just a single date string.
     date_format : str
-        The format of the date expected which must follow either: "YYYY-mm-dd", "YYYY-dd-mm", "dd-mm-YYYY" or
-        "mm-dd-YYYY".
+        The format of the date string extracted, using Python's datetime format codes (e.g., "%Y-%m-%d").
 
     Returns
     -------
-    str
-        The date in the format YYYY-mm-dd.
+    datetime
+        The extracted time as a datetime object.
 
     Raises
     ------
     ValueError
-        If the wrong date format is found.
+        If no date is found or parsing fails.
     """
-    acceptable_formats = ["YYYY-mm-dd", "YYYY-dd-mm", "dd-mm-YYYY", "mm-dd-YYYY"]
-    if date_format not in acceptable_formats:
-        raise ValueError(f"The date format {date_format} is not one of {acceptable_formats}.")
+    matches = re.findall(file_name_regex_pattern, file_name)
 
-    if date_format in acceptable_formats[:2]:
-        match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", file_name)  # look for YYYY-mm-dd or YYYY-dd-mm pattern
-    elif date_format in acceptable_formats[2:]:
-        match = re.search(r"\b\d{2}-\d{2}-\d{4}\b", file_name)  # look for dd-mm-YYYY or mm-dd-YYYY pattern
+    if not matches:
+        raise ValueError(f"No date found in filename '{file_name}' using pattern '{file_name_regex_pattern}'.")
+    if len(matches) > 1:
+        raise ValueError(f"Multiple date matches found in filename '{file_name}': {matches}. Only one expected.")
 
-    if match:
-        return match.group(0)
-    else:
-        raise ValueError(f"No date of format {date_format} found in the filename {file_name}.")
+    date_str = matches[0]
 
+    try:
+        date_obj = datetime.strptime(date_str, date_format)
+    except ValueError as e:
+        raise ValueError(f"Date parsing failed for '{date_str}' with format '{date_format}': {e}") from e
 
-def parse_dates_eolis_filename(file_name: str) -> str:
-    """
-    Parse the date from an EOLIS filename which is in a standard format.
-
-    Parameters
-    ----------
-    file_name : str
-        The file name which contains a date.
-
-    Returns
-    -------
-    str
-        The date in the format YYYY-mm-dd.
-
-    Raises
-    ------
-    ValueError
-        An invalid EOLIS filename was provided.
-    """
-    date_component = [
-        date.replace(".tif", "")[:4] + "-" + date.replace(".tif", "")[4:6] + "-" + date.replace(".tif", "")[6:]
-        for date in file_name.split("_")
-        if len(date.replace(".tif", "")) == 8 and date.replace(".tif", "").isdigit()
-    ]
-
-    if len(date_component) == 1:
-        return date_component[0]
-    else:
-        raise ValueError("Invalid EOLIS filename provided, multiple elements could be interpreted as a date")
+    return date_obj.strftime("%Y-%m-%d")
 
 
 def load_tiff2datacube(
@@ -172,7 +147,8 @@ def load_tiff2datacube(
     create_raster_mask: bool = False,
     geometry_name: Union[list, gpd.GeoDataFrame, str, None] = None,
     process_datetimes: bool = False,
-    process_filenames_as_dates: str = "dates",
+    file_name_regex_pattern: Union[None, str] = None,
+    date_format: str = "%Y-%m-%d",
     extent: Union[dict, None] = None,
 ) -> Tuple[np.ndarray, Union[np.ndarray, None], dict, Union[RasterNp, None]]:
     """
@@ -181,7 +157,7 @@ def load_tiff2datacube(
     Parameters
     ----------
     file_names : list[str]
-        A lit of filenames for the observations.
+        A list of filenames for the observations.
     folder_path_observations : str
         Folder path pointing to where the observation data is stored.
     reference_time : Union[None, pd.Timestamp]
@@ -198,8 +174,10 @@ def load_tiff2datacube(
         Whether a specific geometry name should be used.
     process_datetimes : bool, optional
         Whether the datetimes should be processed.
-    process_filenames_as_dates : str, optional
-        Whether the filenames are to be interpreted as dates.
+    file_name_regex_pattern : str
+        A regex pattern to extract the date portion from the filename. This should extract just a single date string.
+    date_format : str
+        The format of the date string extracted, using Python's datetime format codes (e.g., "%Y-%m-%d").
     extent : Union[Dict[str, Union[int, float]], None], optional
         The extent of the bounding box which will be used to crop GeoTiff files.
 
@@ -217,7 +195,8 @@ def load_tiff2datacube(
         create_raster_mask=create_raster_mask,
         geometry_name=geometry_name,
         process_datetimes=process_datetimes,
-        process_filenames_as_dates=process_filenames_as_dates,
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
         extent=extent,
     )
 
@@ -233,7 +212,8 @@ def load_tiff2datacube(
             create_raster_mask=create_raster_mask,
             geometry_name=geometry_name,
             process_datetimes=process_datetimes,
-            process_filenames_as_dates=process_filenames_as_dates,
+            file_name_regex_pattern=file_name_regex_pattern,
+            date_format=date_format,
             extent=extent,
         )
     else:
@@ -295,7 +275,8 @@ def process_variable_datacube(  # noqa
     create_raster_mask: bool = False,
     geometry_name: Union[list, gpd.GeoDataFrame, str, None] = None,
     process_datetimes: bool = False,
-    process_filenames_as_dates: str = "dates",
+    file_name_regex_pattern: Union[None, str] = None,
+    date_format: str = "%Y-%m-%d",
     extent: Union[dict, None] = None,
 ) -> Tuple[np.ndarray, dict, Union[RasterNp, None]]:
     """
@@ -306,7 +287,7 @@ def process_variable_datacube(  # noqa
     Parameters
     ----------
     file_names : list[str]
-        A lit of filenames for the observations.
+        A list of filenames for the observations.
     folder_path_variable : str
         Folder path pointing to where the observation data is stored.
     reference_time : Union[None, pd.Timestamp]
@@ -319,8 +300,10 @@ def process_variable_datacube(  # noqa
         Whether a specific geometry name should be used.
     process_datetimes : bool, optional
         Whether the datetimes should be processed.
-    process_filenames_as_dates : str, optional
-        Whether the filenames are to be interpreted as dates.
+    file_name_regex_pattern : str
+        A regex pattern to extract the date portion from the filename. This should extract just a single date string.
+    date_format : str
+        The format of the date string extracted, using Python's datetime format codes (e.g., "%Y-%m-%d").
     extent : Union[Dict[str, Union[int, float]], None], optional
         The extent of the bounding box which will be used to crop GeoTiff files.
 
@@ -335,10 +318,11 @@ def process_variable_datacube(  # noqa
     data_coords = {}
     # Process each file.
     for i, file_name in tqdm(enumerate(file_names), total=len(file_names)):
-        if process_filenames_as_dates == "dates":
-            date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
-        elif process_filenames_as_dates == "eolis":
-            date_time = parse_dates_eolis_filename(file_name=file_name)
+        date_time = extract_date_string_from_filename(
+            file_name=file_name,
+            file_name_regex_pattern=file_name_regex_pattern,
+            date_format=date_format,
+        )
         file_path_variable = path.join(folder_path_variable, file_name)
         if extent is None:
             bounding_box = None
@@ -405,8 +389,8 @@ def process_variable_datacube(  # noqa
 def load_tiffs2dataframe(
     file_names: list[str],
     folder_path_observations: str,
-    observation_names: Dict[str, str],
-    coord_names: List[str],
+    observation_names: dict[str, str],
+    coord_names: list[str],
     reference_time: Union[None, pd.Timestamp],
     error_file_names: Union[list[str], None] = None,
     folder_path_errors: Union[str, None] = None,
@@ -414,7 +398,8 @@ def load_tiffs2dataframe(
     create_raster_mask: bool = False,
     geometry_name: Union[list, gpd.GeoDataFrame, str, None] = None,
     process_datetimes: bool = False,
-    process_filenames_as_dates: str = "dates",
+    file_name_regex_pattern: Union[None, str] = None,
+    date_format: str = "%Y-%m-%d",
 ) -> Tuple[pd.DataFrame, Union[RasterNp, None]]:
     """
     Load a set of .tif files and associated errors. Return the loaded .tif files as a centered pd.DataFrame.
@@ -422,7 +407,7 @@ def load_tiffs2dataframe(
     Parameters
     ----------
     file_names : list[str]
-        A lit of filenames for the observations.
+        A list of filenames for the observations.
     folder_path_observations : str
         Folder path pointing to where the observation data is stored.
     observation_names : Dict[str, str]
@@ -443,8 +428,10 @@ def load_tiffs2dataframe(
         Whether a specific geometry name should be used.
     process_datetimes : bool, optional
         Whether the datetimes should be processed.
-    process_filenames_as_dates : str, optional
-        Whether the filenames are to be interpreted as dates.
+    file_name_regex_pattern : str
+        A regex pattern to extract the date portion from the filename. This should extract just a single date string.
+    date_format : str
+        The format of the date string extracted, using Python's datetime format codes (e.g., "%Y-%m-%d").
 
     Returns
     -------
@@ -462,7 +449,8 @@ def load_tiffs2dataframe(
         create_raster_mask=create_raster_mask,
         geometry_name=geometry_name,
         process_datetimes=process_datetimes,
-        process_filenames_as_dates=process_filenames_as_dates,
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     if folder_path_errors is not None:
@@ -481,7 +469,8 @@ def load_tiffs2dataframe(
             create_raster_mask=create_raster_mask,
             geometry_name=geometry_name,
             process_datetimes=process_datetimes,
-            process_filenames_as_dates=process_filenames_as_dates,
+            file_name_regex_pattern=file_name_regex_pattern,
+            date_format=date_format,
         )
 
         data_observations = pd.merge(data_observations, data_errors, on=coord_names)
@@ -492,14 +481,15 @@ def load_tiffs2dataframe(
 def process_variable_dataframe(
     file_names: list[str],
     folder_path_variable: str,
-    variable_names: Dict[str, str],
-    coord_names: List[str],
+    variable_names: dict[str, str],
+    coord_names: list[str],
     reference_time: Union[None, pd.Timestamp],
     file_path_mask: Union[str, None] = None,
     create_raster_mask: bool = False,
     geometry_name: Union[list, gpd.GeoDataFrame, str, None] = None,
     process_datetimes: bool = False,
-    process_filenames_as_dates: str = "dates",
+    file_name_regex_pattern: Union[None, str] = None,
+    date_format: str = "%Y-%m-%d",
 ) -> Tuple[pd.DataFrame, Union[RasterNp, None]]:
     """
     Process a given variable into a dataframe and mask.
@@ -507,7 +497,7 @@ def process_variable_dataframe(
     Parameters
     ----------
     file_names : list[str]
-        A lit of filenames for the observations.
+        A list of filenames for the observations.
     folder_path_variable : str
         Folder path pointing to where the observation data is stored.
     variable_names : Dict[str, str]
@@ -524,8 +514,10 @@ def process_variable_dataframe(
         Whether a specific geometry name should be used.
     process_datetimes : bool, optional
         Whether the datetimes should be processed.
-    process_filenames_as_dates : str, optional
-        Whether the filenames are to be interpreted as dates.
+    file_name_regex_pattern : str
+        A regex pattern to extract the date portion from the filename. This should extract just a single date string.
+    date_format : str
+        The format of the date string extracted, using Python's datetime format codes (e.g., "%Y-%m-%d").
 
     Returns
     -------
@@ -536,10 +528,11 @@ def process_variable_dataframe(
     data_variable_list = []
     # Process each file.
     for i, file_name in tqdm(enumerate(file_names), total=len(file_names)):
-        if process_filenames_as_dates == "dates":
-            date_time = extract_date_string_from_filename(file_name=file_name, date_format="YYYY-mm-dd")
-        elif process_filenames_as_dates == "eolis":
-            date_time = parse_dates_eolis_filename(file_name=file_name)
+        date_time = extract_date_string_from_filename(
+            file_name=file_name,
+            file_name_regex_pattern=file_name_regex_pattern,
+            date_format=date_format,
+        )
         file_path_variable = path.join(folder_path_variable, file_name)
         data_variable = RasterNp.load_from_tiff(file_path=file_path_variable)
 
@@ -617,7 +610,7 @@ def load_netcdf(folder_path: str, file_name: str) -> pd.DataFrame:
 
 
 def get_mask_from_shapefile(
-    file_path_raster: str, file_path_mask: str, geometry_name: Union[List[str], str]
+    file_path_raster: str, file_path_mask: str, geometry_name: Union[list[str], str]
 ) -> RasterNp:
     """
     Convert a shapefile with a polygon defining a mask to a mask in a RasterNp object.
