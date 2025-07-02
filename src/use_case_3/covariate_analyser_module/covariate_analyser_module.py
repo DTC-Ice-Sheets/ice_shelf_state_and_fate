@@ -214,7 +214,7 @@ class CovariateAnalyser:
         timeseries_labels: Union[None, List[str]] = None,
         integrity_check: bool = True,
         aggregation: str = "mean",
-    ) -> bool:
+    ) -> None:
         """
         Prepare the timeseries for the covariate analysis.
 

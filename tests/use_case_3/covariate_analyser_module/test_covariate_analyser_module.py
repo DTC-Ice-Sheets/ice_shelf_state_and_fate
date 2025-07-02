@@ -658,3 +658,27 @@ def test_get_units_all(timeseries_1_fixture, timeseries_2_fixture):
     timeseries_labels = covariate_analyser.get_units_all()
 
     assert timeseries_labels == {"time series 1": "unit 1", "time series 2": "unit 2"}
+
+
+def test_prepare_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture):
+    covariate_analyser = CovariateAnalyser(
+        timeseries={
+            timeseries_1_fixture[1]: timeseries_1_fixture[0],
+            timeseries_2_fixture[1]: timeseries_2_fixture[0],
+            timeseries_5_fixture[1]: timeseries_5_fixture[0],
+        },
+        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1], timeseries_5_fixture[1]],
+        timeseries_units={
+            timeseries_1_fixture[1]: timeseries_1_fixture[2],
+            timeseries_2_fixture[1]: timeseries_2_fixture[2],
+            timeseries_5_fixture[1]: timeseries_5_fixture[2],
+        },
+    )
+
+    covariate_analyser.prepare_timeseries(time_period="M", integrity_check=False)
+    assert (
+        covariate_analyser.integrity_check_timeseries(
+            [timeseries_1_fixture[1], timeseries_2_fixture[1], timeseries_5_fixture[1]]
+        )
+        is None
+    )
