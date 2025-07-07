@@ -2973,14 +2973,14 @@ viz = ["cartopy (>=0.23)", "matplotlib", "nc-time-axis", "seaborn"]
 
 [[package]]
 name = "zarr"
-version = "3.0.8"
+version = "3.0.10"
 description = "An implementation of chunked, compressed, N-dimensional arrays for Python"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "zarr-3.0.8-py3-none-any.whl", hash = "sha256:7f81e7aec086437d98882aa432209107114bd7f3a9f4958b2af9c6b5928a70a7"},
-    {file = "zarr-3.0.8.tar.gz", hash = "sha256:88505d095af899a88ae8ac4db02f4650ef0801d2ff6f65b6d1f0a45dcf760a6d"},
+    {file = "zarr-3.0.10-py3-none-any.whl", hash = "sha256:110724c045fbe4ff5509a8a2a6b6098cb244a6af43da85eaeecef9821473163f"},
+    {file = "zarr-3.0.10.tar.gz", hash = "sha256:1fd1318ade646f692d8f604be0e0ad125675a061196e612e3f7a2cfa9e957d1c"},
 ]
 
 [package.dependencies]
@@ -2996,7 +2996,7 @@ gpu = ["cupy-cuda12x"]
 optional = ["rich", "universal-pathlib"]
 remote = ["fsspec (>=2023.10.0)", "obstore (>=0.5.1)"]
 remote-tests = ["botocore", "fsspec (>=2023.10.0)", "moto[s3,server]", "obstore (>=0.5.1)", "requests", "s3fs (>=2023.10.0)"]
-test = ["coverage", "hypothesis", "mypy", "pytest", "pytest-accept", "pytest-asyncio", "pytest-cov", "rich"]
+test = ["coverage", "hypothesis", "mypy", "pytest (<8.4)", "pytest-accept", "pytest-asyncio", "pytest-cov", "pytest-xdist", "rich"]
 
 [[package]]
 name = "zipp"
@@ -3021,4 +3021,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "1e5036ca6a11c926745d2985ad1bd042e7bd0ac96e3bdf6a1217427cd28477e5"
+content-hash = "e1a98c91e091e26c5dd8234e231450ee96c48de516ff00e2a3cdfc1ab23f039c"
