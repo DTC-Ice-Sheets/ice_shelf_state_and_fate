@@ -2947,29 +2947,29 @@ files = [
 
 [[package]]
 name = "xarray"
-version = "2025.6.1"
+version = "2025.7.0"
 description = "N-D labeled arrays and datasets in Python"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "xarray-2025.6.1-py3-none-any.whl", hash = "sha256:8b988b47f67a383bdc3b04c5db475cd165e580134c1f1943d52aee4a9c97651b"},
-    {file = "xarray-2025.6.1.tar.gz", hash = "sha256:a84f3f07544634a130d7dc615ae44175419f4c77957a7255161ed99c69c7c8b0"},
+    {file = "xarray-2025.7.0-py3-none-any.whl", hash = "sha256:7b5d7267bd554ae119c7a0062f62b50517b4dd1968efc11f2553826b7d99297f"},
+    {file = "xarray-2025.7.0.tar.gz", hash = "sha256:fd83ac8d638e7caef9d7f0c82bcdf380cede29d2ff84575133b2b95164af78ee"},
 ]
 
 [package.dependencies]
-numpy = ">=1.24"
-packaging = ">=23.2"
-pandas = ">=2.1"
+numpy = ">=1.26"
+packaging = ">=24.1"
+pandas = ">=2.2"
 
 [package.extras]
-accel = ["bottleneck", "flox", "numba (>=0.54)", "numbagg", "opt_einsum", "scipy"]
+accel = ["bottleneck", "flox (>=0.9)", "numba (>=0.59)", "numbagg (>=0.8)", "opt_einsum", "scipy (>=1.13)"]
 complete = ["xarray[accel,etc,io,parallel,viz]"]
-etc = ["sparse"]
-io = ["cftime", "fsspec", "h5netcdf", "netCDF4", "pooch", "pydap ; python_version < \"3.10\"", "scipy", "zarr"]
+etc = ["sparse (>=0.15)"]
+io = ["cftime", "fsspec", "h5netcdf", "netCDF4 (>=1.6.0)", "pooch", "pydap", "scipy (>=1.13)", "zarr (>=2.18)"]
 parallel = ["dask[complete]"]
 types = ["pandas-stubs", "scipy-stubs", "types-PyYAML", "types-Pygments", "types-colorama", "types-decorator", "types-defusedxml", "types-docutils", "types-networkx", "types-openpyxl", "types-pexpect", "types-psutil", "types-pycurl", "types-python-dateutil", "types-pytz", "types-setuptools"]
-viz = ["cartopy", "matplotlib", "nc-time-axis", "seaborn"]
+viz = ["cartopy (>=0.23)", "matplotlib", "nc-time-axis", "seaborn"]
 
 [[package]]
 name = "zarr"
@@ -3021,4 +3021,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "75d9656bc25db750585fc1d6a4448476f2edb79302571738696e497b845dc9d7"
+content-hash = "39116b6b1084a1c8de7811084b0b82f028fab5f2288d4026c4fb2b0455be895b"
