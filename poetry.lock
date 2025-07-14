@@ -2947,14 +2947,14 @@ files = [
 
 [[package]]
 name = "xarray"
-version = "2025.7.0"
+version = "2025.7.1"
 description = "N-D labeled arrays and datasets in Python"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "xarray-2025.7.0-py3-none-any.whl", hash = "sha256:7b5d7267bd554ae119c7a0062f62b50517b4dd1968efc11f2553826b7d99297f"},
-    {file = "xarray-2025.7.0.tar.gz", hash = "sha256:fd83ac8d638e7caef9d7f0c82bcdf380cede29d2ff84575133b2b95164af78ee"},
+    {file = "xarray-2025.7.1-py3-none-any.whl", hash = "sha256:e8647b659e53bd350d7c5a91c34dd4122ad6a3ca0bc41399d424a7c0273c7635"},
+    {file = "xarray-2025.7.1.tar.gz", hash = "sha256:2884bf5672b540fcc6ff8c20a3196bda0d78fbfb4d67398d60526e97c2faceef"},
 ]
 
 [package.dependencies]
@@ -3021,4 +3021,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "c36707eb2df20f923d2b70f2b705ba26aa1204d4228ded41ac8deb2562bc5598"
+content-hash = "48b4b822511072f53d5395865307555b1e225575b6f05dbfa8a32bccd0cc2584"
