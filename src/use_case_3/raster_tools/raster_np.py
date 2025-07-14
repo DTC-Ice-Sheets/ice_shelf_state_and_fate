@@ -1,15 +1,18 @@
 """A geospatially aware extension of the numpy array class."""
+
 from __future__ import annotations
 
 import math
 from typing import Any, List, Optional, Tuple, Union
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
 import rasterio.transform as tr
 from affine import Affine
 from numpy.typing import NDArray
+from rasterio.features import geometry_mask
 from rasterio.windows import Window, from_bounds
 
 from use_case_3.raster_tools.bounding_box import BoundingBox
@@ -28,16 +31,27 @@ class RasterNp(np.ndarray):
     y_affine_negative = None
     proj4_code = None
 
-    def _init(self: RasterNp, bounding_box: BoundingBox, resolution: float,
-              y_affine_negative: bool, proj4_code: Union[str, None]) -> None:
+    def _init(
+        self: RasterNp,
+        bounding_box: BoundingBox,
+        resolution: float,
+        y_affine_negative: bool,
+        proj4_code: Union[str, None],
+    ) -> None:
         self.bounding_box = self._get_corrected_bounding_box(bounding_box, resolution, y_affine_negative)
         self.resolution = resolution
         self.y_affine_negative = y_affine_negative
         self.proj4_code = proj4_code
         self.transform = RasterNp._get_transform(bounding_box, resolution, y_affine_negative)
 
-    def __new__(cls: Any, input_array: NDArray[np.float64], bounding_box: BoundingBox, resolution: float,
-                y_affine_negative: Optional[bool] = True, proj4_code: Optional[Union[str, None]] = None) -> RasterNp:
+    def __new__(
+        cls: Any,
+        input_array: NDArray[np.float64],
+        bounding_box: BoundingBox,
+        resolution: float,
+        y_affine_negative: Optional[bool] = True,
+        proj4_code: Optional[Union[str, None]] = None,
+    ) -> RasterNp:
         """
         Create a RasterNp object.
 
@@ -51,7 +65,7 @@ class RasterNp(np.ndarray):
             ideal but it is handled. (c.f. _get_corrected_bounding_box)
         resolution : float
             The spacing between each pixel. Strictly redundant information for the creation of this object
-            but it is usually known and helps catch obvious misunderstandigns of raster extents.
+            but it is usually known and helps catch obvious misunderstandings of raster extents.
         y_affine_negative : Optional[bool]
             If True the data is assumed to decrease in y coordinate as y index increases, by default True
         proj4_code : Optional[Union[str, None]]
@@ -66,11 +80,13 @@ class RasterNp(np.ndarray):
         obj._init(bounding_box, resolution, y_affine_negative, proj4_code)
         return obj
 
-    def _get_corrected_bounding_box(self: RasterNp, bounding_box: BoundingBox, resolution: float,
-                                    _y_affine_negative: bool) -> BoundingBox:
+    def _get_corrected_bounding_box(
+        self: RasterNp, bounding_box: BoundingBox, resolution: float, _y_affine_negative: bool
+    ) -> BoundingBox:
         # Verify / correct dimensions
         expected_x_count = round((bounding_box.max_x - bounding_box.min_x) / resolution)
         expected_y_count = round((bounding_box.max_y - bounding_box.min_y) / resolution)
+
         if self.shape[1] - expected_x_count == 1 and self.shape[0] - expected_y_count == 1:
             bounding_box.min_x = bounding_box.min_x - resolution / 2
             bounding_box.max_x = bounding_box.max_x + resolution / 2
@@ -95,15 +111,18 @@ class RasterNp(np.ndarray):
     @staticmethod
     def _get_transform(bounding_box: BoundingBox, resolution: float, y_affine_negative: bool) -> Affine:
         if y_affine_negative:
-            transform = Affine.translation(
-                bounding_box.min_x, bounding_box.max_y) * Affine.scale(resolution, -resolution)
+            transform = Affine.translation(bounding_box.min_x, bounding_box.max_y) * Affine.scale(
+                resolution, -resolution
+            )
         else:
-            transform = Affine.translation(
-                bounding_box.min_x, bounding_box.min_y) * Affine.scale(resolution, resolution)
+            transform = Affine.translation(bounding_box.min_x, bounding_box.min_y) * Affine.scale(
+                resolution, resolution
+            )
         return transform
 
-    def yx_from_rows_cols(self: RasterNp, y_idx: Union[int, NDArray], x_idx: Union[int, NDArray]) \
-            -> Tuple[Union[float, NDArray], Union[float, NDArray]]:
+    def yx_from_rows_cols(
+        self: RasterNp, y_idx: Union[int, NDArray], x_idx: Union[int, NDArray]
+    ) -> Tuple[Union[float, NDArray], Union[float, NDArray]]:
         """
         Get y, x coordinates (centre points) for corresponding index values in the array data.
 
@@ -125,9 +144,9 @@ class RasterNp(np.ndarray):
         x, y = tr.xy(self.transform, y_idx, x_idx)
         return y, x
 
-    def rows_cols_from_yx(self: RasterNp, y: Union[float, NDArray, Tuple, List],
-                          x: Union[float, NDArray, Tuple, List]) \
-            -> Tuple[Union[int, np.int64, NDArray], Union[int, np.int64, NDArray]]:
+    def rows_cols_from_yx(
+        self: RasterNp, y: Union[float, NDArray, Tuple, List], x: Union[float, NDArray, Tuple, List]
+    ) -> Tuple[Union[int, np.int64, NDArray], Union[int, np.int64, NDArray]]:
         """
         Return row, col array indices for for real y, x coordinates values.
 
@@ -177,8 +196,12 @@ class RasterNp(np.ndarray):
 
         return y, x
 
-    def new_extent_copy(self: RasterNp, bounding_box: BoundingBox, fill_to_extent: Optional[bool] = False,
-                        fill_value: Optional[float] = np.nan) -> RasterNp:
+    def new_extent_copy(
+        self: RasterNp,
+        bounding_box: BoundingBox,
+        fill_to_extent: Optional[bool] = False,
+        fill_value: Optional[float] = np.nan,
+    ) -> RasterNp:
         """
         Return a new RasterNp object, resized to the new extent.
 
@@ -202,20 +225,28 @@ class RasterNp(np.ndarray):
             min_x=max(bounding_box.min_x, self.bounding_box.min_x),
             max_x=min(bounding_box.max_x, self.bounding_box.max_x),
             min_y=max(bounding_box.min_y, self.bounding_box.min_y),
-            max_y=min(bounding_box.max_y, self.bounding_box.max_y))
+            max_y=min(bounding_box.max_y, self.bounding_box.max_y),
+        )
 
         if not fill_to_extent:
             bounding_box = overlap_extent
 
         xs = np.arange(bounding_box.min_x, bounding_box.max_x - self.resolution * 0.1, self.resolution)
         ys = np.arange(bounding_box.min_y, bounding_box.max_y - self.resolution * 0.1, self.resolution)
-        new_raster = RasterNp(np.ones((len(ys), len(xs))) * fill_value, bounding_box,
-                              self.resolution, self.y_affine_negative, self.proj4_code)
+        new_raster = RasterNp(
+            np.ones((len(ys), len(xs))) * fill_value,
+            bounding_box,
+            self.resolution,
+            self.y_affine_negative,
+            self.proj4_code,
+        )
 
-        xs_extract = np.arange(overlap_extent.min_x + self.resolution * 0.5,
-                               overlap_extent.max_x + self.resolution * 0.4, self.resolution)
-        ys_extract = np.arange(overlap_extent.min_y + self.resolution * 0.5,
-                               overlap_extent.max_y + self.resolution * 0.4, self.resolution)
+        xs_extract = np.arange(
+            overlap_extent.min_x + self.resolution * 0.5, overlap_extent.max_x + self.resolution * 0.4, self.resolution
+        )
+        ys_extract = np.arange(
+            overlap_extent.min_y + self.resolution * 0.5, overlap_extent.max_y + self.resolution * 0.4, self.resolution
+        )
 
         if self.y_affine_negative:
             ys = ys[::-1]
@@ -226,8 +257,9 @@ class RasterNp(np.ndarray):
         y_idx_assign, _ = new_raster.rows_cols_from_yx(ys_extract, np.repeat(xs_extract[0], len(ys_extract)))
         _, x_idx_assign = new_raster.rows_cols_from_yx(np.repeat(ys_extract[0], len(xs_extract)), xs_extract)
 
-        new_raster[y_idx_assign[0]:y_idx_assign[-1] + 1, x_idx_assign[0]:x_idx_assign[-1] + 1] =\
-            self[y_idx_extract[0]:y_idx_extract[-1] + 1, x_idx_extract[0]:x_idx_extract[-1] + 1]
+        new_raster[y_idx_assign[0] : y_idx_assign[-1] + 1, x_idx_assign[0] : x_idx_assign[-1] + 1] = self[
+            y_idx_extract[0] : y_idx_extract[-1] + 1, x_idx_extract[0] : x_idx_extract[-1] + 1
+        ]
 
         return new_raster
 
@@ -273,8 +305,13 @@ class RasterNp(np.ndarray):
 
         return x, y, np.transpose(values)
 
-    def save_as_tiff(self: RasterNp, file_path: str, data_type: Optional[str] = "float32",
-                     no_data: Optional[float] = None, **kwargs: Optional[Union[dict[str, Any], None, str]]) -> None:
+    def save_as_tiff(
+        self: RasterNp,
+        file_path: str,
+        data_type: Optional[str] = "float32",
+        no_data: Optional[float] = None,
+        **kwargs: Optional[Union[dict[str, Any], None, str]],
+    ) -> None:
         """
         Save object as a geotiff.
 
@@ -294,17 +331,19 @@ class RasterNp(np.ndarray):
         if "compress" not in list(kwargs.keys()):
             kwargs["compress"] = "lzw"
 
-        with rasterio.open(file_path,
-                           "w",
-                           driver="GTiff",
-                           height=self.shape[0],
-                           width=self.shape[1],
-                           count=1,
-                           dtype=data_type,
-                           crs=self.proj4_code,
-                           transform=self.transform,
-                           nodata=no_data,
-                           **kwargs) as rst:
+        with rasterio.open(
+            file_path,
+            "w",
+            driver="GTiff",
+            height=self.shape[0],
+            width=self.shape[1],
+            count=1,
+            dtype=data_type,
+            crs=self.proj4_code,
+            transform=self.transform,
+            nodata=no_data,
+            **kwargs,
+        ) as rst:
             rst.write_band(1, self.astype(data_type))
 
     @staticmethod
@@ -318,10 +357,16 @@ class RasterNp(np.ndarray):
         # then ensure the window is still within the window of the entire raster
         top = full_raster_window.row_off if top < full_raster_window.row_off else top
         left = full_raster_window.col_off if left < full_raster_window.col_off else left
-        bottom = full_raster_window.row_off + full_raster_window.height if \
-            bottom > full_raster_window.row_off + full_raster_window.height else bottom
-        right = full_raster_window.col_off + full_raster_window.width if \
-            right > full_raster_window.col_off + full_raster_window.width else right
+        bottom = (
+            full_raster_window.row_off + full_raster_window.height
+            if bottom > full_raster_window.row_off + full_raster_window.height
+            else bottom
+        )
+        right = (
+            full_raster_window.col_off + full_raster_window.width
+            if right > full_raster_window.col_off + full_raster_window.width
+            else right
+        )
 
         return Window(left, top, right - left, bottom - top)
 
@@ -342,8 +387,9 @@ class RasterNp(np.ndarray):
         bool
             True if extents overlap.
         """
-        bounds_as_extent = BoundingBox(bounds.left, bounds.right, min(
-            bounds.bottom, bounds.top), max(bounds.bottom, bounds.top))
+        bounds_as_extent = BoundingBox(
+            bounds.left, bounds.right, min(bounds.bottom, bounds.top), max(bounds.bottom, bounds.top)
+        )
         return bounding_box.intersects(bounds_as_extent)
 
     @staticmethod
@@ -382,13 +428,16 @@ class RasterNp(np.ndarray):
                 no_data_mask = rst.read_masks(band)
             else:
                 if not RasterNp._bounding_box_intersects_bounds(rst.bounds, bounding_box):
-                    raise ValueError("Bounding box does not overlap image. Bounding box: {}, File: {}".format(
-                        bounding_box, file_path))
+                    raise ValueError(
+                        "Bounding box does not overlap image. Bounding box: {}, File: {}".format(
+                            bounding_box, file_path
+                        )
+                    )
                 full_raster_window = from_bounds(
-                    rst.bounds.left, rst.bounds.bottom, rst.bounds.right, rst.bounds.top, rst.transform)
+                    rst.bounds.left, rst.bounds.bottom, rst.bounds.right, rst.bounds.top, rst.transform
+                )
                 window = RasterNp._from_bounds(rst.bounds, bounding_box, rst.transform)
-                window = RasterNp._round_window_include_all_partial_pixels(
-                    window, full_raster_window)
+                window = RasterNp._round_window_include_all_partial_pixels(window, full_raster_window)
                 data = rst.read(band, window=window)
                 no_data_mask = rst.read_masks(band, window=window)
                 transform = rasterio.windows.transform(window, rst.transform)
@@ -401,10 +450,14 @@ class RasterNp(np.ndarray):
                 if "float" in str(data.dtype):
                     data[no_data_mask == 0] = np.nan
 
-            bounding_box = BoundingBox(min_x=bounds[0], max_x=bounds[2], min_y=np.min(
-                (bounds[1], bounds[3])), max_y=np.max((bounds[1], bounds[3])))
+            bounding_box = BoundingBox(
+                min_x=bounds[0],
+                max_x=bounds[2],
+                min_y=np.min((bounds[1], bounds[3])),
+                max_y=np.max((bounds[1], bounds[3])),
+            )
             resolution = transform.a
-            y_affine_negative = (transform.e < 0)
+            y_affine_negative = transform.e < 0
             if rst.crs is None:
                 proj4_code = None
             else:
@@ -462,8 +515,12 @@ class RasterNp(np.ndarray):
 
         return RasterNp._bounding_box_intersects_bounds(bounds, bounding_box)
 
-    def mask_from_file(self: RasterNp, file_path: str, include_mask_value: Optional[float] = 1,
-                       outside_mask_return_value: Optional[float] = np.nan) -> None:
+    def mask_from_file(
+        self: RasterNp,
+        file_path: str,
+        include_mask_value: Optional[float] = 1,
+        outside_mask_return_value: Optional[float] = np.nan,
+    ) -> None:
         """
         Mask object in place from another geotiff file.
 
@@ -487,7 +544,7 @@ class RasterNp(np.ndarray):
         mask = mask.new_extent_copy(self.bounding_box, fill_to_extent=True, fill_value=outside_mask_return_value)
         mask_values = mask.at_yx(y, x)
         mask_values = mask_values.reshape(-1, self.shape[0]).swapaxes(0, 1)
-        mask_values = (mask_values == include_mask_value)
+        mask_values = mask_values == include_mask_value
 
         # Apply mask
         if self.y_affine_negative:
@@ -495,10 +552,12 @@ class RasterNp(np.ndarray):
 
         self[~mask_values] = outside_mask_return_value
 
-    def mask_from_raster_np(self: RasterNp,
-                            mask: RasterNp,
-                            include_mask_value: Optional[Union[float, bool]] = 1,
-                            outside_mask_return_value: Optional[float] = np.nan) -> None:
+    def mask_from_raster_np(
+        self: RasterNp,
+        mask: RasterNp,
+        include_mask_value: Optional[Union[float, bool]] = 1,
+        outside_mask_return_value: Optional[float] = np.nan,
+    ) -> None:
         """
         Mask object in place from a np.ndarray mask.
 
@@ -522,10 +581,70 @@ class RasterNp(np.ndarray):
         mask = mask.new_extent_copy(self.bounding_box, fill_to_extent=True, fill_value=outside_mask_return_value)
         mask_values = mask.at_yx(y, x)
         mask_values = mask_values.reshape(-1, self.shape[0]).swapaxes(0, 1)
-        mask_values = (mask_values == include_mask_value)
+        mask_values = mask_values == include_mask_value
 
         # Apply mask
         if self.y_affine_negative:
             mask_values = mask_values[::-1]
 
         self[~mask_values] = outside_mask_return_value
+
+    @staticmethod
+    def rasterise_mask_from_geometry(
+        geometries: Union[list, gpd.GeoDataFrame],
+        y_min: Union[int, float],
+        y_max: Union[int, float],
+        x_min: Union[int, float],
+        x_max: Union[int, float],
+        resolution: Union[int, float],
+        y_affine_negative: bool = False,
+    ) -> RasterNp:
+        """
+        Rasterise a mask based on a geometry.
+
+        Parameters
+        ----------
+        geometries : Union[list, gpd.G
+            A list of multipolygons
+        y_min : Union[int, float]
+            The extent y_min.
+        y_max : Union[int, float]
+            The extent y_max.
+        x_min : Union[int, float]
+            The extent x_min.
+        x_max : Union[int, float]
+            The extent x_max.
+        resolution : Union[int, float]
+            The resolution.
+        y_affine_negative : bool, optional
+            Whether the raster is y affine negative, by default False
+
+        Returns
+        -------
+        RasterNp
+            The raster mask.
+        """
+        # y = int(np.ceil((y_max - y_min) / resolution))
+        # x = int(np.ceil((x_max - x_min) / resolution))
+        # y = int(np.ceil((y_max - y_min) / resolution)) + 1
+        # x = int(np.ceil((x_max - x_min) / resolution)) + 1
+
+        y = int(np.round((y_max - y_min) / resolution))
+        x = int(np.round((x_max - x_min) / resolution))
+
+        # print(y, x)
+
+        bounding_box = BoundingBox(min_y=y_min, max_y=y_max, min_x=x_min, max_x=x_max)
+
+        transform = RasterNp._get_transform(
+            bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
+        )
+
+        mask = geometry_mask(
+            geometries=geometries["geometry"], out_shape=(y, x), transform=transform, invert=False, all_touched=True
+        ).astype(int)
+        mask = RasterNp(
+            input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
+        )
+
+        return mask

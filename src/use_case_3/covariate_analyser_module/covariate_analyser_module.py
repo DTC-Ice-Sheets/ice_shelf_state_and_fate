@@ -761,7 +761,7 @@ class CovariateAnalyser:
             reg_2.estimator_.intercept_,
         )
 
-    def jointplot(self, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True) -> None:
+    def jointplot(self: Any, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True) -> None:
         """
         Visualise a joint plot between two time series.
 
@@ -791,7 +791,9 @@ class CovariateAnalyser:
         plt.grid()
         plt.show()
 
-    def jointplot_grid(self: Any, timeseries_labels: List[str], crosscorr: bool = False) -> None:
+    def jointplot_grid(
+        self: Any, timeseries_labels: List[str], crosscorr: bool = False, axis_labels: list = None, max_lag: int = None
+    ) -> None:
         """
         Plot a gridded jointplot for the given time series. Note that you can pass crosscorr True if the
         maximum cross-correlation is desired.
@@ -825,7 +827,9 @@ class CovariateAnalyser:
                 if row != col:
                     if crosscorr:
                         timeseries_col, timeseries_row, freq, lag = self.align_timeseries(
-                            timeseries_labels[col], timeseries_labels[row]
+                            timeseries_labels[col],
+                            timeseries_labels[row],
+                            max_lag=max_lag,
                         )
                     else:
                         timeseries_col = timeseries[col].copy()
@@ -870,8 +874,12 @@ class CovariateAnalyser:
             axes[-1, row].get_yaxis().set_ticks([])
 
             # Add the correct axis labels
+            if axis_labels is None:
+                axis_label = timeseries_labels[row]
+            else:
+                axis_label = axis_labels[row]
             label = textwrap.fill(
-                " ".join([timeseries_labels[row], "(" + self.timeseries_units[timeseries_labels[row]] + ")"]),
+                " ".join([axis_label, "(" + self.timeseries_units[timeseries_labels[row]] + ")"]),
                 width=25,
                 break_long_words=True,
             )
@@ -881,5 +889,63 @@ class CovariateAnalyser:
         plt.tight_layout()
         plt.plot()
 
-    def covariate_analysis(self: Any, timeseries_labels):  # noqa
-        self.jointplot_grid(timeseries_labels=timeseries_labels)
+    def covariate_analysis(
+        self: Any, timeseries_labels: list, crosscorr: bool = False, axis_labels: list = None, max_lag: int = None
+    ) -> None:  # noqa
+        """
+        Conduct the covariate analysis.
+
+        Parameters
+        ----------
+        self : Any
+            _description_
+        timeseries_labels : list
+            _description_
+        crosscorr : bool, optional
+            _description_, by default False
+        axis_labels : list, optional
+            _description_, by default None
+        max_lag : int, optional
+            _description_, by default None
+        """
+        self.jointplot_grid(
+            timeseries_labels=timeseries_labels, crosscorr=crosscorr, axis_labels=axis_labels, max_lag=max_lag
+        )
+
+    def plot_timeseries(self: Any, timeseries_labels: list = None, yaxis_labels: list = None) -> None:
+        """
+        Plot a timeseries.
+
+        Parameters
+        ----------
+        timeseries_labels : list, optional
+            _description_, by default None
+        yaxis_labels : list, optional
+            _description_, by default None
+        """
+        if timeseries_labels is None:
+            timeseries_labels = self.timeseries_labels
+        f, axes = plt.subplots(
+            len(timeseries_labels),
+            1,
+            figsize=(8, 4 * len(timeseries_labels)),
+            sharex="col",
+        )
+
+        for n, label in enumerate(timeseries_labels):
+            sns.lineplot(
+                x=self.timeseries[timeseries_labels[n]].index,
+                y=self.timeseries[timeseries_labels[n]].values,
+                ax=axes[n],
+                c="k",
+            )
+            if yaxis_labels is None:
+                yaxis_label = timeseries_labels[n]
+            else:
+                yaxis_label = yaxis_labels[n]
+            axes[n].set_ylabel(yaxis_label + " \n (" + self.timeseries_units[label] + ")", fontsize=20)
+            axes[n].grid(True)
+            axes[n].tick_params(axis="both", which="major", labelsize=15)
+            axes[n].tick_params(axis="both", which="minor", labelsize=8)
+
+        axes[n].set_xlabel("Year", fontsize=20)
