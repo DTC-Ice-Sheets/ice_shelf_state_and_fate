@@ -597,6 +597,7 @@ class RasterNp(np.ndarray):
         x_max: Union[int, float],
         resolution: Union[int, float],
         y_affine_negative: bool = False,
+        invert: bool = True,
     ) -> RasterNp:
         """
         Rasterise a mask based on a geometry.
@@ -633,7 +634,7 @@ class RasterNp(np.ndarray):
         )
 
         mask = geometry_mask(
-            geometries=geometries["geometry"], out_shape=(y, x), transform=transform, invert=True, all_touched=True
+            geometries=geometries["geometry"], out_shape=(y, x), transform=transform, invert=invert, all_touched=True
         ).astype(int)
         mask = RasterNp(
             input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative

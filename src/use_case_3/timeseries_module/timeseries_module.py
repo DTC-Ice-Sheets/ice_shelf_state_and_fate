@@ -25,6 +25,7 @@ class TimeSeriesModule:
         self.normalisation_types = ("first", "linear_regression")
         self.plot_spread = (None, "uncertainties", "percentiles")
 
+
     @staticmethod
     def _move_axes_time(data: np.ndarray, dimension_names: List[str]) -> np.ndarray:
         """
