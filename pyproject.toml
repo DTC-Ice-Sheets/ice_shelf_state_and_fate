@@ -34,7 +34,7 @@ netcdf4 = "^1.7.2"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 typeguard = "^4.4.4"
-pre-commit = "^4.2"
+pre-commit = "^4.3"
 ruff = "^0.12.8"
 bandit = "^1.8.6"
 pytest-cov = "^6.2.1"
