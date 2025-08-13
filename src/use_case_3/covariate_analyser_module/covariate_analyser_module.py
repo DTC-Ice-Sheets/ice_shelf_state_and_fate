@@ -1,7 +1,8 @@
 """Module for undertaking the covariate analysis."""
 
+from __future__ import annotations
+
 import textwrap
-from typing import Any, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,45 +19,115 @@ class CovariateAnalyser:
     """The covariate analysis module."""
 
     def __init__(
-        self: Any,
+        self: CovariateAnalyser,
         timeseries: TimeSeriesContainer | None,
         alpha: float = 0.05,
     ) -> None:
-        """Covariate analysis module."""
+        """
+        Initialise the module by passing in the timeseries container with the processed timeseries for covariate
+        analysis.
+
+        Parameters
+        ----------
+        timeseries : TimeSeriesContainer | None
+            The timeseries container.
+        alpha : float, optional
+            The default significance value used in any hypothesis tests, by default 0.05
+        """
         self.alpha = alpha
         self.timeseries = timeseries
 
-    def correlation_coefficient(self: Any, timeseries_label_1: str, timeseries_label_2: str) -> Tuple[float, float]:
+    def covariate_analysis(
+        self: CovariateAnalyser,
+        timeseries_labels: list,
+        crosscorr: bool = False,
+        axis_labels: list = None,
+        max_lag: int = None,
+    ) -> tuple[plt.figure, plt.axes]:  # noqa
         """
-        Calculate the Pearson Correlation Coefficient between two time series.
+        Conduct the covariate analysis. This will be the main entrypoint to run the covariate analysis. Currently this
+        only runs one method, but the final version will output multiple plots and statistics.
 
         Parameters
         ----------
-        timeseries_label_1 : pd.Series
-            The first time series.
-        timeseries_label_2 : pd.Series
-            The second time series.
+        timeseries_labels : list
+            The labels of the timeseries which will be included in the covariate analysis.
+        crosscorr : bool, optional
+            Whether or not the crosscorrelation is used to align the series, by default False
+        max_lag : int, optional
+            The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
+            default None
+        axis_labels : list, optional
+            A list of labels which can be used to customise the axis labels if required, by default None
+        """
+        joint_grid_plot = self.jointplot_grid(
+            timeseries_labels=timeseries_labels, crosscorr=crosscorr, axis_labels=axis_labels, max_lag=max_lag
+        )
+
+        return joint_grid_plot
+
+    def correlation_coefficient(
+        self: CovariateAnalyser, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+    ) -> tuple[float, float]:
+        """
+        Calculate the Pearson Correlation Coefficient between two time series. Note only one of either timeseries_labels
+        or timeseries can be specified.
+
+        Parameters
+        ----------
+        timeseries_labels : list[str] | None
+            A list of two timeseries labels for which to calculate the correlation coefficient between, by default None
+        timeseries : pd.Series
+            A list of two timeseries for which to calculate the correlation coefficient between, by default None
 
         Returns
         -------
-        Tuple[float, float]
+        tuple[float, float]
             The Pearson correlation coefficient and associated p-value.
+
+        Raises
+        ------
+        ValueError
+            "Both timeseries and timeseries_labels cannot both be specified."
+        ValueError
+            "One of either timeseries and timeseries_labels must be specified."
+        ValueError
+            "Only two timeseries labels can be specified"
+        ValueError
+            "Only two timeseries can be specified"
         """
-        corr = pearsonr(
-            self.timeseries.get_timeseries([timeseries_label_1])[0],
-            self.timeseries.get_timeseries([timeseries_label_2])[0],
-        )
+        if timeseries_labels is not None and timeseries is not None:
+            raise ValueError("Both timeseries and timeseries_labels cannot both be specified.")
+        elif timeseries_labels is None and timeseries is None:
+            raise ValueError("One of either timeseries and timeseries_labels must be specified.")
+
+        if timeseries_labels is not None and len(timeseries_labels) != 2:
+            raise ValueError("Only two timeseries labels can be specified")
+
+        if timeseries is not None and len(timeseries) != 2:
+            raise ValueError("Only two timeseries can be specified")
+
+        if timeseries_labels is not None:
+            timeseries_1 = self.timeseries.get_timeseries([timeseries_labels[0]])[0]
+            timeseries_2 = self.timeseries.get_timeseries([timeseries_labels[1]])[0]
+        elif timeseries is not None:
+            timeseries_1 = timeseries[0]
+            timeseries_2 = timeseries[1]
+
+        corr = pearsonr(timeseries_1, timeseries_2)
 
         return corr.statistic, corr.pvalue
 
-    def covariance(self: Any, timeseries_labels: List[str], normalisation: Union[None, str] = None) -> pd.DataFrame:
+    def covariance(
+        self: CovariateAnalyser, timeseries_labels: list[str], normalisation: str | None = None
+    ) -> pd.DataFrame:
         """
-        Calculate the normalised covariance matrix.
+        Calculate the normalised covariance matrix between a set of timeseries.
 
         Parameters
         ----------
-        time_series : List[pd.Series]
-            The list of time series.
+        time_series : list[str]
+            The list of timeseries labels to include in the covariance matrix.
         normalisation : normalisation: Union[None, str], optional
             The type of normalisation applied, this can be None, mean_centered and correlation coefficient.
 
@@ -79,21 +150,23 @@ class CovariateAnalyser:
         else:
             return pd.DataFrame(np.cov(df.T), columns=df.columns, index=df.columns)
 
-    def crosscorrelation(self: Any, timeseries_label_1: str, timeseries_label_2: str) -> Tuple[np.ndarray, np.ndarray]:
+    def crosscorrelation(
+        self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Calculate the cross-correlation between two time series.
+        Calculate the cross-correlation between two timeseries.
 
         Parameters
         ----------
-        time_series_1 : pd.Series
+        timeseries_label_1 : str
             The first time series.
-        time_series_2 : pd.Series
+        timeseries_label_2 : str
             The second time series.
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray]
-            The cross-correlation with assoicated lags.
+        tuple[np.ndarray, np.ndarray]
+            The cross-correlation with associated lags.
         """
         time_series_1 = (
             self.timeseries.get_timeseries([timeseries_label_1])[0]
@@ -109,21 +182,24 @@ class CovariateAnalyser:
         ), correlation_lags(time_series_1.shape[0], time_series_2.shape[0])
 
     def max_crosscorrelation(
-        self: Any, timeseries_label_1: str, timeseries_label_2: str, max_lag: int | np.int64 | None = None
+        self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, max_lag: int | np.int64 | None = None
     ) -> tuple[np.float64, np.int64]:
         """
         Find the maximum cross-correlation and associated lag.
 
         Parameters
         ----------
-        time_series_1 : pd.Series
-            The first time series.
-        time_series_2 : pd.Series
-            The second time series.
+        timeseries_label_1 : str
+            The label for the first timeseries.
+        timeseries_label_2 : str
+            The label for the second timeseries.
+        max_lag : Union[int, None], optional
+            The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+            directions. If set to None there is no maximum lag, by default None
 
         Returns
         -------
-        Tuple[float, int]
+        tuple[float, int]
             The maximum cross-correlation and associated lag.
         """
         corr, corr_lags = self.crosscorrelation(
@@ -138,9 +214,9 @@ class CovariateAnalyser:
 
         return corr[np.argmax(np.abs(corr))], corr_lags[np.argmax(np.abs(corr))]
 
-    def align_timeseries(
-        self: Any, timeseries_label_1: str, timeseries_label_2: str, max_lag: Union[int, None] = None
-    ) -> Tuple[pd.Series, pd.Series, str, Union[int, np.int64]]:
+    def _align_timeseries(
+        self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, max_lag: int | None = None
+    ) -> tuple[pd.Series, pd.Series, str, int | np.int64]:
         """
         Align two timeseries according to the maximum cross correlation.
 
@@ -151,12 +227,12 @@ class CovariateAnalyser:
         timeseries_label_2 : str
             The label for the second timeseries.
         max_lag : Union[int, None], optional
-            The maximum lag to consider, not this will apply this maximum lag in both the positive and
-            the negative directions, by default None
+            The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+            directions. If set to None there is no maximum lag, by default None
 
         Returns
         -------
-        Tuple[pd.Series, pd.Series, str, Union[int, np.int64]]
+        tuple[pd.Series, pd.Series, str, int | np.int64]
             The time aligned series according to the maximum cross correlation.
         """
         _, corr_lag = self.max_crosscorrelation(
@@ -168,7 +244,7 @@ class CovariateAnalyser:
         timeseries_1 = self.timeseries.get_timeseries([timeseries_label_1])[0].copy()
         timeseries_2 = self.timeseries.get_timeseries([timeseries_label_2])[0].copy()
 
-        freq = self.timeseries.infer_frequency(timeseries=timeseries_1)
+        freq = self.timeseries._infer_frequency(timeseries=timeseries_1)
 
         if freq == "Month":
             timeseries_2.index = timeseries_2.index + pd.offsets.MonthEnd(corr_lag)
@@ -177,11 +253,11 @@ class CovariateAnalyser:
         elif freq == "Year":
             timeseries_2.index = timeseries_2.index + pd.offsets.YearEnd(corr_lag)
 
-        start_date, end_date = self.timeseries.find_start_end_dates(
+        start_date, end_date = self.timeseries._find_start_end_dates(
             timeseries_labels=None, timeseries=[timeseries_1, timeseries_2]
         )
 
-        timeseries_trimmed = self.timeseries.trim_timeseries_date(
+        timeseries_trimmed = self.timeseries._trim_timeseries_date(
             timeseries=[timeseries_1, timeseries_2], start_date=start_date, end_date=end_date
         )
 
@@ -193,7 +269,7 @@ class CovariateAnalyser:
         )
 
     def temporal_offset(
-        self: Any, timeseries_label_1: str, timeseries_label_2: str, metric: str = "mean"
+        self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, metric: str = "mean"
     ) -> tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None]:
         """
         Calculate a temporal offset. This is the difference between two series. This can be done using various
@@ -201,16 +277,16 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        time_series_1 : pd.Series
-            The first time series.
-        time_series_2 : pd.Series
-            The second time series.
+        timeseries_label_1 : str
+            The label for the first timeseries.
+        timeseries_label_2 : str
+            The label for the second timeseries.
         metric : str, optional
             The statistic to quantify the difference between the two time series, by default "mean".
 
         Returns
         -------
-        Tuple[float, Union[int, None]]
+        tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None]
             The temporal offset and if applicable the associated index.
         """
         diff = (
@@ -228,24 +304,25 @@ class CovariateAnalyser:
             return diff.min(), diff.argmin()
 
     def temporal_slope(
-        self: Any, timeseries_label_1: str, timeseries_label_2: str, plot: bool = False
-    ) -> Tuple[float, float, float, float, float]:
+        self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, plot: bool = False
+    ) -> tuple[float, float, float, float, float]:
         """
-        Calculate the temporal slope of two time series.
+        Calculate the temporal slope of two time series using robust linear regression (RANSac).
 
         Parameters
         ----------
-        time_series_1 : pd.Series
-            The first time series.
-        time_series_2 : pd.Series
-            The second time series.
+        timeseries_label_1 : str
+            The label for the first timeseries.
+        timeseries_label_2 : str
+            The label for the second timeseries.
         plot : bool, optional
             True if you want a plot of the model fits, by default False
 
         Returns
         -------
-        Tuple[float, float, float, float, float]
-            _description_
+        tuple[float, float, float, float, float]
+            A tuple containing the ratio of gradients between timeseries 1 and timeseries 2, the slope of timeseries 1,
+            the intercept of timeseries 1, the slope of timeseries 2, and the intercept of timeseries 2.
         """
         reg_1 = RANSACRegressor(random_state=0).fit(
             np.arange(0, self.timeseries.get_timeseries([timeseries_label_1])[0].shape[0]).reshape(-1, 1),
@@ -298,23 +375,30 @@ class CovariateAnalyser:
             reg_2.estimator_.intercept_,
         )
 
-    def jointplot(self: Any, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True) -> None:
+    def jointplot(
+        self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True
+    ) -> plt.plot:
         """
-        Visualise a joint plot between two time series.
+        Visualise a joint plot between two time series. This returns a plot.
 
         Parameters
         ----------
-        time_series_1 : pd.Series
-            The first time series.
-        time_series_2 : pd.Series
-            The second time series.
+        timeseries_label_1 : str
+            The label for the first timeseries.
+        timeseries_label_2 : str
+            The label for the second timeseries.
+        linear : bool
+            If true a linear fit is displayed using robust linear regression, by default True
         """
         reg_1 = LinearRegression().fit(
-            self.timeseries[timeseries_label_1].values.reshape(-1, 1),
-            self.timeseries[timeseries_label_2].values.reshape(-1, 1),
+            self.timeseries.get_timeseries([timeseries_label_1])[0].values.reshape(-1, 1),
+            self.timeseries.get_timeseries([timeseries_label_2])[0].values.reshape(-1, 1),
         )
 
-        joint = sns.jointplot(x=self.timeseries[timeseries_label_1], y=self.timeseries[timeseries_label_2])
+        joint = sns.jointplot(
+            x=self.timeseries.get_timeseries([timeseries_label_1])[0],
+            y=self.timeseries.get_timeseries([timeseries_label_2])[0],
+        )
         if linear:
             joint.ax_joint.plot(
                 joint.ax_joint.get_xlim(),
@@ -328,22 +412,34 @@ class CovariateAnalyser:
         plt.grid()
         plt.show()
 
+        return joint
+
     def jointplot_grid(
-        self: Any, timeseries_labels: List[str], crosscorr: bool = False, axis_labels: list = None, max_lag: int = None
-    ) -> None:
+        self: CovariateAnalyser,
+        timeseries_labels: list[str],
+        crosscorr: bool = False,
+        axis_labels: list = None,
+        max_lag: int = None,
+    ) -> tuple[plt.figure, plt.axes]:
         """
-        Plot a gridded jointplot for the given time series. Note that you can pass crosscorr True if the
-        maximum cross-correlation is desired.
+        Plot a gridded jointplot for the given set of timeseries. Note that you can pass crosscorr True if the maximum
+        cross-correlation is desired. This method returns a matplotlib figure and associated axes.
 
         Parameters
         ----------
-        timeseries_labels : List[str]
+        timeseries_labels : list[str]
             The timeseries labels to be plotted.
         crosscorr : bool, optional
             Whether the pearson correlation coefficient (False) or the maximum cross correlation should be used (True),
-            by default False
+            by default False.
+        max_lag : int, optional
+            The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
+            default None.
+        axis_labels : list, optional
+            A list of labels which can be used to customise the axis labels if required, by default None.
         """
-        timeseries = [self.timeseries[label] for label in timeseries_labels]
+        timeseries = self.timeseries.get_timeseries(timeseries_labels=timeseries_labels)
+        units = self.timeseries.get_units(timeseries_labels=timeseries_labels)
 
         width_ratios = [3] * len(timeseries) + [1]
         height_ratios = [3] * len(timeseries) + [1]
@@ -363,7 +459,7 @@ class CovariateAnalyser:
             for col in range(len(timeseries)):
                 if row != col:
                     if crosscorr:
-                        timeseries_col, timeseries_row, freq, lag = self.align_timeseries(
+                        timeseries_col, timeseries_row, freq, lag = self._align_timeseries(
                             timeseries_labels[col],
                             timeseries_labels[row],
                             max_lag=max_lag,
@@ -372,12 +468,12 @@ class CovariateAnalyser:
                         timeseries_col = timeseries[col].copy()
                         timeseries_row = timeseries[row].copy()
                         lag = 0
-                        freq = self.timeseries.infer_frequency(timeseries=timeseries_col)
+                        freq = self.timeseries._infer_frequency(timeseries=timeseries_col)
 
                     if np.abs(lag) != 1:
                         freq = freq + "s"
 
-                    corr = self.correlation_coefficient(timeseries_col, timeseries_row)
+                    corr = self.correlation_coefficient(timeseries=[timeseries_col, timeseries_row])
                     sns.regplot(x=timeseries_col, y=timeseries_row, ax=axes[row, col])
                     axes[row, col].set_xlabel("")
                     axes[row, col].set_ylabel("")
@@ -416,7 +512,7 @@ class CovariateAnalyser:
             else:
                 axis_label = axis_labels[row]
             label = textwrap.fill(
-                " ".join([axis_label, "(" + self.timeseries_units[timeseries_labels[row]] + ")"]),
+                " ".join([axis_label, "(" + units[row] + ")"]),
                 width=25,
                 break_long_words=True,
             )
@@ -425,43 +521,23 @@ class CovariateAnalyser:
 
         plt.tight_layout()
         plt.plot()
+        return f, axes
 
-    def covariate_analysis(
-        self: Any, timeseries_labels: list, crosscorr: bool = False, axis_labels: list = None, max_lag: int = None
-    ) -> None:  # noqa
+    def plot_timeseries(
+        self: CovariateAnalyser, timeseries_labels: list = None, yaxis_labels: list = None
+    ) -> tuple[plt.figure, plt.axes]:
         """
-        Conduct the covariate analysis.
+        Plot a set of timeseries.
 
         Parameters
         ----------
-        self : Any
-            _description_
-        timeseries_labels : list
-            _description_
-        crosscorr : bool, optional
-            _description_, by default False
-        axis_labels : list, optional
-            _description_, by default None
-        max_lag : int, optional
-            _description_, by default None
-        """
-        self.jointplot_grid(
-            timeseries_labels=timeseries_labels, crosscorr=crosscorr, axis_labels=axis_labels, max_lag=max_lag
-        )
-
-    def plot_timeseries(self: Any, timeseries_labels: list = None, yaxis_labels: list = None) -> None:
-        """
-        Plot a timeseries.
-
-        Parameters
-        ----------
-        timeseries_labels : list, optional
-            _description_, by default None
+        timeseries_labels : list[str]
+            The timeseries labels to be plotted.
         yaxis_labels : list, optional
-            _description_, by default None
+            A list of labels which can be used to customise the y-axis labels if required, by default None.
         """
         if timeseries_labels is None:
-            timeseries_labels = self.timeseries_labels
+            timeseries_labels = self.timeseries.get_labels_all()
         f, axes = plt.subplots(
             len(timeseries_labels),
             1,
@@ -471,8 +547,8 @@ class CovariateAnalyser:
 
         for n, label in enumerate(timeseries_labels):
             sns.lineplot(
-                x=self.timeseries[timeseries_labels[n]].index,
-                y=self.timeseries[timeseries_labels[n]].values,
+                x=self.timeseries.get_timeseries([timeseries_labels[n]])[0].index,
+                y=self.timeseries.get_timeseries([timeseries_labels[n]])[0].values,
                 ax=axes[n],
                 c="k",
             )
@@ -480,9 +556,11 @@ class CovariateAnalyser:
                 yaxis_label = timeseries_labels[n]
             else:
                 yaxis_label = yaxis_labels[n]
-            axes[n].set_ylabel(yaxis_label + " \n (" + self.timeseries_units[label] + ")", fontsize=20)
+            axes[n].set_ylabel(yaxis_label + " \n (" + self.timeseries.get_units([label])[0] + ")", fontsize=20)
             axes[n].grid(True)
             axes[n].tick_params(axis="both", which="major", labelsize=15)
             axes[n].tick_params(axis="both", which="minor", labelsize=8)
 
         axes[n].set_xlabel("Year", fontsize=20)
+
+        return f, axes

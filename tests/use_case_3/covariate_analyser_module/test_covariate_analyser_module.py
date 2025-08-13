@@ -158,7 +158,12 @@ def test_correlation_coefficient(timeseries_1_fixture, timeseries_2_fixture):
     )
 
     covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
-    corr, _ = covariate_analyser.correlation_coefficient(timeseries_1_fixture[1], timeseries_2_fixture[1])
+    corr, _ = covariate_analyser.correlation_coefficient(
+        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]]
+    )
+    assert np.isclose(corr, 1)
+
+    corr, _ = covariate_analyser.correlation_coefficient(timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]])
     assert np.isclose(corr, 1)
 
 
@@ -221,7 +226,7 @@ def test_max_crosscorrelation(
     assert lag == -1
 
 
-def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
+def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
     timeseries_container = TimeSeriesContainer(
         timeseries=[
             timeseries_7_fixture[0],
@@ -239,7 +244,7 @@ def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
 
     covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
 
-    timeseries_1, timeseries_2, freq, corr_lag = covariate_analyser.align_timeseries(
+    timeseries_1, timeseries_2, freq, corr_lag = covariate_analyser._align_timeseries(
         timeseries_label_1=timeseries_7_fixture[1], timeseries_label_2=timeseries_7_lag_fixture[1], max_lag=1
     )
 

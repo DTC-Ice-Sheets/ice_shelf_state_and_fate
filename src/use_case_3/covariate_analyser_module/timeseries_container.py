@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -33,6 +33,314 @@ class TimeSeriesContainer:
         self.add_timeseries(
             timeseries=timeseries, timeseries_labels=timeseries_labels, timeseries_units=timeseries_units
         )
+
+    def prepare_timeseries(
+        self: Any,
+        time_period: str,
+        timeseries_labels: list[str] | None = None,
+        aggregation: str = "mean",
+        inplace: bool = True,
+    ) -> list[pd.Series] | None:
+        """
+        Prepare the timeseries for the covariate analysis.
+
+        Parameters
+        ----------
+        time_period : str
+            The time period.
+        timeseries_labels : Union[None, List[str]], optional
+            The labels of the timeseries to be checked, by default None
+        integrity_check : bool, optional
+            Whether the time series will be integrity checked after processing, by default True
+        aggregation : str, optional
+            The aggregation to be applied, by default "mean"
+
+        Returns
+        -------
+        bool
+            _description_
+        """
+        if time_period == "M":
+            period = "MS"
+        elif time_period == "Q":
+            period = "QS"
+        elif time_period == "Y":
+            period = "YS"
+        elif time_period == "d":
+            period = "d"
+
+        if timeseries_labels is None:
+            timeseries, timeseries_labels = self.get_timeseries_all()
+        else:
+            timeseries = self.get_timeseries(timeseries_labels=timeseries_labels)
+
+        if not self._check_timeseries_intersection(timeseries=timeseries):
+            raise ValueError("One or more of the specified time series don't intersect temporaly")
+
+        timeseries = self._resample_timeseries(timeseries=timeseries, time_period=time_period, aggregation=aggregation)
+
+        start_date, end_date = self._find_start_end_dates(timeseries=timeseries)
+
+        timeseries = self._trim_timeseries_date(timeseries=timeseries, start_date=start_date, end_date=end_date)
+
+        timeseries = self._interpolate_timeseries(timeseries=timeseries, period=period)
+
+        if inplace:
+            self.add_timeseries(
+                timeseries=timeseries,
+                timeseries_labels=timeseries_labels,
+                timeseries_units=self.get_units_all()[0],
+                overwrite=True,
+            )
+        else:
+            return timeseries
+
+    def _combine_timeseries_from_labels_and_list(
+        self: Any, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+    ) -> list[pd.Series]:
+        """
+        Combine lists of timeseries collected using either labels or directly as a passed list. If no list of labels or
+        list of timeseries is passed, the default behavior is to return all of the timeseries in this container.
+
+        Parameters
+        ----------
+        timeseries_labels : list[str] | None, optional
+            The list of timeseries, by default None
+        timeseries : list[pd.Series] | None, optional
+            The list of timeseries labels, by default None
+
+        Returns
+        -------
+        list[pd.Series]
+            The total list of timeseries.
+        """
+        if timeseries_labels is not None:
+            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
+        elif timeseries_labels is None and timeseries is None:
+            timeseries_from_labels, timeseries_labels = self.get_timeseries_all()
+        else:
+            timeseries_from_labels = []
+
+        if timeseries is not None:
+            timeseries += timeseries_from_labels
+        else:
+            timeseries = timeseries_from_labels
+
+        return timeseries
+
+    def _check_timeseries_intersection(
+        self: Any, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+    ) -> bool:
+        """
+        Determine whether all time series intersect in time by at least one time point.
+
+        Parameters
+        ----------
+        timeseries : List[pd.Series]
+            The list of time series.
+
+        Returns
+        -------
+        bool
+            True if all time series intersect with at least one time point.
+        """
+        timeseries = self._combine_timeseries_from_labels_and_list(
+            timeseries_labels=timeseries_labels, timeseries=timeseries
+        )
+
+        start_datetime, end_datetime = self._find_start_end_dates(timeseries=timeseries)
+
+        return end_datetime >= start_datetime
+
+    def _find_start_end_dates(
+        self: Any, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+    ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
+        """
+        Return the greatest common start and the smallest common end time for a set of time series.
+
+        Parameters
+        ----------
+        timeseries_labels : List[pd.Series]
+            The list of time series labels to check. If None then it will check all of the timeseries in the container.
+
+        Returns
+        -------
+        Tuple[Union[pd.Timestamp, np.datetime64], Union[pd.Timestamp, np.datetime64]]
+            The start and end datetime. Note it is possible for the end time to be less than the start time in cases
+            where the time series do not intersect in time
+        """
+        timeseries = self._combine_timeseries_from_labels_and_list(
+            timeseries_labels=timeseries_labels, timeseries=timeseries
+        )
+
+        # Find the latest start datetime for all the input timeseries
+        start_date = np.max([np.min(series.index) for series in timeseries])
+        # Find the earliest end datetime for all the input timeseries
+        end_date = np.min([np.max(series.index) for series in timeseries])
+
+        return start_date, end_date
+
+    def _trim_timeseries_date(
+        self: Any,
+        start_date: pd.Timestamp,
+        end_date: pd.Timestamp,
+        timeseries_labels: list[str] | None = None,
+        timeseries: list[pd.Series] | None = None,
+    ) -> list[pd.Series] | None:
+        """
+        Trim a time series using a start and end date time.
+
+        Parameters
+        ----------
+        timeseries : pd.end_date
+            The time series.
+        start_date : int
+            The start date to trim.
+        end_date : int
+            The end date to trim
+
+        Returns
+        -------
+        list[pd.Series] | None
+            _description_
+        """
+        timeseries = self._combine_timeseries_from_labels_and_list(
+            timeseries_labels=timeseries_labels, timeseries=timeseries
+        )
+
+        timeseries = [df[(df.index >= start_date) & (df.index <= end_date)] for df in timeseries]
+
+        return timeseries
+
+    def _resample_timeseries(
+        self: Any,
+        time_period: str,
+        timeseries_labels: list[str] | None = None,
+        timeseries: list[pd.Series] | None = None,
+        aggregation: str = "mean",
+    ) -> list[pd.Series] | None:
+        """
+        Resample the 1D timeseries into specific time periods (days, weeks, months, quarters, years).
+
+        Parameters
+        ----------
+        timeseries : pd.Series
+            The input time series with the date time as the index.
+
+        Returns
+        -------
+        list[pd.Series]
+            The aggregated time series.
+        """
+        timeseries = self._combine_timeseries_from_labels_and_list(
+            timeseries_labels=timeseries_labels, timeseries=timeseries
+        )
+
+        timeseries_agg_list = []
+        for timeseries_single in timeseries:
+            if aggregation == "mean":
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).mean()
+            elif aggregation == "median":
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).median()
+            elif aggregation == "max":
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).max()
+            elif aggregation == "min":
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).min()
+            timeseries_agg.index = timeseries_agg.index.to_timestamp()
+            timeseries_agg_list.append(timeseries_agg)
+
+        return timeseries_agg_list
+
+    def _interpolate_timeseries(
+        self: Any, period: str, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+    ) -> list[pd.Series] | None:
+        """
+        Resamples any missing data and then linearly interpolates a timeseries according to a specified period.
+
+        Parameters
+        ----------
+        timeseries : pd.Series
+            The specified timeseries. This must be a pd.Series with a date time index.
+        period : str
+            The period to resample the time series.
+
+        Returns
+        -------
+        pd.Series
+            The resampled and interpolated time series.
+        """
+        timeseries = self._combine_timeseries_from_labels_and_list(
+            timeseries_labels=timeseries_labels, timeseries=timeseries
+        )
+
+        timeseries_interpolated = []
+        for timeseries_single in timeseries:
+            # Generate the list of date idx
+            date_idx = pd.date_range(
+                start=timeseries_single.index[0],
+                end=timeseries_single.index[-1],
+                freq=period,
+            )
+
+            timeseries_interpolated.append(
+                timeseries_single.reindex(date_idx, fill_value=np.nan).interpolate(method="linear")
+            )
+
+        return timeseries_interpolated
+
+    def _infer_frequency(
+        self: Any,
+        timeseries_label: str | None = None,
+        timeseries: pd.Series | None = None,
+    ) -> str:
+        """
+        Infer the frequency between period index and return this as a string. Note only one of the timeseries or label
+        can be provided.
+
+        Parameters
+        ----------
+        timeseries_label : Union[str, None], optional
+            The timeseries label, by default None
+        timeseries : Union[pd.Series, None], optional
+            The timeseries, by default None
+
+        Returns
+        -------
+        str
+            The period as a string.
+        """
+        if timeseries is None and timeseries_label is None:
+            raise ValueError("Both the timeseries and the timeseries_label parameters cannot be None")
+
+        if timeseries is not None and timeseries_label is not None:
+            raise ValueError(
+                "Both the timeseries and the timeseries_label parameters cannot be used at once, please choose one"
+            )
+
+        if timeseries_label is not None:
+            timeseries = self.get_timeseries(timeseries_labels=[timeseries_label])[0]
+
+        timeseries = timeseries.copy()
+        if not isinstance(timeseries.index, pd.PeriodIndex):
+            # if type(timeseries.index) != pd.PeriodIndex:
+            timeseries.index = timeseries.index.to_period()
+        freqstr = timeseries.index.freq.freqstr
+        if freqstr[0] == "M":
+            freq = "Month"
+        elif freqstr[0] == "Q":
+            freq = "Quarter"
+        elif freqstr[0] == "Y":
+            freq = "Year"
+
+        return freq
 
     def add_timeseries(
         self: TimeSeriesContainer,
@@ -174,7 +482,7 @@ class TimeSeriesContainer:
 
         return timeseries_units
 
-    def get_timeseries_all(self: Any) -> list[pd.Series]:
+    def get_timeseries_all(self: Any) -> tuple[list[pd.Series], list[str]]:
         """
         Get all the timeseries.
 
@@ -183,7 +491,8 @@ class TimeSeriesContainer:
         list[pd.Series]
             The list of all the timeseries.
         """
-        return [self.timeseries[timeseries_label][0] for timeseries_label in self.timeseries.keys()]
+        timeseries_labels = list(self.timeseries.keys())
+        return [self.timeseries[timeseries_label][0] for timeseries_label in timeseries_labels], timeseries_labels
 
     def get_labels_all(self: Any) -> list[str]:
         """
@@ -196,7 +505,7 @@ class TimeSeriesContainer:
         """
         return list(self.timeseries.keys())
 
-    def get_units_all(self: Any) -> list[str]:
+    def get_units_all(self: Any) -> tuple[list[str], list[str]]:
         """
         Get the list of all units.
 
@@ -205,303 +514,5 @@ class TimeSeriesContainer:
         list[str]
             The list containing all of the units.
         """
-        return [self.timeseries[timeseries_label][1] for timeseries_label in self.timeseries.keys()]
-
-    def prepare_timeseries(
-        self: Any,
-        time_period: str,
-        timeseries: list[pd.Series] | None = None,
-        timeseries_labels: list[str] | None = None,
-        aggregation: str = "mean",
-    ) -> list[pd.Series]:
-        """
-        Prepare the timeseries for the covariate analysis. This is conducted in-place, i.e. the timeseries stored within
-        this class are modified.
-
-        Parameters
-        ----------
-        time_period : str
-            The time period.
-        timeseries_labels : Union[None, List[str]], optional
-            The labels of the timeseries to be checked, by default None
-        integrity_check : bool, optional
-            Whether the time series will be integrity checked after processing, by default True
-        aggregation : str, optional
-            The aggregation to be applied, by default "mean"
-
-        Returns
-        -------
-        bool
-            _description_
-        """
-        if time_period == "M":
-            period = "MS"
-        elif time_period == "Q":
-            period = "QS"
-        elif time_period == "Y":
-            period = "YS"
-        elif time_period == "d":
-            period = "d"
-
-        if timeseries_labels is not None:
-            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
-        elif timeseries_labels is None and timeseries is None:
-            timeseries_from_labels = self.get_timeseries_all()
-        else:
-            timeseries_from_labels = []
-
-        if timeseries is not None:
-            timeseries += timeseries_from_labels
-        else:
-            timeseries = timeseries_from_labels
-
-        # timeseries = self.get_timeseries(timeseries_labels=timeseries_labels)
-        timeseries = self.resample_timeseries(timeseries=timeseries, time_period=time_period, aggregation=aggregation)
-
-        start_date, end_date = self.find_start_end_dates(timeseries=timeseries)
-
-        timeseries = self.trim_timeseries_date(timeseries=timeseries, start_date=start_date, end_date=end_date)
-
-        timeseries = self.interpolate_timeseries(timeseries=timeseries, period=period)
-
-        return timeseries
-
-    def check_timeseries_intersection(self: Any, timeseries_labels: List[str]) -> bool:
-        """
-        Determine whether all time series intersect in time by at least one time point.
-
-        Parameters
-        ----------
-        timeseries : List[pd.Series]
-            The list of time series.
-
-        Returns
-        -------
-        bool
-            True if all time series intersect with at least one time point.
-        """
-        start_datetime, end_datetime = self.find_start_end_dates(timeseries_labels=timeseries_labels)
-
-        return end_datetime >= start_datetime
-
-    def find_start_end_dates(
-        self: Any, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
-    ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
-        """
-        Return the greatest common start and the smallest common end time for a set of time series.
-
-        Parameters
-        ----------
-        timeseries_labels : List[pd.Series]
-            The list of time series labels to check. If None then it will check all of the timeseries in the container.
-
-        Returns
-        -------
-        Tuple[Union[pd.Timestamp, np.datetime64], Union[pd.Timestamp, np.datetime64]]
-            The start and end datetime. Note it is possible for the end time to be less than the start time in cases
-            where the time series do not intersect in time
-        """
-        if timeseries_labels is not None:
-            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
-        elif timeseries_labels is None and timeseries is None:
-            timeseries_from_labels = self.get_timeseries_all()
-        else:
-            timeseries_from_labels = []
-
-        if timeseries is not None:
-            timeseries += timeseries_from_labels
-        else:
-            timeseries = timeseries_from_labels
-
-        # Find the latest start datetime for all the input timeseries
-        start_date = np.max([np.min(series.index) for series in timeseries])
-        # Find the earliest end datetime for all the input timeseries
-        end_date = np.min([np.max(series.index) for series in timeseries])
-
-        return start_date, end_date
-
-    def trim_timeseries_date(
-        self: Any,
-        start_date: pd.Timestamp,
-        end_date: pd.Timestamp,
-        timeseries_labels: list[str] | None = None,
-        timeseries: list[pd.Series] | None = None,
-    ) -> list[pd.Series] | None:
-        """
-        Trim a time series using a start and end date time.
-
-        Parameters
-        ----------
-        timeseries : pd.end_date
-            The time series.
-        start_date : int
-            The start date to trim.
-        end_date : int
-            The end date to trim
-
-        Returns
-        -------
-        list[pd.Series] | None
-            _description_
-        """
-        if timeseries_labels is not None:
-            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
-        elif timeseries_labels is None and timeseries is None:
-            timeseries_from_labels = self.get_timeseries_all()
-        else:
-            timeseries_from_labels = []
-
-        if timeseries is not None:
-            timeseries += timeseries_from_labels
-        else:
-            timeseries = timeseries_from_labels
-
-        timeseries = [df[(df.index >= start_date) & (df.index <= end_date)] for df in timeseries]
-
-        return timeseries
-
-    def resample_timeseries(
-        self: Any,
-        time_period: str,
-        timeseries_labels: list[str] | None = None,
-        timeseries: list[pd.Series] | None = None,
-        aggregation: str = "mean",
-    ) -> list[pd.Series] | None:
-        """
-        Resample the 1D timeseries into specific time periods (days, weeks, months, quarters, years).
-
-        Parameters
-        ----------
-        timeseries : pd.Series
-            The input time series with the date time as the index.
-
-        Returns
-        -------
-        list[pd.Series]
-            The aggregated time series.
-        """
-        if timeseries_labels is not None:
-            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
-        elif timeseries_labels is None and timeseries is None:
-            timeseries_from_labels = self.get_timeseries_all()
-        else:
-            timeseries_from_labels = []
-
-        if timeseries is not None:
-            timeseries += timeseries_from_labels
-        else:
-            timeseries = timeseries_from_labels
-
-        timeseries_agg_list = []
-        for timeseries_single in timeseries:
-            if aggregation == "mean":
-                timeseries_agg = timeseries_single.groupby(
-                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
-                ).mean()
-            elif aggregation == "median":
-                timeseries_agg = timeseries_single.groupby(
-                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
-                ).median()
-            elif aggregation == "max":
-                timeseries_agg = timeseries_single.groupby(
-                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
-                ).max()
-            elif aggregation == "min":
-                timeseries_agg = timeseries_single.groupby(
-                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
-                ).min()
-            timeseries_agg.index = timeseries_agg.index.to_timestamp()
-            timeseries_agg_list.append(timeseries_agg)
-
-        return timeseries_agg_list
-
-    def interpolate_timeseries(
-        self: Any, period: str, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
-    ) -> list[pd.Series] | None:
-        """
-        Resamples any missing data and then linearly interpolates a timeseries according to a specified period.
-
-        Parameters
-        ----------
-        timeseries : pd.Series
-            The specified timeseries. This must be a pd.Series with a date time index.
-        period : str
-            The period to resample the time series.
-
-        Returns
-        -------
-        pd.Series
-            The resampled and interpolated time series.
-        """
-        if timeseries_labels is not None:
-            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
-        elif timeseries_labels is None and timeseries is None:
-            timeseries_from_labels = self.get_timeseries_all()
-        else:
-            timeseries_from_labels = []
-
-        if timeseries is not None:
-            timeseries += timeseries_from_labels
-        else:
-            timeseries = timeseries_from_labels
-
-        timeseries_interpolated = []
-        for timeseries_single in timeseries:
-            # Generate the list of date idx
-            date_idx = pd.date_range(
-                start=timeseries_single.index[0],
-                end=timeseries_single.index[-1],
-                freq=period,
-            )
-
-            timeseries_interpolated.append(
-                timeseries_single.reindex(date_idx, fill_value=np.nan).interpolate(method="linear")
-            )
-
-        return timeseries_interpolated
-
-    def infer_frequency(
-        self: Any,
-        timeseries_label: str | None = None,
-        timeseries: pd.Series | None = None,
-    ) -> str:
-        """
-        Infer the frequency between period index and return this as a string. Note only one of the timeseries or label
-        can be provided.
-
-        Parameters
-        ----------
-        timeseries_label : Union[str, None], optional
-            The timeseries label, by default None
-        timeseries : Union[pd.Series, None], optional
-            The timeseries, by default None
-
-        Returns
-        -------
-        str
-            The period as a string.
-        """
-        if timeseries is None and timeseries_label is None:
-            raise ValueError("Both the timeseries and the timeseries_label parameters cannot be None")
-
-        if timeseries is not None and timeseries_label is not None:
-            raise ValueError(
-                "Both the timeseries and the timeseries_label parameters cannot be used at once, please choose one"
-            )
-
-        if timeseries_label is not None:
-            timeseries = self.get_timeseries(timeseries_labels=[timeseries_label])[0]
-
-        timeseries = timeseries.copy()
-        if not isinstance(timeseries.index, pd.PeriodIndex):
-            # if type(timeseries.index) != pd.PeriodIndex:
-            timeseries.index = timeseries.index.to_period()
-        freqstr = timeseries.index.freq.freqstr
-        if freqstr[0] == "M":
-            freq = "Month"
-        elif freqstr[0] == "Q":
-            freq = "Quarter"
-        elif freqstr[0] == "Y":
-            freq = "Year"
-
-        return freq
+        timeseries_labels = list(self.timeseries.keys())
+        return [self.timeseries[timeseries_label][1] for timeseries_label in timeseries_labels], timeseries_labels
