@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Union
+from typing import Any, List
 
 import numpy as np
 import pandas as pd
@@ -210,9 +210,10 @@ class TimeSeriesContainer:
     def prepare_timeseries(
         self: Any,
         time_period: str,
+        timeseries: list[pd.Series] | None = None,
         timeseries_labels: list[str] | None = None,
         aggregation: str = "mean",
-    ) -> None:
+    ) -> list[pd.Series]:
         """
         Prepare the timeseries for the covariate analysis. This is conducted in-place, i.e. the timeseries stored within
         this class are modified.
@@ -242,21 +243,28 @@ class TimeSeriesContainer:
         elif time_period == "d":
             period = "d"
 
-        if timeseries_labels is None or len(timeseries_labels) == 0:
-            timeseries_labels = list(self.timeseries.keys())
+        if timeseries_labels is not None:
+            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
+        elif timeseries_labels is None and timeseries is None:
+            timeseries_from_labels = self.get_timeseries_all()
+        else:
+            timeseries_from_labels = []
+
+        if timeseries is not None:
+            timeseries += timeseries_from_labels
+        else:
+            timeseries = timeseries_from_labels
 
         # timeseries = self.get_timeseries(timeseries_labels=timeseries_labels)
-        self.resample_timeseries(
-            timeseries_labels=timeseries_labels, time_period=time_period, aggregation=aggregation, inplace=True
-        )
+        timeseries = self.resample_timeseries(timeseries=timeseries, time_period=time_period, aggregation=aggregation)
 
-        start_date, end_date = self.find_start_end_dates(timeseries_labels=timeseries_labels)
+        start_date, end_date = self.find_start_end_dates(timeseries=timeseries)
 
-        self.trim_timeseries_date(
-            timeseries_labels=timeseries_labels, start_date=start_date, end_date=end_date, inplace=True
-        )
+        timeseries = self.trim_timeseries_date(timeseries=timeseries, start_date=start_date, end_date=end_date)
 
-        self.interpolate_timeseries(timeseries_labels=timeseries_labels, period=period, inplace=True)
+        timeseries = self.interpolate_timeseries(timeseries=timeseries, period=period)
+
+        return timeseries
 
     def check_timeseries_intersection(self: Any, timeseries_labels: List[str]) -> bool:
         """
@@ -277,8 +285,8 @@ class TimeSeriesContainer:
         return end_datetime >= start_datetime
 
     def find_start_end_dates(
-        self: Any, timeseries_labels: list[str] | None = None
-    ) -> (pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64):
+        self: Any, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+    ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
         """
         Return the greatest common start and the smallest common end time for a set of time series.
 
@@ -294,9 +302,17 @@ class TimeSeriesContainer:
             where the time series do not intersect in time
         """
         if timeseries_labels is not None:
-            timeseries = self.get_timeseries(timeseries_labels=timeseries_labels)
+            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
+        elif timeseries_labels is None and timeseries is None:
+            timeseries_from_labels = self.get_timeseries_all()
         else:
-            timeseries = self.get_timeseries_all()
+            timeseries_from_labels = []
+
+        if timeseries is not None:
+            timeseries += timeseries_from_labels
+        else:
+            timeseries = timeseries_from_labels
+
         # Find the latest start datetime for all the input timeseries
         start_date = np.max([np.min(series.index) for series in timeseries])
         # Find the earliest end datetime for all the input timeseries
@@ -308,8 +324,8 @@ class TimeSeriesContainer:
         self: Any,
         start_date: pd.Timestamp,
         end_date: pd.Timestamp,
-        timeseries_labels: list[str],
-        inplace: bool = False,
+        timeseries_labels: list[str] | None = None,
+        timeseries: list[pd.Series] | None = None,
     ) -> list[pd.Series] | None:
         """
         Trim a time series using a start and end date time.
@@ -328,27 +344,28 @@ class TimeSeriesContainer:
         list[pd.Series] | None
             _description_
         """
-        timeseries = self.get_timeseries(timeseries_labels=timeseries_labels)
+        if timeseries_labels is not None:
+            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
+        elif timeseries_labels is None and timeseries is None:
+            timeseries_from_labels = self.get_timeseries_all()
+        else:
+            timeseries_from_labels = []
+
+        if timeseries is not None:
+            timeseries += timeseries_from_labels
+        else:
+            timeseries = timeseries_from_labels
+
         timeseries = [df[(df.index >= start_date) & (df.index <= end_date)] for df in timeseries]
 
-        if inplace:
-            timeseries_units = self.get_units(timeseries_labels=timeseries_labels)
-            self.add_timeseries(
-                timeseries=timeseries,
-                timeseries_labels=timeseries_labels,
-                timeseries_units=timeseries_units,
-                overwrite=True,
-            )
-            return None
-        else:
-            return timeseries
+        return timeseries
 
     def resample_timeseries(
         self: Any,
-        timeseries_labels: list[str] | None,
         time_period: str,
+        timeseries_labels: list[str] | None = None,
+        timeseries: list[pd.Series] | None = None,
         aggregation: str = "mean",
-        inplace: bool = False,
     ) -> list[pd.Series] | None:
         """
         Resample the 1D timeseries into specific time periods (days, weeks, months, quarters, years).
@@ -363,51 +380,43 @@ class TimeSeriesContainer:
         list[pd.Series]
             The aggregated time series.
         """
-        if timeseries_labels is None:
-            timeseries_labels = list(timeseries_labels.keys())
+        if timeseries_labels is not None:
+            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
+        elif timeseries_labels is None and timeseries is None:
+            timeseries_from_labels = self.get_timeseries_all()
+        else:
+            timeseries_from_labels = []
+
+        if timeseries is not None:
+            timeseries += timeseries_from_labels
+        else:
+            timeseries = timeseries_from_labels
+
         timeseries_agg_list = []
-        for timeseries_label in timeseries_labels:
+        for timeseries_single in timeseries:
             if aggregation == "mean":
-                timeseries_agg = (
-                    self.get_timeseries([timeseries_label])[0]
-                    .groupby(pd.PeriodIndex(self.get_timeseries([timeseries_label])[0].index, freq=time_period))
-                    .mean()
-                )
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).mean()
             elif aggregation == "median":
-                timeseries_agg = (
-                    self.get_timeseries([timeseries_label])[0]
-                    .groupby(pd.PeriodIndex(self.get_timeseries([timeseries_label])[0].index, freq=time_period))
-                    .median()
-                )
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).median()
             elif aggregation == "max":
-                timeseries_agg = (
-                    self.get_timeseries([timeseries_label])[0]
-                    .groupby(pd.PeriodIndex(self.get_timeseries([timeseries_label])[0].index, freq=time_period))
-                    .max()
-                )
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).max()
             elif aggregation == "min":
-                timeseries_agg = (
-                    self.get_timeseries([timeseries_label])[0]
-                    .groupby(pd.PeriodIndex(self.get_timeseries([timeseries_label])[0].index, freq=time_period))
-                    .min()
-                )
+                timeseries_agg = timeseries_single.groupby(
+                    pd.PeriodIndex(timeseries_single.index, freq=time_period)
+                ).min()
             timeseries_agg.index = timeseries_agg.index.to_timestamp()
             timeseries_agg_list.append(timeseries_agg)
 
-        if inplace:
-            timeseries_units = self.get_units(timeseries_labels=timeseries_labels)
-            self.add_timeseries(
-                timeseries=timeseries_agg_list,
-                timeseries_labels=timeseries_labels,
-                timeseries_units=timeseries_units,
-                overwrite=True,
-            )
-            return None
-        else:
-            return timeseries_agg_list
+        return timeseries_agg_list
 
     def interpolate_timeseries(
-        self: Any, timeseries_labels: list[str], period: str, inplace: bool = False
+        self: Any, period: str, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
     ) -> list[pd.Series] | None:
         """
         Resamples any missing data and then linearly interpolates a timeseries according to a specified period.
@@ -424,7 +433,18 @@ class TimeSeriesContainer:
         pd.Series
             The resampled and interpolated time series.
         """
-        timeseries = self.get_timeseries(timeseries_labels=timeseries_labels)
+        if timeseries_labels is not None:
+            timeseries_from_labels = self.get_timeseries(timeseries_labels=timeseries_labels)
+        elif timeseries_labels is None and timeseries is None:
+            timeseries_from_labels = self.get_timeseries_all()
+        else:
+            timeseries_from_labels = []
+
+        if timeseries is not None:
+            timeseries += timeseries_from_labels
+        else:
+            timeseries = timeseries_from_labels
+
         timeseries_interpolated = []
         for timeseries_single in timeseries:
             # Generate the list of date idx
@@ -437,20 +457,13 @@ class TimeSeriesContainer:
             timeseries_interpolated.append(
                 timeseries_single.reindex(date_idx, fill_value=np.nan).interpolate(method="linear")
             )
-        if inplace:
-            timeseries_units = self.get_units(timeseries_labels=timeseries_labels)
-            self.add_timeseries(
-                timeseries=timeseries_interpolated,
-                timeseries_labels=timeseries_labels,
-                timeseries_units=timeseries_units,
-                overwrite=True,
-            )
-            return None
-        else:
-            return timeseries_interpolated
+
+        return timeseries_interpolated
 
     def infer_frequency(
-        self: Any, timeseries_label: Union[str, None] = None, timeseries: Union[pd.Series, None] = None
+        self: Any,
+        timeseries_label: str | None = None,
+        timeseries: pd.Series | None = None,
     ) -> str:
         """
         Infer the frequency between period index and return this as a string. Note only one of the timeseries or label
@@ -468,8 +481,16 @@ class TimeSeriesContainer:
         str
             The period as a string.
         """
-        if timeseries is None and timeseries_label is not None:
-            timeseries = self.timeseries[timeseries_label]
+        if timeseries is None and timeseries_label is None:
+            raise ValueError("Both the timeseries and the timeseries_label parameters cannot be None")
+
+        if timeseries is not None and timeseries_label is not None:
+            raise ValueError(
+                "Both the timeseries and the timeseries_label parameters cannot be used at once, please choose one"
+            )
+
+        if timeseries_label is not None:
+            timeseries = self.get_timeseries(timeseries_labels=[timeseries_label])[0]
 
         timeseries = timeseries.copy()
         if not isinstance(timeseries.index, pd.PeriodIndex):

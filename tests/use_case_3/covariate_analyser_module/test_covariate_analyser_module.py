@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
+from use_case_3.covariate_analyser_module.timeseries_container import TimeSeriesContainer
 
 
 @pytest.fixture
@@ -149,48 +150,26 @@ def timeseries_7_lag_fixture():
     return timeseries, "time series 7 inv", "unit 7 inv"
 
 
-def test_correlation_coefficient_label(timeseries_1_fixture, timeseries_2_fixture):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_1_fixture[1]: timeseries_1_fixture[0],
-            timeseries_2_fixture[1]: timeseries_2_fixture[0],
-        },
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units={
-            timeseries_1_fixture[1]: timeseries_1_fixture[2],
-            timeseries_2_fixture[1]: timeseries_2_fixture[2],
-        },
-    )
-    corr, _ = covariate_analyser.correlation_coefficient_label(timeseries_1_fixture[1], timeseries_2_fixture[1])
-    assert np.isclose(corr, 1)
-
-
 def test_correlation_coefficient(timeseries_1_fixture, timeseries_2_fixture):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_1_fixture[1]: timeseries_1_fixture[0],
-            timeseries_2_fixture[1]: timeseries_2_fixture[0],
-        },
+    timeseries_container = TimeSeriesContainer(
+        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
         timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units={
-            timeseries_1_fixture[1]: timeseries_1_fixture[2],
-            timeseries_2_fixture[1]: timeseries_2_fixture[2],
-        },
+        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
     )
-    corr, _ = covariate_analyser.correlation_coefficient(timeseries_1_fixture[0], timeseries_2_fixture[0])
+
+    covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
+    corr, _ = covariate_analyser.correlation_coefficient(timeseries_1_fixture[1], timeseries_2_fixture[1])
     assert np.isclose(corr, 1)
 
 
 def test_covariance(timeseries_1_fixture):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_1_fixture[1]: timeseries_1_fixture[0],
-        },
+    timeseries_container = TimeSeriesContainer(
+        timeseries=[timeseries_1_fixture[0]],
         timeseries_labels=[timeseries_1_fixture[1]],
-        timeseries_units={
-            timeseries_1_fixture[1]: timeseries_1_fixture[2],
-        },
+        timeseries_units=[timeseries_1_fixture[2]],
     )
+
+    covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
     corr = covariate_analyser.covariance([timeseries_1_fixture[1], timeseries_1_fixture[1]], normalisation="corrcoef")
     assert np.allclose(corr, np.array([[1, 1], [1, 1]]))
 
@@ -198,26 +177,29 @@ def test_covariance(timeseries_1_fixture):
 def test_max_crosscorrelation(
     timeseries_1_fixture, timeseries_1_inv_fixture, timeseries_7_fixture, timeseries_7_lag_fixture
 ):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_1_fixture[1]: timeseries_1_fixture[0],
-            timeseries_1_inv_fixture[1]: timeseries_1_inv_fixture[0],
-            timeseries_7_fixture[1]: timeseries_7_fixture[0],
-            timeseries_7_lag_fixture[1]: timeseries_7_lag_fixture[0],
-        },
+    timeseries_container = TimeSeriesContainer(
+        timeseries=[
+            timeseries_1_fixture[0],
+            timeseries_1_inv_fixture[0],
+            timeseries_7_fixture[0],
+            timeseries_7_lag_fixture[0],
+        ],
         timeseries_labels=[
             timeseries_1_fixture[1],
             timeseries_1_inv_fixture[1],
             timeseries_7_fixture[1],
             timeseries_7_lag_fixture[1],
         ],
-        timeseries_units={
-            timeseries_1_fixture[1]: timeseries_1_fixture[2],
-            timeseries_1_inv_fixture[1]: timeseries_1_inv_fixture[2],
-            timeseries_7_fixture[1]: timeseries_7_fixture[2],
-            timeseries_7_lag_fixture[1]: timeseries_7_lag_fixture[2],
-        },
+        timeseries_units=[
+            timeseries_1_fixture[2],
+            timeseries_1_inv_fixture[2],
+            timeseries_7_fixture[2],
+            timeseries_7_lag_fixture[2],
+        ],
     )
+
+    covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
+
     corr, lag = covariate_analyser.max_crosscorrelation(timeseries_1_fixture[1], timeseries_1_fixture[1], max_lag=None)
     assert np.isclose(corr, 1)
     assert lag == 0
@@ -240,20 +222,22 @@ def test_max_crosscorrelation(
 
 
 def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_7_fixture[1]: timeseries_7_fixture[0],
-            timeseries_7_lag_fixture[1]: timeseries_7_lag_fixture[0],
-        },
+    timeseries_container = TimeSeriesContainer(
+        timeseries=[
+            timeseries_7_fixture[0],
+            timeseries_7_lag_fixture[0],
+        ],
         timeseries_labels=[
             timeseries_7_fixture[1],
             timeseries_7_lag_fixture[1],
         ],
-        timeseries_units={
-            timeseries_7_fixture[1]: timeseries_7_fixture[2],
-            timeseries_7_lag_fixture[1]: timeseries_7_lag_fixture[2],
-        },
+        timeseries_units=[
+            timeseries_7_fixture[2],
+            timeseries_7_lag_fixture[2],
+        ],
     )
+
+    covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
 
     timeseries_1, timeseries_2, freq, corr_lag = covariate_analyser.align_timeseries(
         timeseries_label_1=timeseries_7_fixture[1], timeseries_label_2=timeseries_7_lag_fixture[1], max_lag=1
@@ -286,17 +270,22 @@ def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
 
 
 def test_temporal_offset(timeseries_1_fixture, timeseries_6_fixture):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_1_fixture[1]: timeseries_1_fixture[0],
-            timeseries_6_fixture[1]: timeseries_6_fixture[0],
-        },
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_6_fixture[1]],
-        timeseries_units={
-            timeseries_1_fixture[1]: timeseries_1_fixture[2],
-            timeseries_6_fixture[1]: timeseries_6_fixture[2],
-        },
+    timeseries_container = TimeSeriesContainer(
+        timeseries=[
+            timeseries_1_fixture[0],
+            timeseries_6_fixture[0],
+        ],
+        timeseries_labels=[
+            timeseries_1_fixture[1],
+            timeseries_6_fixture[1],
+        ],
+        timeseries_units=[
+            timeseries_1_fixture[2],
+            timeseries_6_fixture[2],
+        ],
     )
+
+    covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
     assert covariate_analyser.temporal_offset(timeseries_1_fixture[1], timeseries_6_fixture[1], "mean")[0] == 0.4
     assert covariate_analyser.temporal_offset(timeseries_1_fixture[1], timeseries_6_fixture[1], "median")[0] == -1
     assert covariate_analyser.temporal_offset(timeseries_1_fixture[1], timeseries_6_fixture[1], "max")[0] == 4
@@ -314,17 +303,22 @@ def test_temporal_offset(timeseries_1_fixture, timeseries_6_fixture):
 
 
 def test_temporal_slope(timeseries_1_fixture, timeseries_1_inv_fixture):
-    covariate_analyser = CovariateAnalyser(
-        timeseries={
-            timeseries_1_fixture[1]: timeseries_1_fixture[0],
-            timeseries_1_inv_fixture[1]: timeseries_1_inv_fixture[0],
-        },
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_1_inv_fixture[1]],
-        timeseries_units={
-            timeseries_1_fixture[1]: timeseries_1_fixture[2],
-            timeseries_1_inv_fixture[1]: timeseries_1_inv_fixture[2],
-        },
+    timeseries_container = TimeSeriesContainer(
+        timeseries=[
+            timeseries_1_fixture[0],
+            timeseries_1_inv_fixture[0],
+        ],
+        timeseries_labels=[
+            timeseries_1_fixture[1],
+            timeseries_1_inv_fixture[1],
+        ],
+        timeseries_units=[
+            timeseries_1_fixture[2],
+            timeseries_1_inv_fixture[2],
+        ],
     )
+
+    covariate_analyser = CovariateAnalyser(timeseries=timeseries_container)
     model_fits = covariate_analyser.temporal_slope(timeseries_1_fixture[1], timeseries_1_inv_fixture[1])
     assert model_fits[0] == -1
     assert model_fits[1] == 1
