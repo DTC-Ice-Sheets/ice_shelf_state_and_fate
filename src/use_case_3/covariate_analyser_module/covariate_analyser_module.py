@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import textwrap
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +14,7 @@ from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression, RANSACRegressor
 
 from use_case_3.covariate_analyser_module.timeseries_container import TimeSeriesContainer
+from use_case_3.timeseries_module.timeseries import Timeseries
 
 
 class CovariateAnalyser:
@@ -67,7 +69,7 @@ class CovariateAnalyser:
         return joint_grid_plot
 
     def correlation_coefficient(
-        self: CovariateAnalyser, timeseries_labels: list[str] | None = None, timeseries: list[pd.Series] | None = None
+        self: CovariateAnalyser, timeseries_labels: list[str] | None = None, timeseries: list[Timeseries] | None = None
     ) -> tuple[float, float]:
         """
         Calculate the Pearson Correlation Coefficient between two time series. Note only one of either timeseries_labels
@@ -75,9 +77,9 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        timeseries_labels : list[str] | None
+        timeseries_labels : list[str] | None, optional
             A list of two timeseries labels for which to calculate the correlation coefficient between, by default None
-        timeseries : pd.Series
+        timeseries : list[Timeseries] | None, optional
             A list of two timeseries for which to calculate the correlation coefficient between, by default None
 
         Returns
@@ -114,7 +116,7 @@ class CovariateAnalyser:
             timeseries_1 = timeseries[0]
             timeseries_2 = timeseries[1]
 
-        corr = pearsonr(timeseries_1, timeseries_2)
+        corr = pearsonr(timeseries_1.measurements, timeseries_2.measurements)
 
         return corr.statistic, corr.pvalue
 
@@ -144,6 +146,7 @@ class CovariateAnalyser:
             ]
         else:
             timeseries = self.timeseries.get_timeseries(timeseries_labels)
+        timeseries = [series.measurements for series in timeseries]
         df = pd.concat(timeseries, axis=1)
         if normalisation == "corrcoef":
             return pd.DataFrame(np.corrcoef(df.T), columns=df.columns, index=df.columns)
@@ -169,13 +172,13 @@ class CovariateAnalyser:
             The cross-correlation with associated lags.
         """
         time_series_1 = (
-            self.timeseries.get_timeseries([timeseries_label_1])[0]
-            - self.timeseries.get_timeseries([timeseries_label_1])[0].mean()
-        ) / np.std(self.timeseries.get_timeseries([timeseries_label_1])[0])
+            self.timeseries.get_timeseries([timeseries_label_1])[0].measurements
+            - self.timeseries.get_timeseries([timeseries_label_1])[0].measurements.mean()
+        ) / np.std(self.timeseries.get_timeseries([timeseries_label_1])[0].measurements)
         time_series_2 = (
-            self.timeseries.get_timeseries([timeseries_label_2])[0]
-            - self.timeseries.get_timeseries([timeseries_label_2])[0].mean()
-        ) / np.std(self.timeseries.get_timeseries([timeseries_label_2])[0])
+            self.timeseries.get_timeseries([timeseries_label_2])[0].measurements
+            - self.timeseries.get_timeseries([timeseries_label_2])[0].measurements.mean()
+        ) / np.std(self.timeseries.get_timeseries([timeseries_label_2])[0].measurements)
 
         return correlate(time_series_1, time_series_2, "full") / min(
             time_series_1.shape[0], time_series_2.shape[0]
@@ -216,7 +219,7 @@ class CovariateAnalyser:
 
     def _align_timeseries(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, max_lag: int | None = None
-    ) -> tuple[pd.Series, pd.Series, str, int | np.int64]:
+    ) -> tuple[Timeseries, Timeseries, str, int | np.int64]:
         """
         Align two timeseries according to the maximum cross correlation.
 
@@ -226,7 +229,7 @@ class CovariateAnalyser:
             The label for the first timeseries.
         timeseries_label_2 : str
             The label for the second timeseries.
-        max_lag : Union[int, None], optional
+        max_lag : int | None, optional
             The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
             directions. If set to None there is no maximum lag, by default None
 
@@ -241,17 +244,29 @@ class CovariateAnalyser:
             max_lag=max_lag,
         )
 
-        timeseries_1 = self.timeseries.get_timeseries([timeseries_label_1])[0].copy()
-        timeseries_2 = self.timeseries.get_timeseries([timeseries_label_2])[0].copy()
+        timeseries_1 = deepcopy(self.timeseries.get_timeseries([timeseries_label_1])[0])
+        timeseries_2 = deepcopy(self.timeseries.get_timeseries([timeseries_label_2])[0])
 
         freq = self.timeseries._infer_frequency(timeseries=timeseries_1)
 
         if freq == "Month":
-            timeseries_2.index = timeseries_2.index + pd.offsets.MonthEnd(corr_lag)
+            timeseries_2.measurements.index = timeseries_2.measurements.index + pd.offsets.MonthEnd(corr_lag)
+            if timeseries_2.measurement_uncertainties is not None:
+                timeseries_2.measurement_uncertainties.index = (
+                    timeseries_2.measurement_uncertainties.index + pd.offsets.MonthEnd(corr_lag)
+                )
         elif freq == "Quarter":
-            timeseries_2.index = timeseries_2.index + pd.offsets.QuarterEnd(corr_lag)
+            timeseries_2.measurements.index = timeseries_2.measurements.index + pd.offsets.QuarterEnd(corr_lag)
+            if timeseries_2.measurement_uncertainties is not None:
+                timeseries_2.measurement_uncertainties.index = (
+                    timeseries_2.measurement_uncertainties.index + pd.offsets.QuarterEnd(corr_lag)
+                )
         elif freq == "Year":
-            timeseries_2.index = timeseries_2.index + pd.offsets.YearEnd(corr_lag)
+            timeseries_2.measurements.index = timeseries_2.measurements.index + pd.offsets.YearEnd(corr_lag)
+            if timeseries_2.measurement_uncertainties is not None:
+                timeseries_2.measurement_uncertainties.index = (
+                    timeseries_2.measurement_uncertainties.index + pd.offsets.YearEnd(corr_lag)
+                )
 
         start_date, end_date = self.timeseries._find_start_end_dates(
             timeseries_labels=None, timeseries=[timeseries_1, timeseries_2]
@@ -290,8 +305,8 @@ class CovariateAnalyser:
             The temporal offset and if applicable the associated index.
         """
         diff = (
-            self.timeseries.get_timeseries([timeseries_label_1])[0]
-            - self.timeseries.get_timeseries([timeseries_label_2])[0]
+            self.timeseries.get_timeseries([timeseries_label_1])[0].measurements
+            - self.timeseries.get_timeseries([timeseries_label_2])[0].measurements
         )
 
         if metric == "mean":
@@ -325,41 +340,51 @@ class CovariateAnalyser:
             the intercept of timeseries 1, the slope of timeseries 2, and the intercept of timeseries 2.
         """
         reg_1 = RANSACRegressor(random_state=0).fit(
-            np.arange(0, self.timeseries.get_timeseries([timeseries_label_1])[0].shape[0]).reshape(-1, 1),
-            self.timeseries.get_timeseries([timeseries_label_1])[0],
+            np.arange(0, self.timeseries.get_timeseries([timeseries_label_1])[0].measurements.shape[0]).reshape(-1, 1),
+            self.timeseries.get_timeseries([timeseries_label_1])[0].measurements,
         )
         reg_2 = RANSACRegressor(random_state=0).fit(
-            np.arange(0, self.timeseries.get_timeseries([timeseries_label_2])[0].shape[0]).reshape(-1, 1),
-            self.timeseries.get_timeseries([timeseries_label_2])[0],
+            np.arange(0, self.timeseries.get_timeseries([timeseries_label_2])[0].measurements.shape[0]).reshape(-1, 1),
+            self.timeseries.get_timeseries([timeseries_label_2])[0].measurements,
         )
 
         if plot:
             fig, axes = plt.subplots(nrows=1, ncols=2)
             axes[0].plot(
-                np.arange(0, self.timeseries.get_timeseries([timeseries_label_1])[0].shape[0]).reshape(-1, 1),
-                self.timeseries.get_timeseries([timeseries_label_1])[0],
+                np.arange(0, self.timeseries.get_timeseries([timeseries_label_1])[0].measurements.shape[0]).reshape(
+                    -1, 1
+                ),
+                self.timeseries.get_timeseries([timeseries_label_1])[0].measurements,
                 ".k",
             )
             axes[0].plot(
-                [0, self.timeseries[timeseries_label_1].shape[0]],
+                [0, self.timeseries[timeseries_label_1].measurements.shape[0]],
                 [
                     reg_1.estimator_.intercept_,
-                    (reg_1.estimator_.coef_[0] * self.timeseries.get_timeseries([timeseries_label_1])[0].shape[0])
+                    (
+                        reg_1.estimator_.coef_[0]
+                        * self.timeseries.get_timeseries([timeseries_label_1])[0].measurements.shape[0]
+                    )
                     + reg_1.estimator_.intercept_,
                 ],
                 "--k",
             )
             axes[0].grid()
             axes[1].plot(
-                np.arange(0, self.timeseries.get_timeseries([timeseries_label_2])[0].shape[0]).reshape(-1, 1),
-                self.timeseries.get_timeseries([timeseries_label_2])[0],
+                np.arange(0, self.timeseries.get_timeseries([timeseries_label_2])[0].measurements.shape[0]).reshape(
+                    -1, 1
+                ),
+                self.timeseries.get_timeseries([timeseries_label_2])[0].measurements,
                 ".k",
             )
             axes[1].plot(
-                [0, self.timeseries.get_timeseries([timeseries_label_2])[0].shape[0]],
+                [0, self.timeseries.get_timeseries([timeseries_label_2])[0].measurements.shape[0]],
                 [
                     reg_2.estimator_.intercept_,
-                    (reg_2.estimator_.coef_[0] * self.timeseries.get_timeseries([timeseries_label_2])[0].shape[0])
+                    (
+                        reg_2.estimator_.coef_[0]
+                        * self.timeseries.get_timeseries([timeseries_label_2])[0].measurements.shape[0]
+                    )
                     + reg_2.estimator_.intercept_,
                 ],
                 "--k",

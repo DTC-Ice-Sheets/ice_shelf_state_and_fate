@@ -400,7 +400,7 @@ class TimeSeriesContainer:
         if timeseries_label is not None:
             timeseries = self.get_timeseries(timeseries_labels=[timeseries_label])[0]
 
-        timeseries = timeseries.copy()
+        timeseries = deepcopy(timeseries)
         if not isinstance(timeseries.measurements.index, pd.PeriodIndex):
             timeseries.measurements.index = timeseries.measurements.index.to_period()
         freqstr = timeseries.measurements.index.freq.freqstr
