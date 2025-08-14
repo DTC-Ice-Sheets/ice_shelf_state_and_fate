@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from enum import Enum
 
-from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
+from use_case_3.timeseries_module.timeseries import Timeseries
 
 
 class TimeSeriesContainer:
@@ -234,7 +234,7 @@ class TimeSeriesContainer:
 
         return timeseries_trim
 
-    def _resample_timeseries(
+    def _resample_timeseries(  # noqa C901
         self: TimeSeriesContainer,
         time_period: str,
         timeseries_labels: list[str] | None = None,
@@ -243,6 +243,9 @@ class TimeSeriesContainer:
     ) -> list[Timeseries]:
         """
         Resample the 1D timeseries into specific time periods (days, weeks, months, quarters, years).
+
+        TODO: This method is to complex with the nested if statements. Not sure if there is a better way fo doing this
+        though.
 
         Parameters
         ----------
