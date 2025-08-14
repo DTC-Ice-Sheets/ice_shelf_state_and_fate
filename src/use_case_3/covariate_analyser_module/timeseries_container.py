@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 import numpy as np
 import pandas as pd
 
@@ -11,6 +13,7 @@ class TimeSeriesContainer:
 
     def __init__(
         self: TimeSeriesContainer,
+        # timeseries: dict[str: Timeseries] = {}
         timeseries: list[pd.Series],
         timeseries_labels: list[str],
         timeseries_units: list[str],
@@ -535,3 +538,20 @@ class TimeSeriesContainer:
         """
         timeseries_labels = list(self.timeseries.keys())
         return [self.timeseries[timeseries_label][1] for timeseries_label in timeseries_labels], timeseries_labels
+
+
+class AggregationStrategy(Enum):
+    """The available aggregation types."""
+
+    MEAN = "mean"
+    MEDIAN = "median"
+    MAX = "max"
+    MIN = "min"
+
+
+class AggregationPeriod(Enum):
+    """The available aggregation periods."""
+
+    Year = "mean"
+    Quarter = "median"
+    Month = "max"
