@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from use_case_3.covariate_analyser_module.timeseries_container import TimeSeriesContainer
+from use_case_3.covariate_analyser_module.timeseries_container import (
+    AggregationStrategy,
+    TimeSeriesContainer,
+)
 from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
 
 
@@ -279,7 +282,9 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # First test the mean
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], time_period="Y", aggregation="mean"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label],
+        time_period="Y",
+        aggregation=AggregationStrategy("mean"),
     )
 
     assert timeseries_agg[0].measurements.equals(
@@ -304,7 +309,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     timeseries_agg = timeseries_container._resample_timeseries(
         timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label],
         time_period="Y",
-        aggregation="median",
+        aggregation=AggregationStrategy("median"),
     )
 
     assert timeseries_agg[0].measurements.equals(
@@ -327,7 +332,9 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # First test the max
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], time_period="Y", aggregation="max"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label],
+        time_period="Y",
+        aggregation=AggregationStrategy("max"),
     )
 
     assert timeseries_agg[0].measurements.equals(
@@ -350,7 +357,9 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # First test the min
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], time_period="Y", aggregation="min"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label],
+        time_period="Y",
+        aggregation=AggregationStrategy("min"),
     )
 
     assert timeseries_agg[0].measurements.equals(
@@ -376,7 +385,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         timeseries_labels=None,
         timeseries=timeseries_container.get_timeseries([timeseries_1_fixture.label, timeseries_2_fixture.label]),
         time_period="Y",
-        aggregation="mean",
+        aggregation=AggregationStrategy("mean"),
     )
 
     assert timeseries_agg[0].measurements.equals(
@@ -402,7 +411,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         timeseries_labels=[timeseries_1_fixture.label],
         timeseries=timeseries_container.get_timeseries([timeseries_2_fixture.label]),
         time_period="Y",
-        aggregation="mean",
+        aggregation=AggregationStrategy("mean"),
     )
 
     assert timeseries_agg[0].measurements.equals(
@@ -562,7 +571,9 @@ def test_prepare_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseri
         timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture],
     )
 
-    timeseries = timeseries_container.prepare_timeseries(time_period="M", aggregation="mean", inplace=False)
+    timeseries = timeseries_container.prepare_timeseries(
+        time_period="M", aggregation=AggregationStrategy("mean"), inplace=False
+    )
     assert timeseries[0].measurements.equals(
         pd.Series(
             [2.0, 3, 4, 5],

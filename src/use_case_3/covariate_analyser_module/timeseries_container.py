@@ -11,6 +11,23 @@ import pandas as pd
 from use_case_3.timeseries_module.timeseries import Timeseries
 
 
+class AggregationStrategy(Enum):
+    """The available aggregation types."""
+
+    MEAN = "mean"
+    MEDIAN = "median"
+    MAX = "max"
+    MIN = "min"
+
+
+class AggregationPeriod(Enum):
+    """The available aggregation periods."""
+
+    Year = "mean"
+    Quarter = "median"
+    Month = "max"
+
+
 class TimeSeriesContainer:
     """Module for the manipulation of timeseries."""
 
@@ -33,7 +50,7 @@ class TimeSeriesContainer:
         self: TimeSeriesContainer,
         time_period: str,
         timeseries_labels: list[str] | None = None,
-        aggregation: str = "mean",
+        aggregation: Enum = AggregationStrategy.MEAN,
         inplace: bool = True,
     ) -> list[Timeseries] | None:
         """
@@ -239,7 +256,7 @@ class TimeSeriesContainer:
         time_period: str,
         timeseries_labels: list[str] | None = None,
         timeseries: list[Timeseries] | None = None,
-        aggregation: str = "mean",
+        aggregation: Enum = AggregationStrategy.MEAN,
     ) -> list[Timeseries]:
         """
         Resample the 1D timeseries into specific time periods (days, weeks, months, quarters, years).
@@ -270,7 +287,7 @@ class TimeSeriesContainer:
         timeseries_agg_list = []
         for timeseries_single in timeseries:
             timeseries_agg = deepcopy(timeseries_single)
-            if aggregation == "mean":
+            if aggregation == AggregationStrategy.MEAN:
                 timeseries_agg.measurements = timeseries_single.measurements.groupby(
                     pd.PeriodIndex(timeseries_single.measurements.index, freq=time_period)
                 ).mean()
@@ -278,7 +295,7 @@ class TimeSeriesContainer:
                     timeseries_agg.measurement_uncertainties = timeseries_single.measurement_uncertainties.groupby(
                         pd.PeriodIndex(timeseries_single.measurement_uncertainties.index, freq=time_period)
                     ).mean()
-            elif aggregation == "median":
+            elif aggregation == AggregationStrategy.MEDIAN:
                 timeseries_agg.measurements = timeseries_single.measurements.groupby(
                     pd.PeriodIndex(timeseries_single.measurements.index, freq=time_period)
                 ).median()
@@ -286,7 +303,7 @@ class TimeSeriesContainer:
                     timeseries_agg.measurement_uncertainties = timeseries_single.measurement_uncertainties.groupby(
                         pd.PeriodIndex(timeseries_single.measurement_uncertainties.index, freq=time_period)
                     ).median()
-            elif aggregation == "max":
+            elif aggregation == AggregationStrategy.MAX:
                 timeseries_agg.measurements = timeseries_single.measurements.groupby(
                     pd.PeriodIndex(timeseries_single.measurements.index, freq=time_period)
                 ).max()
@@ -294,7 +311,7 @@ class TimeSeriesContainer:
                     timeseries_agg.measurement_uncertainties = timeseries_single.measurement_uncertainties.groupby(
                         pd.PeriodIndex(timeseries_single.measurement_uncertainties.index, freq=time_period)
                     ).max()
-            elif aggregation == "min":
+            elif aggregation == AggregationStrategy.MIN:
                 timeseries_agg.measurements = timeseries_single.measurements.groupby(
                     pd.PeriodIndex(timeseries_single.measurements.index, freq=time_period)
                 ).min()
@@ -515,20 +532,3 @@ class TimeSeriesContainer:
             Get the list of all timeseries labels.
         """
         return list(self.timeseries.keys())
-
-
-class AggregationStrategy(Enum):
-    """The available aggregation types."""
-
-    MEAN = "mean"
-    MEDIAN = "median"
-    MAX = "max"
-    MIN = "min"
-
-
-class AggregationPeriod(Enum):
-    """The available aggregation periods."""
-
-    Year = "mean"
-    Quarter = "median"
-    Month = "max"
