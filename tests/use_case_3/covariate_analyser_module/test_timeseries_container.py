@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from use_case_3.covariate_analyser_module.timeseries_container import TimeSeriesContainer
+from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
 
 
 @pytest.fixture
@@ -20,13 +21,15 @@ def timeseries_1_fixture():
         ],
     )
 
-    return timeseries, "time series 1", "unit 1"
+    return Timeseries(
+        measurements=timeseries, label="time series 1", unit="unit 1", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
 def expected_timeseries_dict_fixture1(timeseries_1_fixture):
     return {
-        timeseries_1_fixture[1]: [timeseries_1_fixture[0], timeseries_1_fixture[2]],
+        timeseries_1_fixture.label: timeseries_1_fixture,
     }
 
 
@@ -43,14 +46,16 @@ def timeseries_2_fixture():
         ],
     )
 
-    return timeseries, "time series 2", "unit 2"
+    return Timeseries(
+        measurements=timeseries, label="time series 2", unit="unit 2", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
 def expected_timeseries_dict_fixture1_fixture_2(timeseries_1_fixture, timeseries_2_fixture):
     return {
-        timeseries_1_fixture[1]: [timeseries_1_fixture[0], timeseries_1_fixture[2]],
-        timeseries_2_fixture[1]: [timeseries_2_fixture[0], timeseries_2_fixture[2]],
+        timeseries_1_fixture.label: timeseries_1_fixture,
+        timeseries_2_fixture.label: timeseries_2_fixture,
     }
 
 
@@ -67,7 +72,9 @@ def timeseries_3_fixture():
         ],
     )
 
-    return timeseries, "time series 3", "unit 3"
+    return Timeseries(
+        measurements=timeseries, label="time series 3", unit="unit 3", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
@@ -83,7 +90,9 @@ def timeseries_4_fixture():
         ],
     )
 
-    return timeseries, "time series 4", "unit 4"
+    return Timeseries(
+        measurements=timeseries, label="time series 4", unit="unit 4", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
@@ -98,7 +107,9 @@ def timeseries_5_fixture():
         ],
     )
 
-    return timeseries, "time series 5", "unit 5"
+    return Timeseries(
+        measurements=timeseries, label="time series 5", unit="unit 5", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
@@ -114,7 +125,12 @@ def timeseries_1_inv_fixture():
         ],
     )
 
-    return timeseries, "time series 1 inv", "unit 1 inv"
+    return Timeseries(
+        measurements=timeseries,
+        label="time series 1 inv",
+        unit="unit 1 inv",
+        timeseries_type=TimeseriesType("cumulative"),
+    )
 
 
 @pytest.fixture
@@ -130,7 +146,9 @@ def timeseries_6_fixture():
         ],
     )
 
-    return timeseries, "time series 6", "unit 6"
+    return Timeseries(
+        measurements=timeseries, label="time series 6", unit="unit 6", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
@@ -146,7 +164,9 @@ def timeseries_7_fixture():
         ],
     )
 
-    return timeseries, "time series 7", "unit 7"
+    return Timeseries(
+        measurements=timeseries, label="time series 7", unit="unit 7", timeseries_type=TimeseriesType("cumulative")
+    )
 
 
 @pytest.fixture
@@ -161,35 +181,34 @@ def timeseries_7_lag_fixture():
             pd.Timestamp(year=2020, month=5, day=1),
         ],
     )
-    return timeseries, "time series 7 inv", "unit 7 inv"
+    return Timeseries(
+        measurements=timeseries,
+        label="time series 7 inv",
+        unit="unit 7 inv",
+        timeseries_type=TimeseriesType("cumulative"),
+    )
 
 
 def test__init__(timeseries_1_fixture, timeseries_2_fixture, expected_timeseries_dict_fixture1_fixture_2):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
     assert timeseries_container.timeseries == expected_timeseries_dict_fixture1_fixture_2
 
     with pytest.raises(ValueError) as excinfo:
         timeseries_container.add_timeseries(
-            timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-            timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-            timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+            timeseries=[timeseries_1_fixture, timeseries_2_fixture],
             overwrite=False,
         )
     assert str(excinfo.value) == "Timeseries is already added"
 
 
 def test_add_timeseries(timeseries_1_fixture, timeseries_2_fixture, expected_timeseries_dict_fixture1_fixture_2):
-    timeseries_container = TimeSeriesContainer(timeseries=[], timeseries_labels=[], timeseries_units=[])
+    timeseries_container = TimeSeriesContainer(timeseries=[])
 
     timeseries_container.add_timeseries(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         overwrite=True,
     )
 
@@ -197,72 +216,35 @@ def test_add_timeseries(timeseries_1_fixture, timeseries_2_fixture, expected_tim
 
     with pytest.raises(ValueError) as excinfo:
         timeseries_container.add_timeseries(
-            timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-            timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-            timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+            timeseries=[timeseries_1_fixture, timeseries_2_fixture],
             overwrite=False,
         )
     assert str(excinfo.value) == "Timeseries is already added"
 
 
-def test__sanity_check_inputs(timeseries_1_fixture):
-    assert TimeSeriesContainer._sanity_check_inputs(
-        timeseries=[timeseries_1_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2]],
-    )
-
-    assert not TimeSeriesContainer._sanity_check_inputs(
-        timeseries=[timeseries_1_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1]],
-        timeseries_units=[],
-    )
-
-
 def test_remove_timeseries(timeseries_1_fixture, timeseries_2_fixture, expected_timeseries_dict_fixture1):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
-    timeseries_container.remove_timeseries(timeseries_labels=[timeseries_2_fixture[1]])
+    timeseries_container.remove_timeseries(timeseries_labels=[timeseries_2_fixture.label])
 
     assert timeseries_container.timeseries == expected_timeseries_dict_fixture1
 
     with pytest.raises(ValueError) as excinfo:
-        timeseries_container.remove_timeseries(timeseries_labels=[timeseries_2_fixture[1]])
+        timeseries_container.remove_timeseries(timeseries_labels=[timeseries_2_fixture.label])
     assert str(excinfo.value) == "There is no timeseries with this label"
 
 
 def test_get_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
     timeseries = timeseries_container.get_timeseries(["time series 2"])
 
-    assert timeseries[0].equals(timeseries_2_fixture[0])
-    assert timeseries_container.timeseries["time series 2"][0].equals(timeseries[0])
-
-    with pytest.raises(ValueError) as excinfo:
-        timeseries_container.get_timeseries(["time series 3"])
-    assert str(excinfo.value) == "There is no timeseries with this name"
-
-
-def test_get_units(timeseries_1_fixture, timeseries_2_fixture):
-    timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
-    )
-
-    timeseries_units = timeseries_container.get_units(["time series 2"])
-
-    assert timeseries_units == [timeseries_2_fixture[2]]
-    assert [timeseries_container.timeseries["time series 2"][1]] == timeseries_units
+    assert timeseries[0] == timeseries_2_fixture
+    assert timeseries_container.timeseries["time series 2"] == timeseries[0]
 
     with pytest.raises(ValueError) as excinfo:
         timeseries_container.get_timeseries(["time series 3"])
@@ -271,25 +253,18 @@ def test_get_units(timeseries_1_fixture, timeseries_2_fixture):
 
 def test_get_timeseries_all(timeseries_1_fixture, timeseries_2_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
-    timeseries, timeseries_labels = timeseries_container.get_timeseries_all()
+    timeseries = timeseries_container.get_timeseries_all()
 
-    assert timeseries[0].equals(timeseries_1_fixture[0])
-    assert timeseries[1].equals(timeseries_2_fixture[0])
-
-    assert timeseries_labels[0] == timeseries_1_fixture[1]
-    assert timeseries_labels[1] == timeseries_2_fixture[1]
+    assert timeseries[0] == timeseries_1_fixture
+    assert timeseries[1] == timeseries_2_fixture
 
 
 def test_get_labels_all(timeseries_1_fixture, timeseries_2_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
     timeseries_labels = timeseries_container.get_labels_all()
@@ -297,32 +272,17 @@ def test_get_labels_all(timeseries_1_fixture, timeseries_2_fixture):
     assert timeseries_labels == ["time series 1", "time series 2"]
 
 
-def test_get_units_all(timeseries_1_fixture, timeseries_2_fixture):
-    timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
-    )
-
-    timeseries_units, timeseries_labels = timeseries_container.get_units_all()
-
-    assert timeseries_units == ["unit 1", "unit 2"]
-    assert timeseries_labels == [timeseries_1_fixture[1], timeseries_2_fixture[1]]
-
-
 def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
     # First test the mean
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]], time_period="Y", aggregation="mean"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], time_period="Y", aggregation="mean"
     )
 
-    assert timeseries_agg[0].equals(
+    assert timeseries_agg[0].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -331,7 +291,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         )
     )
 
-    assert timeseries_agg[1].equals(
+    assert timeseries_agg[1].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -342,10 +302,12 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # Test the median
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]], time_period="Y", aggregation="median"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label],
+        time_period="Y",
+        aggregation="median",
     )
 
-    assert timeseries_agg[0].equals(
+    assert timeseries_agg[0].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -354,7 +316,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         )
     )
 
-    assert timeseries_agg[1].equals(
+    assert timeseries_agg[1].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -365,10 +327,10 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # First test the max
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]], time_period="Y", aggregation="max"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], time_period="Y", aggregation="max"
     )
 
-    assert timeseries_agg[0].equals(
+    assert timeseries_agg[0].measurements.equals(
         pd.Series(
             [5],
             index=[
@@ -377,7 +339,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         )
     )
 
-    assert timeseries_agg[1].equals(
+    assert timeseries_agg[1].measurements.equals(
         pd.Series(
             [5],
             index=[
@@ -388,10 +350,10 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # First test the min
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]], time_period="Y", aggregation="min"
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], time_period="Y", aggregation="min"
     )
 
-    assert timeseries_agg[0].equals(
+    assert timeseries_agg[0].measurements.equals(
         pd.Series(
             [1],
             index=[
@@ -400,7 +362,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         )
     )
 
-    assert timeseries_agg[1].equals(
+    assert timeseries_agg[1].measurements.equals(
         pd.Series(
             [1],
             index=[
@@ -412,12 +374,12 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     # Test passing in timeseries directly
     timeseries_agg = timeseries_container._resample_timeseries(
         timeseries_labels=None,
-        timeseries=timeseries_container.get_timeseries([timeseries_1_fixture[1], timeseries_2_fixture[1]]),
+        timeseries=timeseries_container.get_timeseries([timeseries_1_fixture.label, timeseries_2_fixture.label]),
         time_period="Y",
         aggregation="mean",
     )
 
-    assert timeseries_agg[0].equals(
+    assert timeseries_agg[0].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -426,7 +388,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         )
     )
 
-    assert timeseries_agg[1].equals(
+    assert timeseries_agg[1].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -437,13 +399,13 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
     # Test passing in both labels and timeseries directly
     timeseries_agg = timeseries_container._resample_timeseries(
-        timeseries_labels=[timeseries_1_fixture[1]],
-        timeseries=timeseries_container.get_timeseries([timeseries_2_fixture[1]]),
+        timeseries_labels=[timeseries_1_fixture.label],
+        timeseries=timeseries_container.get_timeseries([timeseries_2_fixture.label]),
         time_period="Y",
         aggregation="mean",
     )
 
-    assert timeseries_agg[0].equals(
+    assert timeseries_agg[0].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -452,7 +414,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
         )
     )
 
-    assert timeseries_agg[1].equals(
+    assert timeseries_agg[1].measurements.equals(
         pd.Series(
             [3.0],
             index=[
@@ -464,23 +426,21 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
 def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, timeseries_4_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0], timeseries_4_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1], timeseries_4_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2], timeseries_4_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_4_fixture],
     )
 
     assert (
         pd.Timestamp(year=2020, month=2, day=1),
         pd.Timestamp(year=2020, month=5, day=1),
     ) == timeseries_container._find_start_end_dates(
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]], timeseries=None
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label], timeseries=None
     )
 
     assert (
         pd.Timestamp(year=2020, month=7, day=1),
         pd.Timestamp(year=2020, month=5, day=1),
     ) == timeseries_container._find_start_end_dates(
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_4_fixture[1]], timeseries=None
+        timeseries_labels=[timeseries_1_fixture.label, timeseries_4_fixture.label], timeseries=None
     )
 
     assert (
@@ -492,8 +452,8 @@ def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, times
         pd.Timestamp(year=2020, month=2, day=1),
         pd.Timestamp(year=2020, month=5, day=1),
     ) == timeseries_container._find_start_end_dates(
-        timeseries_labels=[timeseries_1_fixture[1]],
-        timeseries=timeseries_container.get_timeseries([timeseries_2_fixture[1]]),
+        timeseries_labels=[timeseries_1_fixture.label],
+        timeseries=timeseries_container.get_timeseries([timeseries_2_fixture.label]),
     )
 
     assert (
@@ -501,7 +461,7 @@ def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, times
         pd.Timestamp(year=2020, month=5, day=1),
     ) == timeseries_container._find_start_end_dates(
         timeseries_labels=None,
-        timeseries=timeseries_container.get_timeseries([timeseries_1_fixture[1], timeseries_2_fixture[1]]),
+        timeseries=timeseries_container.get_timeseries([timeseries_1_fixture.label, timeseries_2_fixture.label]),
     )
 
 
@@ -525,25 +485,23 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
     )
 
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
     )
 
     assert timeseries_1.equals(
         timeseries_container._trim_timeseries_date(
-            timeseries_labels=[timeseries_1_fixture[1]],
+            timeseries_labels=[timeseries_1_fixture.label],
             start_date=pd.Timestamp(year=2020, month=2, day=1),
             end_date=pd.Timestamp(year=2020, month=4, day=1),
-        )[0]
+        )[0].measurements
     )
 
     assert timeseries_2.equals(
         timeseries_container._trim_timeseries_date(
-            timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1]],
+            timeseries_labels=[timeseries_1_fixture.label, timeseries_2_fixture.label],
             start_date=pd.Timestamp(year=2020, month=2, day=1),
             end_date=pd.Timestamp(year=2020, month=4, day=1),
-        )[1]
+        )[1].measurements
     )
 
     assert timeseries_1.equals(
@@ -551,7 +509,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
             timeseries_labels=None,
             start_date=pd.Timestamp(year=2020, month=2, day=1),
             end_date=pd.Timestamp(year=2020, month=4, day=1),
-        )[0]
+        )[0].measurements
     )
 
     assert timeseries_2.equals(
@@ -559,57 +517,53 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
             timeseries_labels=None,
             start_date=pd.Timestamp(year=2020, month=2, day=1),
             end_date=pd.Timestamp(year=2020, month=4, day=1),
-        )[1]
+        )[1].measurements
     )
 
     assert timeseries_1.equals(
         timeseries_container._trim_timeseries_date(
-            timeseries=timeseries_container.get_timeseries([timeseries_1_fixture[1], timeseries_2_fixture[1]]),
+            timeseries=timeseries_container.get_timeseries([timeseries_1_fixture.label, timeseries_2_fixture.label]),
             start_date=pd.Timestamp(year=2020, month=2, day=1),
             end_date=pd.Timestamp(year=2020, month=4, day=1),
-        )[0]
+        )[0].measurements
     )
 
     assert timeseries_2.equals(
         timeseries_container._trim_timeseries_date(
-            timeseries=timeseries_container.get_timeseries([timeseries_1_fixture[1], timeseries_2_fixture[1]]),
+            timeseries=timeseries_container.get_timeseries([timeseries_1_fixture.label, timeseries_2_fixture.label]),
             start_date=pd.Timestamp(year=2020, month=2, day=1),
             end_date=pd.Timestamp(year=2020, month=4, day=1),
-        )[1]
+        )[1].measurements
     )
 
 
 def test__interpolate_timeseries(timeseries_1_fixture, timeseries_5_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_5_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_5_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_5_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_5_fixture],
     )
 
-    ts_interp = timeseries_container._interpolate_timeseries(timeseries_labels=[timeseries_5_fixture[1]], period="MS")[
-        0
-    ]
-
-    assert np.allclose(timeseries_1_fixture[0].values, ts_interp.values)
-    assert timeseries_1_fixture[0].index.equals(ts_interp.index)
-
     ts_interp = timeseries_container._interpolate_timeseries(
-        timeseries=timeseries_container.get_timeseries([timeseries_5_fixture[1]]), period="MS"
+        timeseries_labels=[timeseries_5_fixture.label], period="MS"
     )[0]
 
-    assert np.allclose(timeseries_1_fixture[0].values, ts_interp.values)
-    assert timeseries_1_fixture[0].index.equals(ts_interp.index)
+    assert np.allclose(timeseries_1_fixture.measurements.values, ts_interp.measurements.values)
+    assert timeseries_1_fixture.measurements.index.equals(ts_interp.measurements.index)
+
+    ts_interp = timeseries_container._interpolate_timeseries(
+        timeseries=timeseries_container.get_timeseries([timeseries_5_fixture.label]), period="MS"
+    )[0]
+
+    assert np.allclose(timeseries_1_fixture.measurements.values, ts_interp.measurements.values)
+    assert timeseries_1_fixture.measurements.index.equals(ts_interp.measurements.index)
 
 
 def test_prepare_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0], timeseries_5_fixture[0]],
-        timeseries_labels=[timeseries_1_fixture[1], timeseries_2_fixture[1], timeseries_5_fixture[1]],
-        timeseries_units=[timeseries_1_fixture[2], timeseries_2_fixture[2], timeseries_5_fixture[2]],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture],
     )
 
     timeseries = timeseries_container.prepare_timeseries(time_period="M", aggregation="mean", inplace=False)
-    assert timeseries[0].equals(
+    assert timeseries[0].measurements.equals(
         pd.Series(
             [2.0, 3, 4, 5],
             index=[
@@ -621,7 +575,7 @@ def test_prepare_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseri
         )
     )
 
-    assert timeseries[1].equals(
+    assert timeseries[1].measurements.equals(
         pd.Series(
             [1, 2.0, 3, 4],
             index=[
@@ -633,7 +587,7 @@ def test_prepare_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseri
         )
     )
 
-    assert timeseries[2].equals(
+    assert timeseries[2].measurements.equals(
         pd.Series(
             [2.0, 3, 4, 5],
             index=[
@@ -650,27 +604,15 @@ def test__check_timeseries_intersection(
     timeseries_1_fixture, timeseries_2_fixture, timeseries_3_fixture, timeseries_4_fixture
 ):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0], timeseries_3_fixture[0], timeseries_4_fixture[0]],
-        timeseries_labels=[
-            timeseries_1_fixture[1],
-            timeseries_2_fixture[1],
-            timeseries_3_fixture[1],
-            timeseries_4_fixture[1],
-        ],
-        timeseries_units=[
-            timeseries_1_fixture[2],
-            timeseries_2_fixture[2],
-            timeseries_3_fixture[2],
-            timeseries_4_fixture[2],
-        ],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_3_fixture, timeseries_4_fixture],
     )
 
     assert timeseries_container._check_timeseries_intersection(
-        [timeseries_1_fixture[1], timeseries_2_fixture[1], timeseries_3_fixture[1]]
+        [timeseries_1_fixture.label, timeseries_2_fixture.label, timeseries_3_fixture.label]
     )
 
     assert not timeseries_container._check_timeseries_intersection(
-        [timeseries_1_fixture[1], timeseries_2_fixture[1], timeseries_4_fixture[1]]
+        [timeseries_1_fixture.label, timeseries_2_fixture.label, timeseries_4_fixture.label]
     )
 
 
@@ -678,58 +620,46 @@ def test__combine_timeseries_from_labels_and_list(
     timeseries_1_fixture, timeseries_2_fixture, timeseries_3_fixture, timeseries_4_fixture
 ):
     timeseries_container = TimeSeriesContainer(
-        timeseries=[timeseries_1_fixture[0], timeseries_2_fixture[0], timeseries_3_fixture[0], timeseries_4_fixture[0]],
-        timeseries_labels=[
-            timeseries_1_fixture[1],
-            timeseries_2_fixture[1],
-            timeseries_3_fixture[1],
-            timeseries_4_fixture[1],
-        ],
-        timeseries_units=[
-            timeseries_1_fixture[2],
-            timeseries_2_fixture[2],
-            timeseries_3_fixture[2],
-            timeseries_4_fixture[2],
-        ],
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_3_fixture, timeseries_4_fixture],
     )
 
     timeseries = timeseries_container._combine_timeseries_from_labels_and_list(
         timeseries_labels=[
-            timeseries_1_fixture[1],
-            timeseries_2_fixture[1],
-            timeseries_3_fixture[1],
-            timeseries_4_fixture[1],
+            timeseries_1_fixture.label,
+            timeseries_2_fixture.label,
+            timeseries_3_fixture.label,
+            timeseries_4_fixture.label,
         ]
     )
-    assert timeseries[0].equals(timeseries_1_fixture[0])
-    assert timeseries[1].equals(timeseries_2_fixture[0])
-    assert timeseries[2].equals(timeseries_3_fixture[0])
-    assert timeseries[3].equals(timeseries_4_fixture[0])
+    assert timeseries[0] == timeseries_1_fixture
+    assert timeseries[1] == timeseries_2_fixture
+    assert timeseries[2] == timeseries_3_fixture
+    assert timeseries[3] == timeseries_4_fixture
 
     timeseries = timeseries_container._combine_timeseries_from_labels_and_list(
         timeseries_labels=[
-            timeseries_1_fixture[1],
-            timeseries_2_fixture[1],
+            timeseries_1_fixture.label,
+            timeseries_2_fixture.label,
         ],
         timeseries=[
-            timeseries_3_fixture[0],
-            timeseries_4_fixture[0],
+            timeseries_3_fixture,
+            timeseries_4_fixture,
         ],
     )
-    assert timeseries[0].equals(timeseries_3_fixture[0])
-    assert timeseries[1].equals(timeseries_4_fixture[0])
-    assert timeseries[2].equals(timeseries_1_fixture[0])
-    assert timeseries[3].equals(timeseries_2_fixture[0])
+    assert timeseries[0] == timeseries_3_fixture
+    assert timeseries[1] == timeseries_4_fixture
+    assert timeseries[2] == timeseries_1_fixture
+    assert timeseries[3] == timeseries_2_fixture
 
     timeseries = timeseries_container._combine_timeseries_from_labels_and_list(
         timeseries=[
-            timeseries_1_fixture[0],
-            timeseries_2_fixture[0],
-            timeseries_3_fixture[0],
-            timeseries_4_fixture[0],
+            timeseries_1_fixture,
+            timeseries_2_fixture,
+            timeseries_3_fixture,
+            timeseries_4_fixture,
         ]
     )
-    assert timeseries[0].equals(timeseries_1_fixture[0])
-    assert timeseries[1].equals(timeseries_2_fixture[0])
-    assert timeseries[2].equals(timeseries_3_fixture[0])
-    assert timeseries[3].equals(timeseries_4_fixture[0])
+    assert timeseries[0] == timeseries_1_fixture
+    assert timeseries[1] == timeseries_2_fixture
+    assert timeseries[2] == timeseries_3_fixture
+    assert timeseries[3] == timeseries_4_fixture
