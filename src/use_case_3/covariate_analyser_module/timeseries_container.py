@@ -23,9 +23,10 @@ class AggregationStrategy(Enum):
 class AggregationPeriod(Enum):
     """The available aggregation periods."""
 
-    Year = "mean"
-    Quarter = "median"
-    Month = "max"
+    YEAR = "year"
+    QUARTER = "quarter"
+    MONTH = "month"
+    DAY = "day"
 
 
 class TimeSeriesContainer:
@@ -48,7 +49,7 @@ class TimeSeriesContainer:
 
     def prepare_timeseries(
         self: TimeSeriesContainer,
-        time_period: str,
+        time_period: Enum,
         timeseries_labels: list[str] | None = None,
         aggregation: Enum = AggregationStrategy.MEAN,
         inplace: bool = True,
@@ -60,7 +61,7 @@ class TimeSeriesContainer:
 
         Parameters
         ----------
-        time_period : str
+        time_period : Enum
             The time period.
         timeseries_labels : list[str] | None, optional
             The labels of the timeseries to be checked, by default None
@@ -74,14 +75,19 @@ class TimeSeriesContainer:
         list[Timeseries] | None
             Either a list of the processed timeseries or None depending on whether inplace is set.
         """
-        if time_period == "M":
+        # We set the various time periods for aggregation, if aggregating monthly we use the month start etc.
+        if time_period == AggregationPeriod.MONTH:
             period = "MS"
-        elif time_period == "Q":
+            time_period_str = "M"
+        elif time_period == AggregationPeriod.QUARTER:
             period = "QS"
-        elif time_period == "Y":
+            time_period_str = "Q"
+        elif time_period == AggregationPeriod.YEAR:
             period = "YS"
-        elif time_period == "d":
+            time_period_str = "Y"
+        elif time_period == AggregationPeriod.DAY:
             period = "d"
+            time_period_str = "d"
 
         if timeseries_labels is None:
             timeseries = self.get_timeseries_all()
@@ -91,7 +97,9 @@ class TimeSeriesContainer:
         if not self._check_timeseries_intersection(timeseries=timeseries):
             raise ValueError("One or more of the specified time series don't intersect temporaly")
 
-        timeseries = self._resample_timeseries(timeseries=timeseries, time_period=time_period, aggregation=aggregation)
+        timeseries = self._resample_timeseries(
+            timeseries=timeseries, time_period=time_period_str, aggregation=aggregation
+        )
 
         start_date, end_date = self._find_start_end_dates(timeseries=timeseries)
 

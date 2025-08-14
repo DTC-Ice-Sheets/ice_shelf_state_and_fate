@@ -131,7 +131,7 @@ class CovariateAnalyser:
         time_series : list[str]
             The list of timeseries labels to include in the covariance matrix.
         normalisation : normalisation: Union[None, str], optional
-            The type of normalisation applied, this can be None, mean_centered and correlation coefficient.
+            The type of normalisation applied, this can be None, or corrcoef.
 
         Returns
         -------

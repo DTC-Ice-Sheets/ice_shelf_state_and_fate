@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from use_case_3.covariate_analyser_module.timeseries_container import (
+    AggregationPeriod,
     AggregationStrategy,
     TimeSeriesContainer,
 )
@@ -572,7 +573,7 @@ def test_prepare_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseri
     )
 
     timeseries = timeseries_container.prepare_timeseries(
-        time_period="M", aggregation=AggregationStrategy("mean"), inplace=False
+        time_period=AggregationPeriod.MONTH, aggregation=AggregationStrategy("mean"), inplace=False
     )
     assert timeseries[0].measurements.equals(
         pd.Series(
