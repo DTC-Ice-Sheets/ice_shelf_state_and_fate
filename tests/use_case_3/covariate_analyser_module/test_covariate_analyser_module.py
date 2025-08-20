@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
-from use_case_3.covariate_analyser_module.timeseries_container import TimeSeriesContainer
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocesser
 from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
 
 
