@@ -13,7 +13,6 @@ from scipy.signal import correlate, correlation_lags
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression, RANSACRegressor
 
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocesser
 from use_case_3.timeseries_module.timeseries import Timeseries
 
 

@@ -7,7 +7,7 @@ import pytest
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeSeriesPreprocesser,
+    TimeSeriesPreprocessor,
 )
 from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
 
@@ -196,7 +196,7 @@ def timeseries_7_lag_fixture():
 def test__init__(
     timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture, expected_timeseries_dict_fixture1_fixture_2
 ):
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -205,14 +205,7 @@ def test__init__(
 
     assert timeseries_container.timeseries == expected_timeseries_dict_fixture1_fixture_2
 
-    with pytest.raises(ValueError) as excinfo:
-        timeseries_container.add_timeseries(
-            timeseries=[timeseries_1_fixture, timeseries_2_fixture],
-            overwrite=False,
-        )
-    assert str(excinfo.value) == "Timeseries is already added"
-
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -256,7 +249,7 @@ def test__init__(
 
 
 def test_add_timeseries(timeseries_1_fixture, timeseries_2_fixture, expected_timeseries_dict_fixture1_fixture_2):
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -265,49 +258,14 @@ def test_add_timeseries(timeseries_1_fixture, timeseries_2_fixture, expected_tim
 
     timeseries_container.add_timeseries(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
-        overwrite=True,
     )
 
     assert timeseries_container.timeseries == expected_timeseries_dict_fixture1_fixture_2
 
-    with pytest.raises(ValueError) as excinfo:
-        timeseries_container.add_timeseries(
-            timeseries=[timeseries_1_fixture, timeseries_2_fixture],
-            overwrite=False,
-        )
-    assert str(excinfo.value) == "Timeseries is already added"
-
-
-def test_get_timeseries_all(timeseries_1_fixture, timeseries_2_fixture):
-    timeseries_container = TimeSeriesPreprocesser(
-        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
-        time_period=AggregationPeriod.MONTH,
-        aggregation=AggregationStrategy.MEAN,
-        process_timeseries=False,
-    )
-
-    timeseries = timeseries_container.get_timeseries_all()
-
-    assert timeseries[0] == timeseries_1_fixture
-    assert timeseries[1] == timeseries_2_fixture
-
-
-def test_get_labels_all(timeseries_1_fixture, timeseries_2_fixture):
-    timeseries_container = TimeSeriesPreprocesser(
-        timeseries=[timeseries_1_fixture, timeseries_2_fixture],
-        time_period=AggregationPeriod.MONTH,
-        aggregation=AggregationStrategy.MEAN,
-        process_timeseries=False,
-    )
-
-    timeseries_labels = timeseries_container.get_labels_all()
-
-    assert timeseries_labels == ["time series 1", "time series 2"]
-
 
 def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     # First test the mean
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.YEAR,
         aggregation=AggregationStrategy.MEAN,
@@ -335,7 +293,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     )
 
     # Test the median
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.YEAR,
         aggregation=AggregationStrategy.MEDIAN,
@@ -363,7 +321,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     )
 
     # First test the max
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.YEAR,
         aggregation=AggregationStrategy.MAX,
@@ -391,7 +349,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
     )
 
     # First test the min
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.YEAR,
         aggregation=AggregationStrategy.MIN,
@@ -420,7 +378,7 @@ def test__resample_timeseries(timeseries_1_fixture, timeseries_2_fixture):
 
 
 def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, timeseries_4_fixture):
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -432,7 +390,7 @@ def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, times
         pd.Timestamp(year=2020, month=5, day=1),
     ) == timeseries_container._find_start_end_dates()
 
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_4_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -464,7 +422,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
         ],
     )
 
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -478,7 +436,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
 
     assert timeseries_1.equals(timeseries_container.timeseries[timeseries_1_fixture.label].measurements)
 
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -492,7 +450,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
 
     assert timeseries_2.equals(timeseries_container.timeseries[timeseries_2_fixture.label].measurements)
 
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -506,7 +464,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
 
     assert timeseries_1.equals(timeseries_container.timeseries[timeseries_1_fixture.label].measurements)
 
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -522,7 +480,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
 
 
 def test__interpolate_timeseries(timeseries_1_fixture, timeseries_5_fixture):
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_5_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -549,7 +507,7 @@ def test__interpolate_timeseries(timeseries_1_fixture, timeseries_5_fixture):
 
 
 def test_process_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture):
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -597,7 +555,7 @@ def test_process_timeseries(timeseries_1_fixture, timeseries_2_fixture, timeseri
 def test__check_timeseries_intersection(
     timeseries_1_fixture, timeseries_2_fixture, timeseries_3_fixture, timeseries_4_fixture
 ):
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_3_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
@@ -606,7 +564,7 @@ def test__check_timeseries_intersection(
 
     assert timeseries_container._check_timeseries_intersection()
 
-    timeseries_container = TimeSeriesPreprocesser(
+    timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_4_fixture],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,

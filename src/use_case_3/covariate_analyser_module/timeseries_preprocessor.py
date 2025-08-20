@@ -19,7 +19,7 @@ class AggregationStrategy(Enum):
     MAX = "max"
     MIN = "min"
 
-    def __init__(self, aggregation: str):
+    def __init__(self, aggregation: str) -> None:
         self.aggregation = aggregation
 
 
@@ -31,16 +31,16 @@ class AggregationPeriod(Enum):
     MONTH = ("MS", "M")
     DAY = ("d", "d")
 
-    def __init__(self, period: str, time_period_shorthand: str):
+    def __init__(self, period: str, time_period_shorthand: str) -> None:
         self.period = period
         self.time_period_shorthand = time_period_shorthand
 
 
-class TimeSeriesPreprocesser:
+class TimeSeriesPreprocessor:
     """Module for the manipulation of timeseries."""
 
     def __init__(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
         timeseries: list[Timeseries],
         time_period: AggregationPeriod,
         aggregation: AggregationStrategy = AggregationStrategy.MEAN,
@@ -55,15 +55,14 @@ class TimeSeriesPreprocesser:
             The timeseries as Timeseries objects.
         """
         self.timeseries = {}
-        self.period = time_period.period
-        self.time_period = time_period.time_period_shorthand
-        self.aggregation = aggregation.aggregation
+        self.aggregation_period = time_period
+        self.aggregation = aggregation
         self.add_timeseries(timeseries=timeseries)
         if process_timeseries:
             self.process_timeseries()
 
     def process_timeseries(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
     ) -> None:
         """
         Process the timeseries for the covariate analysis. This first checks that all the timeseries intersect in time,
@@ -82,7 +81,7 @@ class TimeSeriesPreprocesser:
         self._interpolate_timeseries()
 
     def _check_timeseries_intersection(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
     ) -> bool:
         """
         Determine whether all time series intersect in time by at least one time point. If both input parameters are
@@ -93,7 +92,7 @@ class TimeSeriesPreprocesser:
         return end_datetime >= start_datetime
 
     def _find_start_end_dates(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
     ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
         """
         Return the greatest common start and the smallest common end time for a set of time series. If both input
@@ -106,16 +105,14 @@ class TimeSeriesPreprocesser:
             where the time series do not intersect in time
         """
         # Find the latest start datetime for all the input timeseries
-        start_date = np.max(
-            [np.min(self.timeseries[ts_label].measurements.index) for ts_label in self.timeseries.keys()]
-        )
+        start_date = np.max([np.min(ts.measurements.index) for ts in self.timeseries.values()])
         # Find the earliest end datetime for all the input timeseries
-        end_date = np.min([np.max(self.timeseries[ts_label].measurements.index) for ts_label in self.timeseries.keys()])
+        end_date = np.min([np.max(ts.measurements.index) for ts in self.timeseries.values()])
 
         return start_date, end_date
 
     def _trim_timeseries_date(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
         start_date: pd.Timestamp,
         end_date: pd.Timestamp,
     ) -> None:
@@ -144,7 +141,7 @@ class TimeSeriesPreprocesser:
                 ]
 
     def _resample_timeseries(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
     ) -> None:
         """
         Resample the 1D timeseries into specific time periods (days, weeks, months, quarters, years).
@@ -157,9 +154,11 @@ class TimeSeriesPreprocesser:
             timeseries_agg.measurements = (
                 self.timeseries[ts_label]
                 .measurements.groupby(
-                    pd.PeriodIndex(self.timeseries[ts_label].measurements.index, freq=self.time_period)
+                    pd.PeriodIndex(
+                        self.timeseries[ts_label].measurements.index, freq=self.aggregation_period.time_period_shorthand
+                    )
                 )
-                .agg(self.aggregation)
+                .agg(self.aggregation.aggregation)
             )
             if timeseries_agg.measurement_uncertainties is not None:
                 timeseries_agg.measurement_uncertainties = (
@@ -167,10 +166,10 @@ class TimeSeriesPreprocesser:
                     .measurement_uncertainties.groupby(
                         pd.PeriodIndex(
                             self.timeseries[ts_label].measurement_uncertainties.index,
-                            freq=self.time_period,
+                            freq=self.aggregation_period.time_period_shorthand,
                         )
                     )
-                    .agg(self.aggregation)
+                    .agg(self.aggregation.aggregation)
                 )
             timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
             if timeseries_agg.measurement_uncertainties is not None:
@@ -180,7 +179,7 @@ class TimeSeriesPreprocesser:
             self.timeseries[ts_label] = timeseries_agg
 
     def _interpolate_timeseries(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
     ) -> None:
         """Resamples any missing data and then linearly interpolates a timeseries according to a specified period."""
         for ts_label in self.timeseries.keys():
@@ -189,7 +188,7 @@ class TimeSeriesPreprocesser:
             date_idx = pd.date_range(
                 start=timeseries_interp.measurements.index[0],
                 end=timeseries_interp.measurements.index[-1],
-                freq=self.period,
+                freq=self.aggregation_period.period,
             )
 
             timeseries_interp.measurements = timeseries_interp.measurements.reindex(
@@ -201,7 +200,7 @@ class TimeSeriesPreprocesser:
                 date_idx = pd.date_range(
                     start=timeseries_interp.measurement_uncertainties.index[0],
                     end=timeseries_interp.measurement_uncertainties.index[-1],
-                    freq=self.period,
+                    freq=self.aggregation_period.period,
                 )
 
                 timeseries_interp.measurement_uncertainties = timeseries_interp.measurement_uncertainties.reindex(
@@ -211,7 +210,7 @@ class TimeSeriesPreprocesser:
             self.timeseries[ts_label] = timeseries_interp
 
     def _infer_frequency(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
         timeseries_label: str,
     ) -> str:
         """
@@ -239,9 +238,8 @@ class TimeSeriesPreprocesser:
         return freq
 
     def add_timeseries(
-        self: TimeSeriesPreprocesser,
+        self: TimeSeriesPreprocessor,
         timeseries: list[Timeseries],
-        overwrite: bool = False,
     ) -> None:
         """
         Set all the time series. It is required that labels and units are also provided for every timeseries.
@@ -250,45 +248,6 @@ class TimeSeriesPreprocesser:
         ----------
         timeseries : list[Timeseries]
             The timeseries as a dictionary where the key is a label in the list of timeseries labels.
-        overwrite : bool, optional
-            if set to True all the timeseries, labels and units will be overwritten. If False then these
-            will only be added if no time series have been added already, by default False
-
-        Raises
-        ------
-        ValueError
-            Timeseries data already present and overwrite is set to False
         """
         for timeseries_single in timeseries:
-            if timeseries_single.label in self.timeseries.keys():
-                label_found = True
-            else:
-                label_found = False
-
-            if not overwrite and label_found:
-                raise ValueError("Timeseries is already added")
-            else:
-                self.timeseries[timeseries_single.label] = timeseries_single
-
-    def get_timeseries_all(self: TimeSeriesPreprocesser) -> list[Timeseries]:
-        """
-        Get all the timeseries, and the aligned label names.
-
-        Returns
-        -------
-        list[Timeseries]
-            The list of all the timeseries. and a list of the associated labels.
-        """
-        timeseries_labels = list(self.timeseries.keys())
-        return [self.timeseries[timeseries_label] for timeseries_label in timeseries_labels]
-
-    def get_labels_all(self: TimeSeriesPreprocesser) -> list[str]:
-        """
-        Get all the timeseries labels.
-
-        Returns
-        -------
-        List
-            Get the list of all timeseries labels.
-        """
-        return list(self.timeseries.keys())
+            self.timeseries[timeseries_single.label] = timeseries_single
