@@ -206,10 +206,10 @@ def test_correlation_coefficient(timeseries_1_fixture, timeseries_2_fixture, tim
         process_timeseries=False,
     )
 
-    timeseries_container._timeseries_altered[timeseries_1_fixture.label] = timeseries_1_fixture
-    timeseries_container._timeseries_altered[timeseries_2_fixture.label] = timeseries_7_fixture
-
     covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    covariate_analyser._timeseries_altered[timeseries_1_fixture.label] = timeseries_1_fixture
+    covariate_analyser._timeseries_altered[timeseries_2_fixture.label] = timeseries_7_fixture
     corr, p_value = covariate_analyser.correlation_coefficient(
         timeseries_label_1=timeseries_1_fixture.label, timeseries_label_2=timeseries_2_fixture.label, altered=False
     )
@@ -238,10 +238,11 @@ def test_covariance(timeseries_1_fixture, timeseries_1_inv_fixture, timeseries_2
         process_timeseries=False,
     )
 
-    timeseries_container._timeseries_altered[timeseries_1_fixture.label] = timeseries_1_fixture
-    timeseries_container._timeseries_altered[timeseries_7_fixture.label] = timeseries_7_fixture
-
     covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    covariate_analyser._timeseries_altered[timeseries_1_fixture.label] = timeseries_1_fixture
+    covariate_analyser._timeseries_altered[timeseries_7_fixture.label] = timeseries_7_fixture
+
     corr = covariate_analyser.covariance(
         [timeseries_1_fixture.label, timeseries_1_fixture.label], normalisation="corrcoef", altered=False
     )
@@ -283,10 +284,10 @@ def test_max_crosscorrelation(
         process_timeseries=False,
     )
 
-    timeseries_container._timeseries_altered[timeseries_1_fixture.label] = timeseries_1_fixture
-    timeseries_container._timeseries_altered[timeseries_1_inv_fixture.label] = timeseries_1_inv_fixture
-
     covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    covariate_analyser._timeseries_altered[timeseries_1_fixture.label] = timeseries_1_fixture
+    covariate_analyser._timeseries_altered[timeseries_1_inv_fixture.label] = timeseries_1_inv_fixture
 
     corr, lag = covariate_analyser.max_crosscorrelation(
         timeseries_1_fixture.label, timeseries_1_fixture.label, max_lag=None, altered=False
@@ -365,10 +366,10 @@ def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
     )
 
     assert np.allclose(
-        timeseries_container._timeseries_altered[timeseries_7_fixture.label].measurements.values, timeseries_1_gt.values
+        covariate_analyser._timeseries_altered[timeseries_7_fixture.label].measurements.values, timeseries_1_gt.values
     )
     assert np.allclose(
-        timeseries_container._timeseries_altered[timeseries_7_lag_fixture.label].measurements.values,
+        covariate_analyser._timeseries_altered[timeseries_7_lag_fixture.label].measurements.values,
         timeseries_2_gt.values,
     )
     assert freq == "M"

@@ -19,7 +19,11 @@ from statsmodels.tools.tools import add_constant
 from statsmodels.tsa.stattools import grangercausalitytests
 from statsmodels.tsa.tsatools import lagmat2ds
 
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import AggregationStrategy, TimeSeriesPreprocessor
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
+    AggregationPeriod,
+    AggregationStrategy,
+    TimeSeriesPreprocessor,
+)
 
 
 class ModelEvaluationMetric(Enum):
@@ -57,6 +61,11 @@ class CovariateAnalyser:
 
         TODO: None of the plotting functions are tested!
 
+        NOTE: It is generally considered unsafe to use the timeseries in the self._timeseries_altered attribute as
+        these have been altered with no history of how and when. There are no gaurentees that a timeseries label which
+        is in self.timeseries is in self._timeseries_altered. Only use these timeseries if you know what is stored
+        there!
+
         Parameters
         ----------
         timeseries : TimeSeriesPreprocessor | None
@@ -80,6 +89,7 @@ class CovariateAnalyser:
             "crimson",
         ]
         self.timeseries_container = timeseries_container
+        self._timeseries_altered = {}  # Store any timeseries objects requiring temporary processing.
 
     def covariate_analysis(
         self: CovariateAnalyser,
@@ -132,12 +142,12 @@ class CovariateAnalyser:
         """
         if altered:
             if (
-                timeseries_label_1 not in self.timeseries_container._timeseries_altered.keys()
-                or timeseries_label_2 not in self.timeseries_container._timeseries_altered.keys()
+                timeseries_label_1 not in self._timeseries_altered.keys()
+                or timeseries_label_2 not in self._timeseries_altered.keys()
             ):
                 raise ValueError("The labels specified are not in the altered timeseries container")
-            timeseries_1 = self.timeseries_container._timeseries_altered[timeseries_label_1]
-            timeseries_2 = self.timeseries_container._timeseries_altered[timeseries_label_2]
+            timeseries_1 = self._timeseries_altered[timeseries_label_1]
+            timeseries_2 = self._timeseries_altered[timeseries_label_2]
         else:
             timeseries_1 = self.timeseries_container.timeseries[timeseries_label_1]
             timeseries_2 = self.timeseries_container.timeseries[timeseries_label_2]
@@ -170,9 +180,7 @@ class CovariateAnalyser:
             The covariance matrix.
         """
         if altered:
-            timeseries = [
-                ts for ts in self.timeseries_container._timeseries_altered.values() if ts.label in timeseries_labels
-            ]
+            timeseries = [ts for ts in self._timeseries_altered.values() if ts.label in timeseries_labels]
         else:
             timeseries = [ts for ts in self.timeseries_container.timeseries.values() if ts.label in timeseries_labels]
 
@@ -208,8 +216,8 @@ class CovariateAnalyser:
             The cross-correlation with associated lags.
         """
         if altered:
-            timeseries_1 = deepcopy(self.timeseries_container._timeseries_altered[timeseries_label_1])
-            timeseries_2 = deepcopy(self.timeseries_container._timeseries_altered[timeseries_label_2])
+            timeseries_1 = deepcopy(self._timeseries_altered[timeseries_label_1])
+            timeseries_2 = deepcopy(self._timeseries_altered[timeseries_label_2])
         else:
             timeseries_1 = deepcopy(self.timeseries_container.timeseries[timeseries_label_1])
             timeseries_2 = deepcopy(self.timeseries_container.timeseries[timeseries_label_2])
@@ -295,24 +303,20 @@ class CovariateAnalyser:
 
         freq = self.timeseries_container.aggregation_period.time_period_shorthand
 
-        if freq == "M":
-            timeseries_2.measurements.index = timeseries_2.measurements.index + pd.offsets.MonthEnd(corr_lag)
-            if timeseries_2.measurement_uncertainties is not None:
-                timeseries_2.measurement_uncertainties.index = (
-                    timeseries_2.measurement_uncertainties.index + pd.offsets.MonthEnd(corr_lag)
-                )
-        elif freq == "Q":
-            timeseries_2.measurements.index = timeseries_2.measurements.index + pd.offsets.QuarterEnd(corr_lag)
-            if timeseries_2.measurement_uncertainties is not None:
-                timeseries_2.measurement_uncertainties.index = (
-                    timeseries_2.measurement_uncertainties.index + pd.offsets.QuarterEnd(corr_lag)
-                )
-        elif freq == "Y":
-            timeseries_2.measurements.index = timeseries_2.measurements.index + pd.offsets.YearEnd(corr_lag)
-            if timeseries_2.measurement_uncertainties is not None:
-                timeseries_2.measurement_uncertainties.index = (
-                    timeseries_2.measurement_uncertainties.index + pd.offsets.YearEnd(corr_lag)
-                )
+        offset_map = {
+            AggregationPeriod.MONTH: pd.offsets.MonthEnd,
+            AggregationPeriod.QUARTER: pd.offsets.QuarterEnd,
+            AggregationPeriod.YEAR: pd.offsets.YearEnd,
+            AggregationPeriod.DAY: pd.offsets.Day,
+        }
+
+        offset_func = offset_map[self.timeseries_container.aggregation_period]
+
+        timeseries_2.measurements.index = timeseries_2.measurements.index + offset_func(corr_lag)
+        if timeseries_2.measurement_uncertainties is not None:
+            timeseries_2.measurement_uncertainties.index = timeseries_2.measurement_uncertainties.index + offset_func(
+                corr_lag
+            )
 
         # Find the latest start datetime for all the input timeseries
         start_date = np.max([np.min(timeseries_1.measurements.index), np.min(timeseries_2.measurements.index)])
@@ -329,7 +333,7 @@ class CovariateAnalyser:
                     & (ts.measurement_uncertainties.index <= end_date)
                 ]
 
-            self.timeseries_container._timeseries_altered[ts.label] = ts
+            self._timeseries_altered[ts.label] = ts
 
         return (
             freq,
@@ -546,8 +550,8 @@ class CovariateAnalyser:
                             timeseries[row].label,
                             max_lag=max_lag,
                         )
-                        timeseries_col = deepcopy(self.timeseries_container._timeseries_altered[timeseries[col].label])
-                        timeseries_row = deepcopy(self.timeseries_container._timeseries_altered[timeseries[row].label])
+                        timeseries_col = deepcopy(self._timeseries_altered[timeseries[col].label])
+                        timeseries_row = deepcopy(self._timeseries_altered[timeseries[row].label])
                         altered = True
                     elif analysis_type == JointPlotAnalysisType.CORR:
                         timeseries_col = deepcopy(timeseries[col])

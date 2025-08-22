@@ -49,18 +49,12 @@ class TimeSeriesPreprocessor:
         """
         Initialise and create the necessary timeseries container.
 
-        NOTE: It is generally considered unsafe to use the timeseries in the self._timeseries_altered attribute as
-        these have been altered with no history of how and when. There are no gaurentees that a timeseries label which
-        is in self.timeseries is in self._timeseries_altered. Only use these timeseries if you know what is stored
-        there!
-
         Parameters
         ----------
         timeseries : list[Timeseries]
             The timeseries as Timeseries objects.
         """
         self.timeseries = {}
-        self._timeseries_altered = {}  # Store any timeseries objects requiring temporary processing.
         self.aggregation_period = time_period
         self.aggregation = aggregation
         self.add_timeseries(timeseries=timeseries)
