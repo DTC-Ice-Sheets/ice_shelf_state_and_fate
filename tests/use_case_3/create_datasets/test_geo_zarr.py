@@ -16,14 +16,6 @@ from use_case_3.create_datasets.geo_zarr import GeoZarr, ZarrStorage
 
 
 @pytest.fixture
-def dataframe_fixture() -> pd.DataFrame:
-    return pd.DataFrame(
-        np.array([[8, 3, 0, 4], [10, 2, 5, 12], [9, 1, 11, 6], [7, 14, 15, 13], [19, 18, 17, 16]]),
-        columns=["projection_y_coordinate", "projection_x_coordinate", "time", "target"],
-    )
-
-
-@pytest.fixture
 def geozarr_memory_store() -> GeoZarr:
     return GeoZarr(storage_type=ZarrStorage.memory_store)
 
@@ -59,11 +51,30 @@ def example_df_fixture() -> pd.DataFrame:
 
     combined_tifs = return_common_elements_from_two_lists(list_1=elevation_tifs, list_2=error_tifs, ascending=True)
 
-    data = load_tiffs2dataframe(
+    coord_names = ["projection_x_coordinate", "projection_y_coordinate", "time"]
+    reference_time = pd.Timestamp(year=1970, month=1, day=1)
+    observation_names = {
+        "value": "height_difference_from_reference_elevation",
+        "x": "projection_x_coordinate",
+        "y": "projection_y_coordinate",
+    }
+
+    file_name_regex_pattern = r"(\d+-\d+-\d+)\.tif"
+    date_format = "%Y-%m-%d"
+
+    data, mask_raster = load_tiffs2dataframe(
         file_names=combined_tifs,
-        folder_path_elevations=test_folder_input_path,
+        folder_path_observations=test_folder_input_path,
+        observation_names=observation_names,
+        coord_names=coord_names,
+        reference_time=reference_time,
         folder_path_errors=test_folder_input_path,
-        dem_diff=True,
+        file_path_mask=None,
+        create_raster_mask=False,
+        geometry_name=None,
+        process_datetimes=True,
+        file_name_regex_pattern=file_name_regex_pattern,
+        date_format=date_format,
     )
 
     return data
@@ -187,7 +198,10 @@ def test_calculate_chunk_dims(geozarr_local_store: GeoZarr, data_shape, n_chunks
 def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):
     geozarr_local_store.dataframe2geozarr(
         data=example_df_fixture,
-        data_columns=["height_difference_from_dem", "height_difference_from_dem_uncertainty"],
+        data_columns=[
+            "height_difference_from_reference_elevation",
+            "height_difference_from_reference_elevation_uncertainty",
+        ],
         coordinate_columns=["projection_y_coordinate", "projection_x_coordinate", "time"],
         auxiliary_columns=[],
         y_affine_negative=False,
@@ -198,17 +212,17 @@ def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.
     assert sorted(geozarr_local_store.root.keys()) == sorted(
         [
             "time",
-            "height_difference_from_dem",
-            "height_difference_from_dem_uncertainty",
+            "height_difference_from_reference_elevation",
+            "height_difference_from_reference_elevation_uncertainty",
             "projection_y_coordinate",
             "projection_x_coordinate",
         ]
     )
 
-    assert geozarr_local_store.root["height_difference_from_dem"][0, 0, 0] == 12
-    assert geozarr_local_store.root["height_difference_from_dem"][2, 0, 0] == 4
-    assert geozarr_local_store.root["height_difference_from_dem"][3, 2, 2] == 2
-    assert geozarr_local_store.root["height_difference_from_dem"].attrs["_ARRAY_DIMENSIONS"] == [
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"][0, 0, 0] == 12
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"][2, 0, 0] == 4
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"][3, 2, 2] == 2
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"].attrs["_ARRAY_DIMENSIONS"] == [
         "projection_y_coordinate",
         "projection_x_coordinate",
         "time",
@@ -220,7 +234,10 @@ def test_dataframe2geozarr(geozarr_local_store: GeoZarr, example_df_fixture: pd.
 def test_dataframe2geozarr_affine_negative(geozarr_local_store: GeoZarr, example_df_fixture: pd.DataFrame):
     geozarr_local_store.dataframe2geozarr(
         data=example_df_fixture,
-        data_columns=["height_difference_from_dem", "height_difference_from_dem_uncertainty"],
+        data_columns=[
+            "height_difference_from_reference_elevation",
+            "height_difference_from_reference_elevation_uncertainty",
+        ],
         coordinate_columns=["projection_y_coordinate", "projection_x_coordinate", "time"],
         auxiliary_columns=[],
         y_affine_negative=True,
@@ -231,17 +248,17 @@ def test_dataframe2geozarr_affine_negative(geozarr_local_store: GeoZarr, example
     assert sorted(geozarr_local_store.root.keys()) == sorted(
         [
             "time",
-            "height_difference_from_dem",
-            "height_difference_from_dem_uncertainty",
+            "height_difference_from_reference_elevation",
+            "height_difference_from_reference_elevation_uncertainty",
             "projection_y_coordinate",
             "projection_x_coordinate",
         ]
     )
 
-    assert geozarr_local_store.root["height_difference_from_dem"][3, 0, 0] == 12
-    assert geozarr_local_store.root["height_difference_from_dem"][1, 0, 0] == 4
-    assert geozarr_local_store.root["height_difference_from_dem"][0, 2, 2] == 2
-    assert geozarr_local_store.root["height_difference_from_dem"].attrs["_ARRAY_DIMENSIONS"] == [
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"][3, 0, 0] == 12
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"][1, 0, 0] == 4
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"][0, 2, 2] == 2
+    assert geozarr_local_store.root["height_difference_from_reference_elevation"].attrs["_ARRAY_DIMENSIONS"] == [
         "projection_y_coordinate",
         "projection_x_coordinate",
         "time",
