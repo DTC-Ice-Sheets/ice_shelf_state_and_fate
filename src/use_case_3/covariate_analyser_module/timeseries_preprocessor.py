@@ -49,6 +49,11 @@ class TimeSeriesPreprocessor:
         """
         Initialise and create the necessary timeseries container.
 
+        NOTE: It is generally considered unsafe to use the timeseries in the self._timeseries_altered attribute as
+        these have been altered with no history of how and when. There are no gaurentees that a timeseries label which
+        is in self.timeseries is in self._timeseries_altered. Only use these timeseries if you know what is stored
+        there!
+
         Parameters
         ----------
         timeseries : list[Timeseries]
@@ -211,34 +216,6 @@ class TimeSeriesPreprocessor:
                 ).interpolate(method="linear")
 
             self.timeseries[ts_label] = timeseries_interp
-
-    # def _infer_frequency(
-    #     self: TimeSeriesPreprocessor,
-    #     timeseries_label: str,
-    # ) -> str:
-    #     """
-    #     Infer the frequency between period index and return this as a string. Note only one of either the timeseries or
-    #     label can be provided.
-
-    #     Returns
-    #     -------
-    #     str
-    #         The period as a string.
-    #     """
-    #     timeseries = self.timeseries[timeseries_label]
-
-    #     timeseries = deepcopy(timeseries)
-    #     if not isinstance(timeseries.measurements.index, pd.PeriodIndex):
-    #         timeseries.measurements.index = timeseries.measurements.index.to_period()
-    #     freqstr = timeseries.measurements.index.freq.freqstr
-    #     if freqstr[0] == "M":
-    #         freq = "Month"
-    #     elif freqstr[0] == "Q":
-    #         freq = "Quarter"
-    #     elif freqstr[0] == "Y":
-    #         freq = "Year"
-
-    #     return freq
 
     def add_timeseries(
         self: TimeSeriesPreprocessor,

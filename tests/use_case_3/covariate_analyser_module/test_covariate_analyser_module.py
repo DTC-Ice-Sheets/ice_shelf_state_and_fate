@@ -6,16 +6,15 @@ import pytest
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import (
     CovariateAnalyser,
-    ModelEvaluationMetric,
     JointPlotAnalysisType,
+    ModelEvaluationMetric,
 )
-from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
-
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
     AggregationPeriod,
     AggregationStrategy,
     TimeSeriesPreprocessor,
 )
+from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
 
 
 @pytest.fixture
@@ -468,3 +467,61 @@ def test_jointplotanalysistype__init():
     assert JointPlotAnalysisType("corr") == JointPlotAnalysisType.CORR
     assert JointPlotAnalysisType("cross_corr") == JointPlotAnalysisType.CROSS_CORR
     assert JointPlotAnalysisType("causal") == JointPlotAnalysisType.CAUSAL
+
+
+@pytest.fixture
+def fixture_series_x():
+    return Timeseries(
+        measurements=pd.Series([-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0], name="x"),
+        label="x",
+        unit="",
+        timeseries_type=TimeseriesType("cumulative"),
+    )
+
+
+@pytest.fixture
+def fixture_series_y():
+    return Timeseries(
+        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1], name="x"),
+        label="y",
+        unit="",
+        timeseries_type=TimeseriesType("cumulative"),
+    )
+
+
+@pytest.fixture()
+def fixture_data(fixture_series_x, fixture_series_y):
+    return pd.concat([fixture_series_x.measurements, fixture_series_y.measurements], axis=1)
+
+
+def test__granger_causality_test_bestlag(fixture_data):
+    best_lag, best_bic = CovariateAnalyser._granger_causality_test_bestlag(
+        data=fixture_data, max_lags=3, metric=ModelEvaluationMetric("bic")
+    )
+
+    assert best_lag == 3
+    np.testing.assert_almost_equal(best_bic, -501.16420633063353)
+
+
+def test__granger_causality_test(fixture_series_x, fixture_series_y):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[
+            fixture_series_x,
+            fixture_series_y,
+        ],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    f_score, p_value = covariate_analyser._granger_causality_test(
+        timeseries_label_1=fixture_series_x.label,
+        timeseries_label_2=fixture_series_y.label,
+        max_lags=3,
+        metric=ModelEvaluationMetric.BIC,
+    )
+
+    np.testing.assert_almost_equal(f_score, 2.203389830508475)
+    np.testing.assert_almost_equal(p_value, 0.2059788277233571)

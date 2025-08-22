@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import textwrap
 from copy import deepcopy
+from enum import Enum
+from textwrap import wrap
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,17 +14,12 @@ import seaborn as sns
 from scipy.signal import correlate, correlation_lags
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression, RANSACRegressor
-from enum import Enum
-from textwrap import wrap
-
-from statsmodels.tsa.stattools import grangercausalitytests, adfuller, kpss
-from statsmodels.tools.tools import add_constant
-from statsmodels.tsa.tsatools import lagmat2ds
 from statsmodels.regression.linear_model import OLS
-from statsmodels.tools.eval_measures import mse
+from statsmodels.tools.tools import add_constant
+from statsmodels.tsa.stattools import grangercausalitytests
+from statsmodels.tsa.tsatools import lagmat2ds
 
-from use_case_3.timeseries_module.timeseries import Timeseries
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor, AggregationStrategy
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import AggregationStrategy, TimeSeriesPreprocessor
 
 
 class ModelEvaluationMetric(Enum):
@@ -58,6 +55,8 @@ class CovariateAnalyser:
         Initialise the module by passing in the timeseries container with the processed timeseries for covariate
         analysis.
 
+        TODO: None of the plotting functions are tested!
+
         Parameters
         ----------
         timeseries : TimeSeriesPreprocessor | None
@@ -65,8 +64,8 @@ class CovariateAnalyser:
         alpha : float, optional
             The default significance value used in any hypothesis tests, by default 0.05
         """
-        self.alpha = alpha
-        self.colours = [
+        self.alpha = alpha  # The critical value
+        self.colours = [  # Some colours for the plots to use.
             "black",
             "coral",
             "forestgreen",
@@ -110,8 +109,7 @@ class CovariateAnalyser:
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, altered: bool = False
     ) -> tuple[float, float]:
         """
-        Calculate the Pearson Correlation Coefficient between two time series. Note only one of either timeseries_labels
-        or timeseries can be specified.
+        Calculate the Pearson Correlation Coefficient between two time series.
 
         Parameters
         ----------
@@ -458,11 +456,13 @@ class CovariateAnalyser:
             reg_2.estimator_.intercept_,
         )
 
-    def jointplot(  # noqa
+    def jointplot(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True
     ) -> plt.plot:
         """
         Visualise a joint plot between two time series. This returns a plot.
+
+        TODO: Currently not necessarily used, but will lieky be useful so leaving currently.
 
         Parameters
         ----------
@@ -497,7 +497,7 @@ class CovariateAnalyser:
 
         return joint
 
-    def jointplot_grid(
+    def jointplot_grid(  # noqa C901
         self: CovariateAnalyser,
         axis_labels: list = None,
         max_lag: int = None,
@@ -507,20 +507,21 @@ class CovariateAnalyser:
         Plot a gridded jointplot for the given set of timeseries. Note that you can pass crosscorr True if the maximum
         cross-correlation is desired. This method returns a matplotlib figure and associated axes.
 
+        TODO: This is currently a fairly horrible method, but not sure how to simplify currently.
+
         Parameters
         ----------
         timeseries_labels : list[str]
             The timeseries labels to be plotted.
-        crosscorr : bool, optional
-            Whether the pearson correlation coefficient (False) or the maximum cross correlation should be used (True),
-            by default False.
         max_lag : int, optional
             The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
             default None.
         axis_labels : list, optional
             A list of labels which can be used to customise the axis labels if required, by default None.
+        analysis_type : JointPlotAnalysisType, optional
+            Define the analysis type to be conducted.
         """
-        timeseries = [ts for ts in self.timeseries_container.timeseries.values()]
+        timeseries = list(self.timeseries_container.timeseries.values())
 
         width_ratios = [3] * len(timeseries) + [1]
         height_ratios = [3] * len(timeseries) + [1]
@@ -639,7 +640,7 @@ class CovariateAnalyser:
 
     def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list = None) -> tuple[plt.figure, plt.axes]:
         """
-        Plot a set of timeseries.
+        Plot all the timeseries in the timeseries container.
 
         Parameters
         ----------
@@ -654,7 +655,7 @@ class CovariateAnalyser:
             sharex="col",
         )
 
-        for n, label in enumerate(timeseries_labels):
+        for n, _ in enumerate(timeseries_labels):
             sns.lineplot(
                 x=self.timeseries_container.timeseries[timeseries_labels[n]].measurements.index,
                 y=self.timeseries_container.timeseries[timeseries_labels[n]].measurements.values,
@@ -720,7 +721,7 @@ class CovariateAnalyser:
         data : pd.DataFrame
             A 2d dataset with two variable columns.
         max_lags : int
-            The maximum number of lags (need to define how this is determined).
+            The maximum number of lags which must be <= floor((n - 1) / 3) - 1 where n is the no. rows in data.
         metric : ModelEvaluationMetric, optional
             The evaluation metric used to evaluate the best model fit, by default ModelEvaluationMetric.BIC
 
@@ -734,10 +735,13 @@ class CovariateAnalyser:
         ValueError
             "The metric must be one of ModelEvaluationMetric.BIC or ModelEvaluationMetric.AIC"
         """
+        # Set some arbritrary values for the best model fits
         best_lag = None
         best_bic = 1e99
-        for lag in range(max_lags):
-            lag += 1
+
+        # Loop through each lag and assess the model
+        for lag in range(1, max_lags + 1):
+            # Conver the data into an input matrix with lagged X and Y variables.
             dta = lagmat2ds(data, lag, trim="both", dropex=1)
 
             # We always add an intercept term to the model here
@@ -749,6 +753,8 @@ class CovariateAnalyser:
                 score = model.aic
             else:
                 raise ValueError("The metric must be one of ModelEvaluationMetric.BIC or ModelEvaluationMetric.AIC")
+            # If the model performs better store the lag. Note this will prefer models with smaller lags if performance
+            # is equal.
             if score < best_bic:
                 best_lag = lag
                 best_bic = model.bic
@@ -761,7 +767,7 @@ class CovariateAnalyser:
         timeseries_label_2: str,
         max_lags: int,
         metric: ModelEvaluationMetric = ModelEvaluationMetric.BIC,
-    ) -> tuple[int, float]:
+    ) -> tuple[float, float]:
         """
         Conduct a granger causality test to determine causality between two variables. This finds the lag (i.e. the
         number of lag variables in time for both X and Y) which results in the best model fit. Note, that in this case
@@ -774,13 +780,14 @@ class CovariateAnalyser:
         timeseries_label_2 : str
             The variable for the second time series.
         max_lags : int
-            _description_
+            The maximum number of lags, if to large will be adjusted to floor((n - 1) / 3) - 1 where n is the no. rows
+             in data.
         metric : ModelEvaluationMetric, optional
-            _description_, by default ModelEvaluationMetric.BIC
+            The evaluation metric used to evaluate the best model fit, by default ModelEvaluationMetric.BIC
 
         Returns
         -------
-        tuple[int, float]
+        tuple[float, float]
             f-score and associated p-value.
 
         Raises
