@@ -55,9 +55,12 @@ class TimeSeriesPreprocessor:
             The timeseries as Timeseries objects.
         """
         self.timeseries = {}
+        self._timeseries_altered = {}  # Store any timeseries objects requiring temporary processing.
         self.aggregation_period = time_period
         self.aggregation = aggregation
         self.add_timeseries(timeseries=timeseries)
+        self.start_date = None
+        self.end_date = None
         if process_timeseries:
             self.process_timeseries()
 
@@ -209,33 +212,33 @@ class TimeSeriesPreprocessor:
 
             self.timeseries[ts_label] = timeseries_interp
 
-    def _infer_frequency(
-        self: TimeSeriesPreprocessor,
-        timeseries_label: str,
-    ) -> str:
-        """
-        Infer the frequency between period index and return this as a string. Note only one of either the timeseries or
-        label can be provided.
+    # def _infer_frequency(
+    #     self: TimeSeriesPreprocessor,
+    #     timeseries_label: str,
+    # ) -> str:
+    #     """
+    #     Infer the frequency between period index and return this as a string. Note only one of either the timeseries or
+    #     label can be provided.
 
-        Returns
-        -------
-        str
-            The period as a string.
-        """
-        timeseries = self.timeseries[timeseries_label]
+    #     Returns
+    #     -------
+    #     str
+    #         The period as a string.
+    #     """
+    #     timeseries = self.timeseries[timeseries_label]
 
-        timeseries = deepcopy(timeseries)
-        if not isinstance(timeseries.measurements.index, pd.PeriodIndex):
-            timeseries.measurements.index = timeseries.measurements.index.to_period()
-        freqstr = timeseries.measurements.index.freq.freqstr
-        if freqstr[0] == "M":
-            freq = "Month"
-        elif freqstr[0] == "Q":
-            freq = "Quarter"
-        elif freqstr[0] == "Y":
-            freq = "Year"
+    #     timeseries = deepcopy(timeseries)
+    #     if not isinstance(timeseries.measurements.index, pd.PeriodIndex):
+    #         timeseries.measurements.index = timeseries.measurements.index.to_period()
+    #     freqstr = timeseries.measurements.index.freq.freqstr
+    #     if freqstr[0] == "M":
+    #         freq = "Month"
+    #     elif freqstr[0] == "Q":
+    #         freq = "Quarter"
+    #     elif freqstr[0] == "Y":
+    #         freq = "Year"
 
-        return freq
+    #     return freq
 
     def add_timeseries(
         self: TimeSeriesPreprocessor,
