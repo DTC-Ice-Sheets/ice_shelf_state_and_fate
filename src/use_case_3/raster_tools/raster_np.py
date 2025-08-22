@@ -65,7 +65,7 @@ class RasterNp(np.ndarray):
             ideal but it is handled. (c.f. _get_corrected_bounding_box)
         resolution : float
             The spacing between each pixel. Strictly redundant information for the creation of this object
-            but it is usually known and helps catch obvious misunderstandigns of raster extents.
+            but it is usually known and helps catch obvious misunderstandings of raster extents.
         y_affine_negative : Optional[bool]
             If True the data is assumed to decrease in y coordinate as y index increases, by default True
         proj4_code : Optional[Union[str, None]]
@@ -86,6 +86,7 @@ class RasterNp(np.ndarray):
         # Verify / correct dimensions
         expected_x_count = round((bounding_box.max_x - bounding_box.min_x) / resolution)
         expected_y_count = round((bounding_box.max_y - bounding_box.min_y) / resolution)
+
         if self.shape[1] - expected_x_count == 1 and self.shape[0] - expected_y_count == 1:
             bounding_box.min_x = bounding_box.min_x - resolution / 2
             bounding_box.max_x = bounding_box.max_x + resolution / 2
