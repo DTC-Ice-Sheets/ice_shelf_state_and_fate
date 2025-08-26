@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from typing import Any, List, Optional, Tuple, Union
 
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
@@ -14,6 +13,7 @@ from affine import Affine
 from numpy.typing import NDArray
 from rasterio.features import geometry_mask
 from rasterio.windows import Window, from_bounds
+from shapely.geometry import MultiPolygon, Polygon
 
 from use_case_3.raster_tools.bounding_box import BoundingBox
 from use_case_3.raster_tools.helpers import make_grid_mesh_xy
@@ -591,12 +591,12 @@ class RasterNp(np.ndarray):
 
     @staticmethod
     def rasterise_mask_from_geometry(
-        geometries: Union[list, gpd.GeoDataFrame],
-        y_min: Union[int, float],
-        y_max: Union[int, float],
-        x_min: Union[int, float],
-        x_max: Union[int, float],
-        resolution: Union[int, float],
+        geometries: list | MultiPolygon | Polygon,
+        y_min: int | float,
+        y_max: int | float,
+        x_min: int | float,
+        x_max: int | float,
+        resolution: int | float,
         y_affine_negative: bool = False,
     ) -> RasterNp:
         """
@@ -634,7 +634,7 @@ class RasterNp(np.ndarray):
         )
 
         mask = geometry_mask(
-            geometries=geometries["geometry"], out_shape=(y, x), transform=transform, invert=True, all_touched=True
+            geometries=geometries, out_shape=(y, x), transform=transform, invert=False, all_touched=True
         ).astype(int)
         mask = RasterNp(
             input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative

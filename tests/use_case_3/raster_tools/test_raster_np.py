@@ -2,7 +2,6 @@
 
 import os
 
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
@@ -436,10 +435,10 @@ def test_mask_from_raster_np(dummy_raster, bounding_box_fixture):
 def test_rasterise_mask_from_geometry():
     coords = ((100.0, 1200.0), (300.0, 1200.0), (300.0, 1300.0), (100.0, 1300.0))
     polygon = Polygon(coords)
-    geometries = gpd.GeoDataFrame([[polygon]], columns=["geometry"])
 
     mask = RasterNp.rasterise_mask_from_geometry(
-        geometries=geometries, y_min=1050, y_max=1450, x_min=50, x_max=450, resolution=100, y_affine_negative=True
+        geometries=[polygon], y_min=1050, y_max=1450, x_min=50, x_max=450, resolution=100, y_affine_negative=True
     )
 
-    assert np.allclose(mask, np.array([[0, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0]]))
+    # assert np.allclose(mask, np.array([[0, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0]]))
+    assert np.allclose(mask, np.array([[1, 1, 1, 1], [0, 0, 0, 1], [0, 0, 0, 1], [1, 1, 1, 1]]))

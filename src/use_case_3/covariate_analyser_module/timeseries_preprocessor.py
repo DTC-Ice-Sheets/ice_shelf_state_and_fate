@@ -3,37 +3,15 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from enum import Enum
 
 import numpy as np
 import pandas as pd
 
 from use_case_3.timeseries_module.timeseries import Timeseries
-
-
-class AggregationStrategy(Enum):
-    """The available aggregation types."""
-
-    MEAN = "mean"
-    MEDIAN = "median"
-    MAX = "max"
-    MIN = "min"
-
-    def __init__(self, aggregation: str) -> None:
-        self.aggregation = aggregation
-
-
-class AggregationPeriod(Enum):
-    """The available aggregation periods."""
-
-    YEAR = ("YS", "Y")
-    QUARTER = ("QS", "Q")
-    MONTH = ("MS", "M")
-    DAY = ("d", "d")
-
-    def __init__(self, period: str, time_period_shorthand: str) -> None:
-        self.period = period
-        self.time_period_shorthand = time_period_shorthand
+from use_case_3.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+)
 
 
 class TimeSeriesPreprocessor:
