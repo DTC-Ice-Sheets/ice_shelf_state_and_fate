@@ -1,6 +1,7 @@
 """Module for the manipulation of timeseries."""
 
 from __future__ import annotations
+
 from enum import Enum
 
 
