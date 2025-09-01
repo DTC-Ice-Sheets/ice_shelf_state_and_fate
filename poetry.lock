@@ -3196,14 +3196,14 @@ files = [
 
 [[package]]
 name = "zarr"
-version = "3.1.1"
+version = "3.1.2"
 description = "An implementation of chunked, compressed, N-dimensional arrays for Python"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "zarr-3.1.1-py3-none-any.whl", hash = "sha256:9a0b7e7c27bf62965b8eef6b8b8fdb9b47381f0738be35e40f37be6479b546be"},
-    {file = "zarr-3.1.1.tar.gz", hash = "sha256:17db72f37f2489452d2137ac891c4133b8f976f9189d8efd3e75f3b3add84e8c"},
+    {file = "zarr-3.1.2-py3-none-any.whl", hash = "sha256:c3e180f53ee0ef91b86f7feff6f9dd381ddd1b512d1a46580530966a493387b6"},
+    {file = "zarr-3.1.2.tar.gz", hash = "sha256:688e4eb79045c110128cd16f301f2f58fa19507b1803dcbea0ea894e66e06274"},
 ]
 
 [package.dependencies]
@@ -3244,4 +3244,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "5374abc88858fe433121c54222a92ffaddd718c066fb70e17960e81495cbc319"
+content-hash = "064dc9223e3fb0b497767fde7ed288e1a6f0ad01bbe5c1d846a2b52a7ec65db3"
