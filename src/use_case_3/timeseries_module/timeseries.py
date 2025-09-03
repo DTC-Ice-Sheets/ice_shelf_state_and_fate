@@ -33,9 +33,9 @@ class Timeseries:
     """The timeseries data class. A wrapped to maintain metadata with the timeseries."""
 
     label: str
-    measurement_name: str
     timeseries_type: TimeseriesType
     timeseries_region: TimeseriesRegion
+    measurement_name: str | None = None
     measurements: pd.Series | None = None
     measurement_std: pd.Series | None = None
     measurement_n: pd.Series | None = None
@@ -54,7 +54,7 @@ class Timeseries:
         data: xr.Dataset,
         measurement_name: str,
         measurement_uncertainty_name: None | str,
-        mask_geometries: dict[str : Polygon | MultiPolygon | None],
+        mask_geometries: dict[str, Polygon | MultiPolygon | None],
         apply_mask: bool,
         aggregate: AggregationStrategy = AggregationStrategy.MEAN,
         period: None | AggregationPeriod = AggregationPeriod.MONTH,
@@ -183,30 +183,46 @@ class Timeseries:
                     t0_normalisation=t0_normalisation,
                     modify=modify,
                 )
-
-                self.measurement_uncertainties = data_uncertainties_agg["uncertainty"]
-                self.measurement_uncertainties_std = data_uncertainties_agg["uncertainty_std"]
-                self.measurement_uncertainties_n = data_uncertainties_agg["uncertainty_n"]
-
-            self.measurements = data_agg["aggregation"]
-            self.measurement_std = data_agg["data_std"]
-            self.measurement_n = data_agg["aggregation_n"]
             self.measurement_coverage = data_coverage_agg["coverage"]
             self.measurement_coverage_n = data_coverage_agg["coverage_n"]
         else:
-            self.measurements = pd.Series(data_observations.ravel(), index=data["time"].values)
-            self.measurements = self.measurements.loc[~self.measurements.index.duplicated(keep="first")]
-            self.measurement_std = None
-            self.measurement_n = None
+            modify = True
+            data_agg = self._calculate_aggregate_timeseries(
+                data_observations=data_observations,
+                dimension_data=dimension_data,
+                dimension_names=dimension_names,
+                aggregate=aggregate,
+                period=period,
+                t0_normalisation=t0_normalisation,
+                modify=modify,
+            )
+            data_agg = data_agg.loc[~data_agg.index.duplicated(keep="first")]
             self.measurement_coverage = None
             self.measurement_coverage_n = None
             if measurement_uncertainty_name is not None:
-                self.measurement_uncertainties = pd.Series(data_uncertainties.ravel(), index=data["time"].values)
-                self.measurement_uncertainties = self.measurement_uncertainties.loc[
-                    ~self.measurement_uncertainties.index.duplicated(keep="first")
+                data_uncertainties_agg = self._propagate_uncertainties_timeseries(
+                    data_observations=data_observations,
+                    data_uncertainties=data_uncertainties,
+                    dimension_data=dimension_data,
+                    dimension_names=dimension_names,
+                    aggregate=aggregate,
+                    uncertainty=uncertainty,
+                    period=period,
+                    independent=independent,
+                    t0_normalisation=t0_normalisation,
+                    modify=modify,
+                )
+                data_uncertainties_agg = data_uncertainties_agg.loc[
+                    ~data_uncertainties_agg.index.duplicated(keep="first")
                 ]
-                self.measurement_uncertainties_std = None
-                self.measurement_uncertainties_n = None
+
+        self.measurements = data_agg["aggregation"]
+        self.measurement_std = data_agg["data_std"]
+        self.measurement_n = data_agg["aggregation_n"]
+        if measurement_uncertainty_name is not None:
+            self.measurement_uncertainties = data_uncertainties_agg["uncertainty"]
+            self.measurement_uncertainties_std = data_uncertainties_agg["uncertainty_std"]
+            self.measurement_uncertainties_n = data_uncertainties_agg["uncertainty_n"]
 
         self.uncertainty = uncertainty
         self.extent_polygon = mask_geometry
@@ -218,7 +234,7 @@ class Timeseries:
         dimension_data: dict,
         dimension_names: list[str],
         aggregate: AggregationStrategy = AggregationStrategy.MEAN,
-        period: None | str = None,
+        period: None | AggregationPeriod = None,
         t0_normalisation: None | str = None,
         modify: bool = False,
     ) -> pd.DataFrame:
@@ -307,7 +323,7 @@ class Timeseries:
         dimension_names: list[str],
         aggregate: AggregationStrategy = AggregationStrategy.MEAN,
         uncertainty: UncertaintyType = UncertaintyType.STD,
-        period: None | str = None,
+        period: None | AggregationPeriod = None,
         independent: bool = False,
         t0_normalisation: None | str = None,
         modify: bool = False,
@@ -750,7 +766,7 @@ class Timeseries:
         data_observations: np.ndarray,
         dimension_data: dict,
         dimension_names: list[str],
-        period: None | str = None,
+        period: None | AggregationPeriod = None,
         percentiles: tuple[float, float] = (25, 75),
     ) -> pd.DataFrame:
         """
@@ -844,7 +860,7 @@ class Timeseries:
         dimension_data: dict,
         dimension_names: list[str],
         data_mask: None | np.ndarray = None,
-        period: None | str = None,
+        period: None | AggregationPeriod = None,
     ) -> pd.DataFrame:
         """
         Calculate the coverage for the timeseries. Coverage is calculated against a reference mask.
@@ -1088,7 +1104,7 @@ class Timeseries:
 
         return data, dimension_names
 
-    def _find_time_indexes(self: Timeseries, time_coord: pd.Series, period: str) -> dict:
+    def _find_time_indexes(self: Timeseries, time_coord: pd.Series, period: AggregationPeriod) -> dict:
         """
         Find the time indexes to slice into the data-cube.
 
@@ -1121,9 +1137,9 @@ class Timeseries:
             [f"{y}-{m}" for y, m in zip(time_coord_df["year"], time_coord_df["month"])]
         )
 
-        if period == "year":
+        if period == AggregationPeriod.YEAR:
             return {year: time_coord_df[time_coord_df["year"] == year].index for year in time_coord_df["year"].unique()}
-        elif period == "month":
+        elif period == AggregationPeriod.MONTH:
             return {
                 date_month: time_coord_df[time_coord_df["date_month"] == date_month].index
                 for date_month in time_coord_df["date_month"].unique()
@@ -1133,7 +1149,7 @@ class Timeseries:
         self: Timeseries,
         dimension_names: list,
         dimension_data: xr.DataArray | pd.DataFrame | dict,
-        period: None | str,
+        period: None | AggregationPeriod,
     ) -> dict:
         """
         Process the time indexes. This returns a dictionary with the each key containing the indexes

@@ -9,6 +9,7 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationStrategy,
     NormalisationType,
+    AggregationPeriod,
     # PlotSpreadType,
     TimeseriesType,
     TimeseriesRegion,
@@ -159,6 +160,108 @@ def time_series_fixture():
     )
 
 
+@pytest.fixture
+def timeseries_dataset_fixture(timeseries_fixture):
+    ds = xr.Dataset(
+        data_vars={
+            "measurement": (["time", "y", "x"], timeseries_fixture[0].values.reshape((-1, 1, 1)).astype(float)),
+            "measurement_uncertainties": (
+                ["time", "y", "x"],
+                timeseries_fixture[1].values.reshape((-1, 1, 1)).astype(float),
+            ),
+        },
+        coords={
+            "time": timeseries_fixture[0].index.values,
+            "x": [0],
+            "y": [1],
+        },
+    )
+
+    return ds, "time series 1", "unit 1", "measurement", "cumulative", "ice_shelf"
+
+
+def test_process_timeseries_1d(timeseries_dataset_fixture):
+    timeseries = Timeseries(
+        label=timeseries_dataset_fixture[1],
+        measurement_name=timeseries_dataset_fixture[2],
+        unit=timeseries_dataset_fixture[2],
+        timeseries_type=TimeseriesType(timeseries_dataset_fixture[4]),
+        timeseries_region=TimeseriesRegion(timeseries_dataset_fixture[5]),
+    )
+
+    mask_geometries = {"ice_shelf": None, "ocean": None, "climate": None}
+
+    timeseries.process_timeseries(
+        data=timeseries_dataset_fixture[0],
+        measurement_name=timeseries_dataset_fixture[3],
+        measurement_uncertainty_name="measurement_uncertainties",
+        mask_geometries=mask_geometries,
+        apply_mask=False,
+        period=AggregationPeriod.MONTH,
+        aggregate=AggregationStrategy.MEAN,
+        uncertainty=UncertaintyType.STD,
+        independent=True,
+        t0_normalisation=None,
+    )
+
+    assert timeseries.label == timeseries_dataset_fixture[1]
+    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
+    assert np.allclose(timeseries.measurement_std.values, np.zeros(timeseries.measurements.values.shape))
+    assert np.allclose(timeseries.measurement_n.values, np.ones(timeseries.measurements.values.shape))
+    assert np.allclose(
+        timeseries.measurement_uncertainties.values,
+        timeseries_dataset_fixture[0]["measurement_uncertainties"].values.ravel(),
+    )
+    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
+    assert np.allclose(
+        timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
+    )
+    assert np.allclose(
+        timeseries.measurement_uncertainties_n.values, np.ones(timeseries.measurement_uncertainties.values.shape)
+    )
+
+
+def test_process_timeseries_3d(timeseries_dataset_fixture):
+    timeseries = Timeseries(
+        label=timeseries_dataset_fixture[1],
+        measurement_name=timeseries_dataset_fixture[2],
+        unit=timeseries_dataset_fixture[2],
+        timeseries_type=TimeseriesType(timeseries_dataset_fixture[4]),
+        timeseries_region=TimeseriesRegion(timeseries_dataset_fixture[5]),
+    )
+
+    mask_geometries = {"ice_shelf": None, "ocean": None, "climate": None}
+
+    timeseries.process_timeseries(
+        data=timeseries_dataset_fixture[0],
+        measurement_name=timeseries_dataset_fixture[3],
+        measurement_uncertainty_name="measurement_uncertainties",
+        mask_geometries=mask_geometries,
+        apply_mask=False,
+        period=AggregationPeriod.MONTH,
+        aggregate=AggregationStrategy.MEAN,
+        uncertainty=UncertaintyType.STD,
+        independent=True,
+        t0_normalisation=None,
+    )
+
+    assert timeseries.label == timeseries_dataset_fixture[1]
+    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
+    assert np.allclose(timeseries.measurement_std.values, np.zeros(timeseries.measurements.values.shape))
+    assert np.allclose(timeseries.measurement_n.values, np.ones(timeseries.measurements.values.shape))
+    assert np.allclose(
+        timeseries.measurement_uncertainties.values,
+        timeseries_dataset_fixture[0]["measurement_uncertainties"].values.ravel(),
+    )
+    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
+    assert np.allclose(
+        timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
+    )
+    assert np.allclose(
+        timeseries.measurement_uncertainties_n.values, np.ones(timeseries.measurement_uncertainties.values.shape)
+    )
+
+
 def test_timeseries_type():
     assert TimeseriesType.CUMULATIVE.value == "cumulative"
     assert TimeseriesType.DERIVATIVE.value == "derivative"
@@ -262,7 +365,7 @@ def test__expand_dimensions3d(timeseries_obj_fixture, data_array_3d_fixture, dim
 
 def test__find_time_indexes(timeseries_obj_fixture, dimension_data_fixture_dates):
     time_idx = timeseries_obj_fixture._find_time_indexes(
-        time_coord=pd.Series(dimension_data_fixture_dates["time"], name="time"), period="year"
+        time_coord=pd.Series(dimension_data_fixture_dates["time"], name="time"), period=AggregationPeriod.YEAR
     )
     keys = [2012, 2014]
 
@@ -271,7 +374,7 @@ def test__find_time_indexes(timeseries_obj_fixture, dimension_data_fixture_dates
     assert time_idx[2014].equals(pd.Index([2]))
 
     time_idx = timeseries_obj_fixture._find_time_indexes(
-        time_coord=pd.Series(dimension_data_fixture_dates["time"], name="time"), period="month"
+        time_coord=pd.Series(dimension_data_fixture_dates["time"], name="time"), period=AggregationPeriod.MONTH
     )
     keys = ["2012-1", "2012-3", "2014-1"]
     keys = [
@@ -302,7 +405,9 @@ def test__process_time_indexes(
     assert time_idx == {10: [0], 11: [1], 12: [2]}
 
     time_idx = timeseries_obj_fixture._process_time_indexes(
-        dimension_names=dimension_names_3d_fixture, dimension_data=dimension_data_fixture_dates, period="year"
+        dimension_names=dimension_names_3d_fixture,
+        dimension_data=dimension_data_fixture_dates,
+        period=AggregationPeriod.YEAR,
     )
 
     keys = [2012, 2014]
@@ -593,7 +698,7 @@ def test__calculate_coverage_timeseries(
         dimension_data=dimension_data_fixture_dates,
         dimension_names=dimension_names_ordered_3d_fixture,
         data_mask=mask_fixture,
-        period="month",
+        period=AggregationPeriod.MONTH,
     )
 
     assert np.allclose(np.array([[100, 8], [87.5, 7], [75, 6]]), coverage)
@@ -636,7 +741,7 @@ def test__propagate_uncertainties_timeseries(
         dimension_names=dimension_names_ordered_3d_fixture,
         aggregate=AggregationStrategy("mean"),
         uncertainty=UncertaintyType("std"),
-        period="year",
+        period=AggregationPeriod.YEAR,
         independent=True,
         t0_normalisation=None,
     )
@@ -733,7 +838,7 @@ def test__calculate_percentiles_timeseries(
         data_observations=data_array_nans_fixture,
         dimension_data=dimension_data_fixture_dates,
         dimension_names=dimension_names_ordered_3d_fixture,
-        period="month",
+        period=AggregationPeriod.MONTH,
         percentiles=(25, 75),
     )
 
