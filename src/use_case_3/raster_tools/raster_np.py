@@ -624,8 +624,8 @@ class RasterNp(np.ndarray):
         RasterNp
             The raster mask.
         """
-        y = int(np.ceil((y_max - y_min) / resolution))
-        x = int(np.ceil((x_max - x_min) / resolution))
+        y = int(np.round((y_max - y_min) / resolution))
+        x = int(np.round((x_max - x_min) / resolution))
 
         bounding_box = BoundingBox(min_y=y_min, max_y=y_max, min_x=x_min, max_x=x_max)
 
@@ -640,4 +640,4 @@ class RasterNp(np.ndarray):
             input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
         )
 
-        return mask
+        return mask.astype(bool)

@@ -44,6 +44,9 @@ plotly = "^6.3.0"
 nbformat = "^5.10.4"
 dash = "^3.2.0"
 dash-bootstrap-components = "^2.0.4"
+dotenv = "^0.9.9"
+ipywidgets = "^8.1.7"
+jupyter = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"

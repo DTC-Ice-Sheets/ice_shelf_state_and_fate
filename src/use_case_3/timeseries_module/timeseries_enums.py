@@ -14,6 +14,7 @@ class AggregationStrategy(Enum):
     MIN = "min"
     STD = "std"
     IQR = "IQR"
+    NONE = "None"
 
     def __init__(self, aggregation: str) -> None:
         self.aggregation = aggregation
@@ -77,3 +78,40 @@ class TimeseriesType(Enum):
 
     CUMULATIVE = "cumulative"
     DERIVATIVE = "derivative"
+
+
+class TimeseriesRegion(Enum):
+    """
+    Define the region type of the timeseries. This can be iceshelf, ocean or climate. This defines how the mask is
+    calculated and applied.
+
+    Parameters
+    ----------
+    Enum : str
+        The timeseries type.
+    """
+
+    ICE_SHELF = "ice_shelf"
+    OCEAN = "ocean"
+    CLIMATE = "climate"
+
+
+class ModelEvaluationMetric(Enum):
+    """The available model evaluation metrics."""
+
+    AIC = "aic"
+    BIC = "bic"
+
+    def __init__(self, evaluation_metric: str) -> None:
+        self.evaluation_metric = evaluation_metric
+
+
+class JointPlotAnalysisType(Enum):
+    """The available analysis types used to evaluate correlation or causality between variables."""
+
+    CORR = "corr"
+    CROSS_CORR = "cross_corr"
+    CAUSAL = "causal"
+
+    def __init__(self, analysis_type: str) -> None:
+        self.analysis_type = analysis_type

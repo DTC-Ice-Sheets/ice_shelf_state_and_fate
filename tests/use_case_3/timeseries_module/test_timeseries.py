@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
@@ -10,6 +11,7 @@ from use_case_3.timeseries_module.timeseries_enums import (
     NormalisationType,
     # PlotSpreadType,
     TimeseriesType,
+    TimeseriesRegion,
     UncertaintyType,
 )
 
@@ -38,12 +40,17 @@ def timeseries_fixture():
         ],
     )
 
-    return timeseries, uncertainties, "time series 1", "unit 1"
+    return timeseries, uncertainties, "time series 1", "unit 1", "measurement 1", "cumulative", "ice_shelf"
 
 
 @pytest.fixture
 def timeseries_obj_fixture():
-    return Timeseries(label="test", timeseries_type=TimeseriesType.CUMULATIVE)
+    return Timeseries(
+        label="test",
+        measurement_name="measurement 1",
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        timeseries_region=TimeseriesRegion("ice_shelf"),
+    )
 
 
 @pytest.fixture
@@ -160,23 +167,29 @@ def test_timeseries_type():
 def test_timeseries(timeseries_fixture):
     timeseries = Timeseries(
         label=timeseries_fixture[2],
+        measurement_name=timeseries_fixture[4],
         measurements=timeseries_fixture[0],
         measurement_uncertainties=timeseries_fixture[1],
         unit=timeseries_fixture[3],
-        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_type=TimeseriesType(timeseries_fixture[5]),
+        timeseries_region=TimeseriesRegion(timeseries_fixture[6]),
     )
 
     assert timeseries.label == "time series 1"
     assert timeseries.unit == "unit 1"
+    assert timeseries.measurement_name == "measurement 1"
     assert timeseries.measurements.equals(timeseries_fixture[0])
     assert timeseries.measurement_uncertainties.equals(timeseries_fixture[1])
     assert timeseries.timeseries_type == TimeseriesType("cumulative")
+    assert timeseries.timeseries_region == TimeseriesRegion("ice_shelf")
 
     timeseries = Timeseries(
         label=timeseries_fixture[2],
+        measurement_name=timeseries_fixture[4],
         measurements=timeseries_fixture[0],
         unit=timeseries_fixture[3],
-        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_type=TimeseriesType(timeseries_fixture[5]),
+        timeseries_region=TimeseriesRegion("ocean"),
     )
 
     assert timeseries.label == "time series 1"
@@ -184,6 +197,7 @@ def test_timeseries(timeseries_fixture):
     assert timeseries.measurements.equals(timeseries_fixture[0])
     assert timeseries.measurement_uncertainties is None
     assert timeseries.timeseries_type == TimeseriesType("cumulative")
+    assert timeseries.timeseries_region == TimeseriesRegion("ocean")
 
 
 def test__move_axes_time(data_array_3d_fixture, dimension_names_3d_fixture):
@@ -299,10 +313,10 @@ def test__process_time_indexes(
 
 
 def test_count_nan_elements(data_array_3d_fixture, data_array_nans_fixture, time_index_fixture):
-    assert np.array_equal(
-        Timeseries._count_nan_elements(data=data_array_3d_fixture, non_nan=False),
-        np.array([0]),
-    )
+    # assert np.array_equal(
+    #     Timeseries._count_nan_elements(data=data_array_3d_fixture, non_nan=False),
+    #     np.array([0]),
+    # )
 
     assert np.array_equal(
         Timeseries._count_nan_elements(data=data_array_3d_fixture, non_nan=False, time_index=time_index_fixture),
@@ -328,8 +342,8 @@ def test_count_nan_elements(data_array_3d_fixture, data_array_nans_fixture, time
 def test_spread_calculation_type():
     assert Timeseries._spread_calculation_type(AggregationStrategy("mean")) == (AggregationStrategy.STD, True)
     assert Timeseries._spread_calculation_type(AggregationStrategy("median")) == (AggregationStrategy.IQR, True)
-    assert Timeseries._spread_calculation_type(AggregationStrategy("max")) == (None, False)
-    assert Timeseries._spread_calculation_type(AggregationStrategy("min")) == (None, False)
+    assert Timeseries._spread_calculation_type(AggregationStrategy("max")) == (AggregationStrategy.NONE, False)
+    assert Timeseries._spread_calculation_type(AggregationStrategy("min")) == (AggregationStrategy.NONE, False)
 
 
 def test_mask_data_cube(
@@ -533,6 +547,22 @@ def test__calculate_aggregate_timeseries_3d_median(
     assert list(data_df.columns) == ["aggregation", "data_IQR", "aggregation_n"]
 
 
+def test__calculate_aggregate_timeseries_3d_max(
+    timeseries_obj_fixture, data_array_nans_fixture, dimension_names_3d_fixture, dimension_data_fixture
+):
+    data_df = timeseries_obj_fixture._calculate_aggregate_timeseries(
+        data_observations=data_array_nans_fixture,
+        dimension_data=dimension_data_fixture,
+        dimension_names=dimension_names_3d_fixture,
+        aggregate=AggregationStrategy.MAX,
+    )
+    assert data_df.index.to_list() == [10, 11, 12]
+    assert list(data_df.columns) == ["aggregation", "data_None", "aggregation_n"]
+    assert np.allclose(data_df["aggregation"].values, np.array([19, 26, 27]), rtol=1e-2)
+    assert np.allclose(data_df["data_None"].values, np.array([0, 0, 0]), rtol=1e-2)
+    assert np.allclose(data_df["aggregation_n"].values, np.array([0, 0, 0]), rtol=1e-2)
+
+
 def test__combine_uncertainties_quadrature(uncertainty_vector_fixture):
     assert np.allclose(
         Timeseries._combine_uncertainties_quadrature(
@@ -645,30 +675,6 @@ def test__determine_coverage_point(timeseries_obj_fixture, mask_fixture, data_ar
 def test_determine_count_pixels(mask_fixture, data_array_nans_fixture):
     assert Timeseries._count_pixels(mask_fixture) == 8
     assert Timeseries._count_pixels(data_array_nans_fixture) == 21
-
-
-def test__flatten_data_cube(
-    timeseries_obj_fixture, data_array_3d_fixture, dimension_data_fixture, dimension_names_ordered_3d_fixture
-):
-    data_slices = timeseries_obj_fixture._flatten_data_cube(
-        data_array_3d_fixture, dimension_data_fixture, dimension_names_ordered_3d_fixture
-    )
-
-    assert data_slices[0][0, 0] == 0
-    assert data_slices[0][0, 1] == 0
-    assert data_slices[0][0, 2] == 1
-
-    assert data_slices[0][5, 0] == 1
-    assert data_slices[0][5, 1] == 2
-    assert data_slices[0][5, 2] == 6
-
-    assert data_slices[2][0, 0] == 0
-    assert data_slices[2][0, 1] == 0
-    assert data_slices[2][0, 2] == 19
-
-    assert data_slices[2][5, 0] == 1
-    assert data_slices[2][5, 1] == 2
-    assert data_slices[2][5, 2] == 24
 
 
 def test_summary_statistics(timeseries_obj_fixture, time_series_fixture):

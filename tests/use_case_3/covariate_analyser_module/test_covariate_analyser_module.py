@@ -10,11 +10,16 @@ from use_case_3.covariate_analyser_module.covariate_analyser_module import (
     ModelEvaluationMetric,
 )
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
-    AggregationPeriod,
-    AggregationStrategy,
     TimeSeriesPreprocessor,
 )
-from use_case_3.timeseries_module.timeseries import Timeseries, TimeseriesType
+from use_case_3.timeseries_module.timeseries import Timeseries
+
+from use_case_3.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+    TimeseriesRegion,
+    TimeseriesType,
+)
 
 
 @pytest.fixture
@@ -31,7 +36,12 @@ def timeseries_1_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 1", unit="unit 1", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 1",
+        unit="unit 1",
+        measurement_name="measurement 1",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -56,7 +66,12 @@ def timeseries_2_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 2", unit="unit 2", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 2",
+        unit="unit 2",
+        measurement_name="measurement 2",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -82,7 +97,12 @@ def timeseries_3_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 3", unit="unit 3", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 3",
+        unit="unit 3",
+        measurement_name="measurement 3",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -100,7 +120,12 @@ def timeseries_4_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 4", unit="unit 4", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 4",
+        unit="unit 4",
+        measurement_name="measurement 4",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -117,7 +142,12 @@ def timeseries_5_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 5", unit="unit 5", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 5",
+        unit="unit 5",
+        measurement_name="measurement 5",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -138,7 +168,9 @@ def timeseries_1_inv_fixture():
         measurements=timeseries,
         label="time series 1 inv",
         unit="unit 1 inv",
+        measurement_name="measurement 1 inv",
         timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -156,7 +188,12 @@ def timeseries_6_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 6", unit="unit 6", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 6",
+        unit="unit 6",
+        measurement_name="measurement 6",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -174,7 +211,12 @@ def timeseries_7_fixture():
     )
 
     return Timeseries(
-        measurements=timeseries, label="time series 7", unit="unit 7", timeseries_type=TimeseriesType("cumulative")
+        measurements=timeseries,
+        label="time series 7",
+        unit="unit 7",
+        measurement_name="measurement 7",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -194,7 +236,9 @@ def timeseries_7_lag_fixture():
         measurements=timeseries,
         label="time series 7 inv",
         unit="unit 7 inv",
+        measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -474,19 +518,23 @@ def test_jointplotanalysistype__init():
 def fixture_series_x():
     return Timeseries(
         measurements=pd.Series([-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0], name="x"),
+        measurement_name="x",
         label="x",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 
 @pytest.fixture
 def fixture_series_y():
     return Timeseries(
-        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1], name="x"),
+        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1], name="y"),
+        measurement_name="y",
         label="y",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 

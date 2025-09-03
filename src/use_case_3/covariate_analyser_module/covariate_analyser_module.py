@@ -25,28 +25,9 @@ from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
+    ModelEvaluationMetric,
+    JointPlotAnalysisType,
 )
-
-
-class ModelEvaluationMetric(Enum):
-    """The available model evaluation metrics."""
-
-    AIC = "aic"
-    BIC = "bic"
-
-    def __init__(self, evaluation_metric: str) -> None:
-        self.evaluation_metric = evaluation_metric
-
-
-class JointPlotAnalysisType(Enum):
-    """The available analysis types used to evaluate correlation or causality between variables."""
-
-    CORR = "corr"
-    CROSS_CORR = "cross_corr"
-    CAUSAL = "causal"
-
-    def __init__(self, analysis_type: str) -> None:
-        self.analysis_type = analysis_type
 
 
 class CovariateAnalyser:
@@ -587,17 +568,16 @@ class CovariateAnalyser:
                             timeseries_label_2=timeseries_row.label,
                             altered=altered,
                         )
-                        title = f"corr:{corr:.2f}, p:{p_value:.2f}"
+                        title = f"corr:{corr:.2f},\n p:{p_value:.2f}"
+                        y_offset = 0.6
                     elif analysis_type == JointPlotAnalysisType.CAUSAL:
                         title = f"p:{p_value:.2f}"
-
+                        y_offset = 0.80
                     if p_value > self.alpha:
                         axes[row, col].set_facecolor("mistyrose")
-
-                    y_offset = 0.85
                     if analysis_type == JointPlotAnalysisType.CROSS_CORR:
                         title += f", \n lag:{lag} {freq}"
-                        y_offset = 0.75
+                        y_offset = 0.45
                     axes[row, col].set_title(title, y=y_offset)
                 else:
                     axes[row, col].set_facecolor("lightgrey")
@@ -629,12 +609,12 @@ class CovariateAnalyser:
 
             # Add the correct axis labels
             if axis_labels is None:
-                axis_label = timeseries_row.label
+                axis_label = f"{timeseries_row.measurement_name.replace('_', ' ').title()}"
             else:
                 axis_label = axis_labels[row]
             label = textwrap.fill(
                 " ".join([axis_label, "(" + timeseries_row.unit + ")"]),
-                width=25,
+                width=18,
                 break_long_words=True,
             )
             axes[row, 0].set_ylabel(label)
