@@ -1,13 +1,16 @@
-import plotly.graph_objects as go
-import textwrap
-from dash import Dash, html, dcc, callback, Output, Input
-import pandas as pd
 import copy
+
 import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 
 
 def plot_summary_indicator(summary_data, variable, year_range):
     variable_uncertainty = variable + "_uncertainties"
+# <<<<<<< HEAD
+# =======
+#     variable_unit = "Gt"
+# >>>>>>> b5750de260fa950aeaa2bf78f770e89d6d0ba75d
 
     summary_data_filt = copy.deepcopy(summary_data)
 
@@ -30,20 +33,36 @@ def plot_summary_indicator(summary_data, variable, year_range):
     uncertainty_upper = total_change_value + uncertainty
     uncertainty_lower = total_change_value - uncertainty
 
+# <<<<<<< HEAD
     max_value = abs(summary_data[variable][-1]).values
     if max(abs(uncertainty_upper), abs(uncertainty_lower)) > max_value:
         max_value = max(abs(uncertainty_upper), abs(uncertainty_lower))
 
+# =======
+#     max_value = abs(summary_data_filt[variable][-1]).values
+#     if max(abs(uncertainty_upper), abs(uncertainty_lower)) > max_value:
+#         max_value = max(abs(uncertainty_upper), abs(uncertainty_lower))
+
+#     chart_title = "<br>".join(textwrap.wrap(f"<b>{' '.join(variable.split('_'))} ({variable_unit})</b>", width=20))
+
+# >>>>>>> b5750de260fa950aeaa2bf78f770e89d6d0ba75d
     if total_change_value >= 0:
         bar_range = [0, total_change_value]
     else:
         bar_range = [total_change_value, 0]
     fig = go.Figure(
         go.Indicator(
+# <<<<<<< HEAD
             mode="gauge+delta",
             value=float(total_change_value),
             domain={"x": [0.1, 1], "y": [0, 1]},
             # title={"text": chart_title},
+# =======
+#             mode="number+gauge+delta",
+#             value=float(total_change_value),
+#             domain={"x": [0.1, 1], "y": [0, 1]},
+#             title={"text": chart_title},
+# >>>>>>> b5750de260fa950aeaa2bf78f770e89d6d0ba75d
             delta={"reference": 0},
             gauge={
                 "shape": "bullet",
@@ -64,6 +83,7 @@ def plot_summary_indicator(summary_data, variable, year_range):
             },
         )
     )
+# <<<<<<< HEAD
     fig.update_layout(height=55)
     fig.update_layout(margin={"t": 0, "l": 0, "b": 25, "r": 0})
     return fig
@@ -179,4 +199,8 @@ def plot_summary_timeseries(summary_data, variable, year_range, margin={"t": 0, 
     fig.update_layout(showlegend=False)
     fig.update_layout(height=150)
     fig.update_layout(margin=margin)
+# =======
+#     fig.update_layout(height=150)
+#     fig.update_layout(margin={"t": 50, "l": 200, "b": 35, "r": 75})
+# >>>>>>> b5750de260fa950aeaa2bf78f770e89d6d0ba75d
     return fig
