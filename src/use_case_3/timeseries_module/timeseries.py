@@ -10,7 +10,6 @@ import numpy as np
 # from use_case_3.timeseries_module.timeseries_module import TimeSeriesModule
 import pandas as pd
 import seaborn as sns
-import skgstat as skg
 import xarray as xr
 from scipy.stats import bootstrap
 from shapely.geometry import MultiPolygon, Polygon
@@ -18,13 +17,13 @@ from sklearn.linear_model import LinearRegression
 
 from use_case_3.raster_tools.raster_np import RasterNp
 from use_case_3.timeseries_module.timeseries_enums import (
-    AggregationStrategy,
     AggregationPeriod,
+    AggregationStrategy,
     NormalisationType,
+    TimeseriesRegion,
     # PlotSpreadType,
     TimeseriesType,
     UncertaintyType,
-    TimeseriesRegion,
 )
 
 
@@ -227,6 +226,40 @@ class Timeseries:
         self.uncertainty = uncertainty
         self.extent_polygon = mask_geometry
         self.data_raw = data
+
+    def _process_timeseries_nd(self):
+        pass
+
+    def _process_timeseries_1d(self):
+        modify = True
+        data_agg = self._calculate_aggregate_timeseries(
+            data_observations=data_observations,
+            dimension_data=dimension_data,
+            dimension_names=dimension_names,
+            aggregate=aggregate,
+            period=period,
+            t0_normalisation=t0_normalisation,
+            modify=modify,
+        )
+        data_agg = data_agg.loc[~data_agg.index.duplicated(keep="first")]
+        self.measurement_coverage = None
+        self.measurement_coverage_n = None
+        if measurement_uncertainty_name is not None:
+            data_uncertainties_agg = self._propagate_uncertainties_timeseries(
+                data_observations=data_observations,
+                data_uncertainties=data_uncertainties,
+                dimension_data=dimension_data,
+                dimension_names=dimension_names,
+                aggregate=aggregate,
+                uncertainty=uncertainty,
+                period=period,
+                independent=independent,
+                t0_normalisation=t0_normalisation,
+                modify=modify,
+            )
+            data_uncertainties_agg = data_uncertainties_agg.loc[
+                ~data_uncertainties_agg.index.duplicated(keep="first")
+            ]
 
     def _calculate_aggregate_timeseries(
         self: Timeseries,
