@@ -6,8 +6,6 @@ from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-# from use_case_3.timeseries_module.timeseries_module import TimeSeriesModule
 import pandas as pd
 import seaborn as sns
 import xarray as xr
@@ -21,7 +19,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationStrategy,
     NormalisationType,
     TimeseriesRegion,
-    # PlotSpreadType,
     TimeseriesType,
     UncertaintyType,
 )
@@ -46,7 +43,6 @@ class Timeseries:
     extent_polygon: Polygon | MultiPolygon | None = None
     unit: str = ""
     uncertainty: UncertaintyType = UncertaintyType.STD
-    data_raw: None | xr.DataSet = None  # Might not be needed
 
     def process_timeseries(
         self: Timeseries,
@@ -66,6 +62,8 @@ class Timeseries:
         processing the datacube into the time series. This works with both 3D and 1D data.
 
         NOTE: Main entry point.
+        NOTE: This function has been split into two separate functions depending on the data dimensionality. This is in
+        attempt to simplify and make things more readable.
 
         Parameters
         ----------
@@ -107,7 +105,7 @@ class Timeseries:
 
         dimension_names = list(data[measurement_name].dims)
 
-        # These will need to be better dedined and formalised.
+        # TODO: These will need to be better defined and formalised.
         if self.timeseries_region == TimeseriesRegion.ICE_SHELF:
             mask_geometry = mask_geometries["ice_shelf"]
         elif self.timeseries_region == TimeseriesRegion.OCEAN:
@@ -118,119 +116,220 @@ class Timeseries:
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
         if data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
-            if mask_geometry is not None:
-                resolution = np.abs(dimension_data["y"][1].values - dimension_data["y"][0].values)
-                if dimension_data["y"][1].values > dimension_data["y"][0].values:
-                    y_affine_negative = False
-                else:
-                    y_affine_negative = True
-
-                data_mask = RasterNp.rasterise_mask_from_geometry(
-                    geometries=[mask_geometry],
-                    y_min=dimension_data["y"].min().values,
-                    y_max=dimension_data["y"].max().values + resolution,
-                    x_min=dimension_data["x"].min().values,
-                    x_max=dimension_data["x"].max().values + resolution,
-                    resolution=resolution,
-                    y_affine_negative=y_affine_negative,
-                )
-            else:
-                apply_mask = False
-
-            if apply_mask:
-                data_observations, modify = self._mask_data_cube(
-                    data_cube=data_observations, data_mask=data_mask, dimension_names=dimension_names, modify=True
-                )
-                if measurement_uncertainty_name is not None:
-                    data_uncertainties, modify = self._mask_data_cube(
-                        data_cube=data_uncertainties,
-                        data_mask=data_mask,
-                        dimension_names=dimension_names,
-                        modify=modify,
-                    )
-            else:
-                modify = True
-
-            data_agg = self._calculate_aggregate_timeseries(
+            self._process_timeseries_nd(
                 data_observations=data_observations,
+                data_uncertainties=data_uncertainties,
                 dimension_data=dimension_data,
                 dimension_names=dimension_names,
+                mask_geometry=mask_geometry,
+                measurement_uncertainty_name=measurement_uncertainty_name,
                 aggregate=aggregate,
                 period=period,
+                uncertainty=uncertainty,
+                independent=independent,
                 t0_normalisation=t0_normalisation,
-                modify=modify,
+                apply_mask=apply_mask,
             )
-
-            data_coverage_agg = self._calculate_coverage_timeseries(
-                data_observations=data_observations,
-                data_mask=data_mask,
-                dimension_data=dimension_data,
-                dimension_names=dimension_names,
-                period=period,
-            )
-
-            if measurement_uncertainty_name is not None:
-                data_uncertainties_agg = self._propagate_uncertainties_timeseries(
-                    data_observations=data_observations,
-                    data_uncertainties=data_uncertainties,
-                    dimension_data=dimension_data,
-                    dimension_names=dimension_names,
-                    aggregate=aggregate,
-                    uncertainty=uncertainty,
-                    period=period,
-                    independent=independent,
-                    t0_normalisation=t0_normalisation,
-                    modify=modify,
-                )
-            self.measurement_coverage = data_coverage_agg["coverage"]
-            self.measurement_coverage_n = data_coverage_agg["coverage_n"]
         else:
-            modify = True
-            data_agg = self._calculate_aggregate_timeseries(
+            self._process_timeseries_1d(
                 data_observations=data_observations,
                 dimension_data=dimension_data,
                 dimension_names=dimension_names,
+                measurement_uncertainty_name=measurement_uncertainty_name,
+                data_uncertainties=data_uncertainties,
                 aggregate=aggregate,
                 period=period,
+                uncertainty=uncertainty,
+                independent=independent,
                 t0_normalisation=t0_normalisation,
-                modify=modify,
             )
-            data_agg = data_agg.loc[~data_agg.index.duplicated(keep="first")]
-            self.measurement_coverage = None
-            self.measurement_coverage_n = None
-            if measurement_uncertainty_name is not None:
-                data_uncertainties_agg = self._propagate_uncertainties_timeseries(
-                    data_observations=data_observations,
-                    data_uncertainties=data_uncertainties,
-                    dimension_data=dimension_data,
-                    dimension_names=dimension_names,
-                    aggregate=aggregate,
-                    uncertainty=uncertainty,
-                    period=period,
-                    independent=independent,
-                    t0_normalisation=t0_normalisation,
-                    modify=modify,
-                )
-                data_uncertainties_agg = data_uncertainties_agg.loc[
-                    ~data_uncertainties_agg.index.duplicated(keep="first")
-                ]
+        self.uncertainty = uncertainty
+        self.extent_polygon = mask_geometry
 
+    def _store_processed_data(
+        self: Timeseries,
+        data_agg: pd.DataFrame,
+        data_uncertainties_agg: pd.DataFrame | None = None,
+        data_coverage_agg: pd.DataFrame | None = None,
+    ) -> None:
+        """
+        Store the relvent data in the dataclass after processing.
+
+        Parameters
+        ----------
+        data_agg : pd.DataFrame
+            _The aggregated data.
+        data_uncertainties_agg : pd.DataFrame | None, optional
+            The aggregated data uncertainties, by default None
+        data_coverage_agg : pd.DataFrame | None, optional
+            The aggregated data coverage, by default None
+        """
         self.measurements = data_agg["aggregation"]
         self.measurement_std = data_agg["data_std"]
         self.measurement_n = data_agg["aggregation_n"]
-        if measurement_uncertainty_name is not None:
+
+        if data_uncertainties_agg is not None:
             self.measurement_uncertainties = data_uncertainties_agg["uncertainty"]
             self.measurement_uncertainties_std = data_uncertainties_agg["uncertainty_std"]
             self.measurement_uncertainties_n = data_uncertainties_agg["uncertainty_n"]
 
-        self.uncertainty = uncertainty
-        self.extent_polygon = mask_geometry
-        self.data_raw = data
+        if data_coverage_agg is not None:
+            self.measurement_coverage = data_coverage_agg["coverage"]
+            self.measurement_coverage_n = data_coverage_agg["coverage_n"]
 
-    def _process_timeseries_nd(self):
-        pass
+    def _process_timeseries_nd(
+        self: Timeseries,
+        data_observations: np.ndarray,
+        dimension_data: dict[str, xr.DataArray],
+        dimension_names: list[str],
+        mask_geometry: Polygon | MultiPolygon | None = None,
+        data_uncertainties: np.ndarray | None = None,
+        measurement_uncertainty_name: str | None = None,
+        aggregate: AggregationStrategy = AggregationStrategy.MEAN,
+        period: None | AggregationPeriod = AggregationPeriod.MONTH,
+        uncertainty: None | UncertaintyType = None,
+        independent: bool = False,
+        t0_normalisation: None | str = None,
+        apply_mask: bool = False,
+    ) -> None:
+        """
+        Process n-d data into a timeseries. Specifically this will be run when the number of dims > 1.
 
-    def _process_timeseries_1d(self):
+        Parameters
+        ----------
+        data_observations : np.ndarray
+            The data observations.
+        dimension_data : dict[str, xr.DataArray]
+            The dimension data.
+        dimension_names : list[str]
+            The dimension names.
+        mask_geometry : Polygon | MultiPolygon | None, optional
+            The mask used, by default None
+        data_uncertainties : np.ndarray | None, optional
+            The data uncertainties, by default None
+        measurement_uncertainty_name : str | None, optional
+            The name of the uncertainties, by default None
+        aggregate : AggregationStrategy, optional
+            The method of aggregation, by default AggregationStrategy.MEAN
+        period : None | AggregationPeriod, optional
+            The period of aggregation, by default AggregationPeriod.MONTH
+        uncertainty : None | UncertaintyType, optional
+            The type of the uncertainty such as standard deviation or standard error, by default None
+        independent : bool, optional
+            Whether data points can be treated as being independent, by default False
+        t0_normalisation : None | str, optional
+            Whether the data is normalised, by default None
+        apply_mask : bool, optional
+            If true the data is masked, by default False
+        """
+        if mask_geometry is not None:
+            resolution = float(np.abs(dimension_data["y"][1].values - dimension_data["y"][0].values))
+            if dimension_data["y"][1].values > dimension_data["y"][0].values:
+                y_affine_negative = False
+            else:
+                y_affine_negative = True
+
+            data_mask = RasterNp.rasterise_mask_from_geometry(
+                geometries=[mask_geometry],
+                y_min=float(dimension_data["y"].min().values),
+                y_max=float(dimension_data["y"].max().values + resolution),
+                x_min=float(dimension_data["x"].min().values),
+                x_max=float(dimension_data["x"].max().values + resolution),
+                resolution=resolution,
+                y_affine_negative=y_affine_negative,
+            )
+        else:
+            apply_mask = False
+
+        if apply_mask:
+            data_observations, modify = self._mask_data_cube(
+                data_cube=data_observations, data_mask=data_mask, dimension_names=dimension_names, modify=True
+            )
+            if measurement_uncertainty_name is not None:
+                data_uncertainties, modify = self._mask_data_cube(
+                    data_cube=data_uncertainties,
+                    data_mask=data_mask,
+                    dimension_names=dimension_names,
+                    modify=modify,
+                )
+        else:
+            modify = True
+
+        data_agg = self._calculate_aggregate_timeseries(
+            data_observations=data_observations,
+            dimension_data=dimension_data,
+            dimension_names=dimension_names,
+            aggregate=aggregate,
+            period=period,
+            t0_normalisation=t0_normalisation,
+            modify=modify,
+        )
+
+        data_coverage_agg = self._calculate_coverage_timeseries(
+            data_observations=data_observations,
+            data_mask=data_mask,
+            dimension_data=dimension_data,
+            dimension_names=dimension_names,
+            period=period,
+        )
+
+        if measurement_uncertainty_name is not None:
+            data_uncertainties_agg = self._propagate_uncertainties_timeseries(
+                data_observations=data_observations,
+                data_uncertainties=data_uncertainties,
+                dimension_data=dimension_data,
+                dimension_names=dimension_names,
+                aggregate=aggregate,
+                uncertainty=uncertainty,
+                period=period,
+                independent=independent,
+                t0_normalisation=t0_normalisation,
+                modify=modify,
+            )
+
+        self._store_processed_data(
+            data_agg=data_agg, data_uncertainties_agg=data_uncertainties_agg, data_coverage_agg=data_coverage_agg
+        )
+
+    def _process_timeseries_1d(
+        self: Timeseries,
+        data_observations: np.ndarray,
+        dimension_data: dict[str, xr.DataArray],
+        dimension_names: list[str],
+        measurement_uncertainty_name: str | None = None,
+        data_uncertainties: np.ndarray | None = None,
+        aggregate: AggregationStrategy = AggregationStrategy.MEAN,
+        period: None | AggregationPeriod = AggregationPeriod.MONTH,
+        uncertainty: None | UncertaintyType = None,
+        independent: bool = False,
+        t0_normalisation: None | str = None,
+    ):
+        """
+        Process 1-d data into a timeseries. Specifically this will be run when the number of dims = 1.
+
+        Parameters
+        ----------
+        data_observations : np.ndarray
+            The data observations.
+        dimension_data : dict[str, xr.DataArray]
+            The dimension data.
+        dimension_names : list[str]
+            The dimension names.
+        data_uncertainties : np.ndarray | None, optional
+            The data uncertainties, by default None
+        measurement_uncertainty_name : str | None, optional
+            The name of the uncertainties, by default None
+        aggregate : AggregationStrategy, optional
+            The method of aggregation, by default AggregationStrategy.MEAN
+        period : None | AggregationPeriod, optional
+            The period of aggregation, by default AggregationPeriod.MONTH
+        uncertainty : None | UncertaintyType, optional
+            The type of the uncertainty such as standard deviation or standard error, by default None
+        independent : bool, optional
+            Whether data points can be treated as being independent, by default False
+        t0_normalisation : None | str, optional
+            Whether the data is normalised, by default None
+        """
         modify = True
         data_agg = self._calculate_aggregate_timeseries(
             data_observations=data_observations,
@@ -257,9 +356,13 @@ class Timeseries:
                 t0_normalisation=t0_normalisation,
                 modify=modify,
             )
-            data_uncertainties_agg = data_uncertainties_agg.loc[
-                ~data_uncertainties_agg.index.duplicated(keep="first")
-            ]
+            data_uncertainties_agg = data_uncertainties_agg.loc[~data_uncertainties_agg.index.duplicated(keep="first")]
+        else:
+            data_uncertainties_agg = None
+
+        self._store_processed_data(
+            data_agg=data_agg, data_uncertainties_agg=data_uncertainties_agg, data_coverage_agg=None
+        )
 
     def _calculate_aggregate_timeseries(
         self: Timeseries,
@@ -283,15 +386,15 @@ class Timeseries:
             The data for each of the data dimensions, i.e. coordinate values.
         dimension_names : List[str]
             List of dimension names with indexes corresponding to the axes in data.
-        aggregate : str, optional
+        aggregate : AggregationStrategy, optional
             The aggregation to perform on the data, by default "mean". Currently these are limited to:
             mean, median, max, min. Note, the aggregation chosen determines the spread according to the following rules:
                 - mean: standard deviation
                 - median: IQR
                 - max/min: None
-        period : Union[None, str], optional
+        period : None | AggregationPeriod, optional
             The time period over which to aggregate, by default None.
-        t0_normalisation : Union[None, str], optional
+        t0_normalisation : None | str, optional
             Whether to normalise the time series against time zero, by default None.
         modify : bool
             Whether to modify the dimensions of the datacube, by default False.
@@ -301,15 +404,7 @@ class Timeseries:
         pd.DataFrame
             A dataframe containing the aggregated variable, the spread of that variable and the number of
             points in the aggregation. The index of the dataframe is time.
-
-        Raises
-        ------
-        ValueError
-            The aggregation type is not one of the specified values.
         """
-        # if aggregate not in self.aggregation_types:
-        #     raise ValueError(f"The aggregation type {aggregate} is not one of {self.aggregation_types}")
-
         data_observations, dimension_names = self._expand_dimensions(
             data=data_observations, dimension_names=dimension_names, modify_dimension_names=modify
         )
@@ -373,18 +468,18 @@ class Timeseries:
             Input data uncertainties with axes ordered according to the dimension names.
         dimension_data : dict
             The data for each of the data dimensions, i.e. coordinate values.
-        dimension_names : List[str]
+        dimension_names : list[str]
             List of dimension names with indexes corresponding to the axes in data.
-        aggregate : str, optional
-            The type of aggregation performed on the data, by default "mean". Currently these are limited to:
+        aggregate : AggregationStrategy, optional
+            The type of aggregation performed on the data, by default AggregationStrategy.MEAN. Currently these are limited to:
             mean, median, max, min. Note, the aggregation chosen determines the spread according to the following rules:
                 - mean: standard deviation
                 - median: IQR
                 - max/min: NaN
-        uncertainty : str, optional
-            The type of uncertainty provided, by default "std". Currently these are limited to:
-            std.
-        period : Union[None, str], optional
+        uncertainty : UncertaintyType, optional
+            The type of uncertainty provided, by default UncertaintyType.STD. Currently these are limited to:
+                - std
+        period : None | AggregationPeriod, optional
             The time period over which to aggregate, by default None.
         independent : bool, optional
             Whether the uncertainties are independent or not, by default False
@@ -406,11 +501,6 @@ class Timeseries:
         ValueError
             The uncertainty type is not one of the specified values.
         """
-        # if aggregate not in self.aggregation_types:
-        #     raise ValueError(f"The aggregation type {aggregate} is not one of {self.aggregation_types}")
-        # if uncertainty not in self.uncertainty_types:
-        #     raise ValueError(f"The aggregation type {uncertainty} is not one of {self.uncertainty_types}")
-
         data_observations, dimension_names = self._expand_dimensions(
             data=data_observations, dimension_names=dimension_names, modify_dimension_names=modify
         )
@@ -488,8 +578,8 @@ class Timeseries:
         np.ndarray
             The count of either NaN or non-NaN values.
         """
-        # if time_index is None:
-        #     time_index = {0: [0]}
+        if time_index is None:
+            time_index = {0: [0]}
 
         data_agg_n = []
         for time_point in time_index.keys():
@@ -505,7 +595,7 @@ class Timeseries:
     def _aggregate_statistic(
         data: np.ndarray,
         aggregate: AggregationStrategy,
-        time_index: dict,
+        time_index: dict | None = None,
         dimension_names: None | list[str] = None,
         dimension_aggregate: None | int | tuple[int, int] = None,
     ) -> tuple[np.ndarray, list]:
@@ -518,13 +608,13 @@ class Timeseries:
         data : np.ndarray
             The input n-dim data array. When the array is 1d along the time axis this will be returned with no
             aggregation.
-        aggregate : str, optional
-            The type of aggregation performed on the data, by default "mean". Currently these are limited to:
+        aggregate : AggregationStrategy
+            The type of aggregation performed on the data. Currently these are limited to:
             mean, median, max, min. Note, the aggregation chosen determines the spread according to the following rules:
                 - mean: standard deviation
                 - median: IQR
                 - max/min: NaN
-        time_index : Union[None, dict], optional
+        time_index : dict | None, optional
             The time indexes over which to do the aggregations, by default None
         dimension_names : list
             Specification of the dimension names.
@@ -542,6 +632,9 @@ class Timeseries:
 
         time_coords_agg = []
         data_agg = []
+
+        if time_index is None:
+            time_index = {0: [0]}
 
         for time_point in time_index.keys():
             time_min = time_index[time_point][0]
@@ -571,7 +664,7 @@ class Timeseries:
         self: Timeseries,
         data_uncertainties: np.ndarray,
         uncertainty: UncertaintyType,
-        time_index: dict = None,
+        time_index: dict | None = None,
         independent: bool = False,
     ) -> tuple[np.ndarray, list]:
         """
@@ -584,7 +677,7 @@ class Timeseries:
             Input data uncertainties with axes ordered according to the dimension names.
         uncertainty : UncertaintyType
             The type of uncertainty, currently only std is supported.
-        time_index : Union[None, dict], optional
+        time_index : dict | None, optional
             The time indexes over which to do the aggregations, by default None
         independent : bool, optional
             Whether the errors are treated as independent when propagating. If they are assumed to be
@@ -600,6 +693,9 @@ class Timeseries:
 
         time_coords_agg = []
         data_agg = []
+
+        if time_index is None:
+            time_index = {0: [0]}
 
         for i, time_point in enumerate(time_index.keys()):
             time_min = time_index[time_point][0]
@@ -625,7 +721,7 @@ class Timeseries:
         self: Timeseries,
         data_observations: np.ndarray,
         data_uncertainties: np.ndarray,
-        time_index: dict = None,
+        time_index: dict | None = None,
         n_repeats: int = 1000,
     ) -> tuple[np.ndarray, list]:
         """
@@ -638,7 +734,7 @@ class Timeseries:
             The observation data.
         data_uncertainties : np.ndarray
             The uncertainty data.
-        time_index : Union[None, dict], optional
+        time_index : dict | None, optional
             The time indexes over which to do the aggregations, by default None
         n_repeats : int, optional
             The number of repeats. This is both the number of samples drawn and the number of bootstrapping iterations,
@@ -651,6 +747,9 @@ class Timeseries:
         """
         time_coords_agg = []
         data_agg = []
+
+        if time_index is None:
+            time_index = {0: [0]}
 
         for time_point in time_index.keys():
             time_min = time_index[time_point][0]
@@ -680,7 +779,7 @@ class Timeseries:
         data_observations: np.ndarray,
         data_uncertainties: np.ndarray,
         uncertainty: UncertaintyType,
-        time_index: dict = None,
+        time_index: dict | None = None,
     ) -> tuple[np.ndarray, list]:
         """
         Aggregate the uncertainties when aggregating using either the maximum or minimum value. In this case the
@@ -694,7 +793,7 @@ class Timeseries:
             Input data uncertainties with axes ordered according to the dimension names.
         uncertainty : UncertaintyType
             The type of uncertainty, currently only std is supported.
-        time_index : Union[None, dict], optional
+        time_index : dict | None, optional
             The time indexes over which to do the aggregations, by default None
 
         Returns
@@ -704,6 +803,9 @@ class Timeseries:
         """
         time_coords_agg = []
         data_agg = []
+
+        if time_index is None:
+            time_index = {0: [0]}
 
         for time_point in time_index.keys():
             time_min = time_index[time_point][0]
@@ -736,11 +838,11 @@ class Timeseries:
         ----------
         data_observation : np.ndarray
             The 1D timeseries to be normalised.
-        normalisation_type : str, optional
-            The normalisation type to be applied. Must be one of 'first' or 'linear_regression'. Using 'first' subtracts
-            the first value from the whole time series, whereas using 'linear_regression' fits a unregularised linear
-            regression model to to the whole time series and then uses a predicted t0 to normalise the dataset, by
-            default "first".
+        normalisation_type : NormalisationType, optional
+            The normalisation type to be applied. Using NormalisationType.FIRST subtracts
+            the first value from the whole time series, whereas using NormalisationType.LINEAR_REGRESSION fits a
+            unregularised linear regression model to to the whole time series and then uses a predicted t0 to normalise
+            the dataset, by default NormalisationType.FIRST.
 
         Returns
         -------
@@ -772,11 +874,11 @@ class Timeseries:
         ----------
         data_uncertainties : np.ndarray
             The 1D timeseries to be normalised.
-        normalisation_type : str, optional
-            The normalisation type to be applied. Must be one of 'first' or 'linear_regression'. Using 'first' subtracts
-            the first value from the whole time series, whereas using 'linear_regression' fits a unregularised linear
-            regression model to to the whole time series and then uses a predicted t0 to normalise the dataset, by
-            default "first".
+        normalisation_type : NormalisationType, optional
+            The normalisation type to be applied. Using NormalisationType.FIRST subtracts
+            the first value from the whole time series, whereas using NormalisationType.LINEAR_REGRESSION fits a
+            unregularised linear regression model to to the whole time series and then uses a predicted t0 to normalise
+            the dataset, by default NormalisationType.FIRST.
 
         Returns
         -------
@@ -811,9 +913,9 @@ class Timeseries:
             The datacube of observations.
         dimension_data : dict
             The coordinate data.
-        dimension_names : List[str]
+        dimension_names : list[str]
             The dimension names
-        period : Union[None, str], optional
+        period : None | AggregationPeriod, optional
             The period over which the data is aggregated, by default None
         percentiles : Tuple[float, float], optional
             The lower and upper percentile to be calculated for a datacube. These must be a tuple of floats in the range
@@ -859,7 +961,7 @@ class Timeseries:
         )
 
     def _determine_percentiles(
-        self: Timeseries, data_observations: np.ndarray, time_index: dict, percentile: float
+        self: Timeseries, data_observations: np.ndarray, time_index: dict | None, percentile: float
     ) -> tuple[np.ndarray, list]:
         """
         Calculate the percentile for a given datacube and time index.
@@ -868,7 +970,7 @@ class Timeseries:
         ----------
         data_observations : np.ndarray
             The data cube of observations.
-        time_index : Union[None, dict]
+        time_index : dict | None
             The time indexes for each time slice to be processed.
         percentile : float
             The percentile to be calculated. This needs to be a float in the range [0.0, 100.0] inclusive.
@@ -880,6 +982,10 @@ class Timeseries:
         """
         data_percentile = []
         time_coords_agg = []
+
+        if time_index is None:
+            time_index = {0: [0]}
+
         for time_point in time_index.keys():
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
@@ -905,11 +1011,11 @@ class Timeseries:
             The data observations.
         dimension_data : dict
             The coordinate data.
-        dimension_names : List[str]
+        dimension_names : list[str]
             The dimension names
-        data_mask : Union[None, np.ndarray], optional
+        data_mask : dict | None, optional
             The data mask, by default None
-        period : Union[None, str], optional
+        period : None | AggregationPeriod, optional
             The period over which the data is aggregated, by default None
 
         Returns
@@ -941,7 +1047,7 @@ class Timeseries:
         )
 
     def _determine_coverage(
-        self, data_observations: np.ndarray, time_index: dict, mask_raster: np.ndarray
+        self, data_observations: np.ndarray, time_index: dict | None, mask_raster: np.ndarray
     ) -> tuple[np.ndarray, list]:
         """
         Calculate the spatial coverage for each time slice. The spatial coverage is defined as the number of pixels with
@@ -952,10 +1058,10 @@ class Timeseries:
         ----------
         data_observations : np.ndarray
             The data observations.
+        time_index : dict | None
+            The time indexes for each time slice to be processed.
         mask_raster : np.ndarray
             The binary mask used on the dataset.
-        time_index : Union[None, dict]
-            The time indexes for each time slice to be processed.
 
         Returns
         -------
@@ -964,6 +1070,10 @@ class Timeseries:
         """
         data_coverage = []
         time_coords_agg = []
+
+        if time_index is None:
+            time_index = {0: [0]}
+
         for time_point in time_index.keys():
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
@@ -1012,7 +1122,7 @@ class Timeseries:
 
         Returns
         -------
-        Union[float, int]
+        float | int
             The number of elements which are False or non-NaN.
         """
         # Assumes that False in mask are included pixels.
@@ -1030,14 +1140,14 @@ class Timeseries:
 
         Parameters
         ----------
-        data_uncertainties_1 : Union[np.float64, np.ndarray]
+        data_uncertainties_1 : np.float64 | np.ndarray
             The first vector of uncertainties.
-        data_uncertainties_2 : Union[np.float64, np.ndarray]
+        data_uncertainties_2 : np.float64 | np.ndarray
             The second vector of uncertainties.
 
         Returns
         -------
-        Union[np.float64, np.ndarray]
+        np.float64 | np.ndarray
             The combined uncertainty vector.
         """
         return np.sqrt(np.square(data_uncertainties_1) + np.square(data_uncertainties_2))
@@ -1112,7 +1222,7 @@ class Timeseries:
         ----------
         data : np.ndarray
             The input data.
-        dimension_names : List[str]
+        dimension_names : list[str]
             The input dimension names.
         modify_dimension_names : bool, optional
             Whether the dimension_names should be modified, this is used when multiple data arrays with the same
@@ -1120,7 +1230,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray, list]
+        Tuple[np.ndarray, list]
             A 3D data array with three named dimensions.
         """
         if len(data.shape) == 2:
@@ -1145,18 +1255,13 @@ class Timeseries:
         ----------
         time_coord : pd.Series
             The time coordinates.
-        period : str
-            The period over which to aggregate, this can either be month or year.
+        period : AggregationPeriod
+            The period over which to aggregate.
 
         Returns
         -------
         dict
             Returns the dictionary, mapping each time slice to the data-cube indexes.
-
-        Raises
-        ------
-        ValueError
-            The period must be one of {self.periods}
         """
         if isinstance(time_coord.iloc[0], str):
             time_coord = time_coord.str.replace("-", "/")
@@ -1180,7 +1285,7 @@ class Timeseries:
 
     def _process_time_indexes(
         self: Timeseries,
-        dimension_names: list,
+        dimension_names: list[str],
         dimension_data: xr.DataArray | pd.DataFrame | dict,
         period: None | AggregationPeriod,
     ) -> dict:
@@ -1190,11 +1295,13 @@ class Timeseries:
 
         Parameters
         ----------
-        dimension_data : Union[xr.DataArray, pd.DataFrame, dict]
+        dimension_names : list[str]
+            The list of dimension names.
+        dimension_data : xr.DataArray | pd.DataFrame | dict
             The coordinate data, i.e. the grid coordinates and the time coordinates.
-        period : Union[None, str]
-            The time period over which to aggregate the data points. This can be 'month', 'year' or None. If no period
-            is chosen then the dictionary will contain one time point per key.
+        period : None | AggregationPeriod
+            The time period over which to aggregate the data points. If no periodis chosen then the dictionary will
+            contain one time point per key.
 
         Returns
         -------
@@ -1224,12 +1331,12 @@ class Timeseries:
 
         Parameters
         ----------
-        aggregate : str
+        aggregate : AggregationStrategy
             The type of aggregation applied to calculate the central tendency.
 
         Returns
         -------
-        Tuple[Union[str, None], bool]
+        tuple[AggregationStrategy | None, bool]
             The aggregate function for the spread, and the counts.
         """
         if aggregate == AggregationStrategy.MEAN:
@@ -1265,7 +1372,7 @@ class Timeseries:
             The data cube to be masked.
         data_mask : np.ndarray
             The rasterised data mask.
-        dimension_names : List[str]
+        dimension_names : list[str]
             A list of the dimension names. These need to be in the order that they index the axes of the datacube.
         modify : bool
             Whether to modify the dimensions of the datacube.
@@ -1305,7 +1412,6 @@ class Timeseries:
     def plot(
         self: Timeseries,
         spread: None | str,
-        percentiles: None | tuple[int, int] = None,
         x_label: None | str = None,
         y_label: None | str = None,
     ) -> None:
@@ -1316,23 +1422,12 @@ class Timeseries:
         ----------
         data_timeseries : pd.DataFrame
             The timeseries.
-        spread : Union[None, str]
+        spread : None | str
             The spread to display on the line plot. This can be one of None, "uncertainties" and "percentiles".
-        percentiles : Union[None, Tuple[int, int]], optional
-            The percentiles, by default None
-        x_label : Union[None, str], optional
+        x_label : None | str, optional
             A X-axis label to use, by default None
-        y_label : Union[None, str], optional
+        y_label : None | str, optional
             A Y-axis label to use, by default None
-
-        Raises
-        ------
-        ValueError
-            f"the spread needs to be one of {self.plot_spread}"
-        ValueError
-            "Percentiles need to be specified!"
-        ValueError
-            "Percentiles do not match the columns in the timeseries!"
         """
         error_pos = None
         error_neg = None
@@ -1406,7 +1501,7 @@ class Timeseries:
         ----------
         data_timeseries : pd.DataFrame
             The timeseries.
-        x_label : Union[None, str], optional
+        x_label : None | str, optional
             A X-axis label to use, by default None
         """
         fig, axes = plt.subplots(1, 1)
@@ -1435,20 +1530,6 @@ class Timeseries:
         """
         Generate a set of summary statistics for a time series. This assumes that the timeseries is
         ordered. It also assumes that there are associated uncertainties.
-
-        Parameters
-        ----------
-        timeseries : pd.DataFrame
-            The time series.
-        observation_name : str
-            The name of the observation.
-        observation_units : str
-            The units of the observation.
-
-        Returns
-        -------
-        pd.DataFrame
-            A set of summary statistics.
         """
         start = self.measurements.iloc[0]
         start_uncertainty = self.measurement_uncertainties.iloc[0]

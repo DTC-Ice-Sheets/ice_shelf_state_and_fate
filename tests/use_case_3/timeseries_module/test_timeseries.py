@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from shapely import Polygon
 
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
@@ -105,6 +106,12 @@ def mask_fixture():
 
 
 @pytest.fixture
+def mask_2_fixture():
+    nested_list = [[True, False, True], [False, False, False], [False, False, False]]
+    return np.array(nested_list)
+
+
+@pytest.fixture
 def data_array_nans_fixture():
     nested_list = [
         [[np.nan, 2, 3], [4, 5, 6], [7, 8, 9]],
@@ -161,7 +168,29 @@ def time_series_fixture():
 
 
 @pytest.fixture
-def timeseries_dataset_fixture(timeseries_fixture):
+def timeseries_dataset_3d_fixture(data_array_nans_fixture, data_array_uncertainties_nans_fixture):
+    time = [
+        pd.Timestamp(year=2020, month=1, day=1),
+        pd.Timestamp(year=2020, month=2, day=1),
+        pd.Timestamp(year=2020, month=3, day=1),
+    ]
+    ds = xr.Dataset(
+        data_vars={
+            "measurement": (["time", "y", "x"], data_array_nans_fixture.astype(float)),
+            "measurement_uncertainties": (["time", "y", "x"], data_array_uncertainties_nans_fixture.astype(float)),
+        },
+        coords={
+            "time": time,
+            "x": [0, 1, 2],
+            "y": [0, 1, 2],
+        },
+    )
+
+    return ds, "time series 1", "unit 1", "measurement", "cumulative", "ice_shelf"
+
+
+@pytest.fixture
+def timeseries_dataset_1d_fixture(timeseries_fixture):
     ds = xr.Dataset(
         data_vars={
             "measurement": (["time", "y", "x"], timeseries_fixture[0].values.reshape((-1, 1, 1)).astype(float)),
@@ -180,20 +209,20 @@ def timeseries_dataset_fixture(timeseries_fixture):
     return ds, "time series 1", "unit 1", "measurement", "cumulative", "ice_shelf"
 
 
-def test_process_timeseries_1d(timeseries_dataset_fixture):
+def test_process_timeseries_1d(timeseries_dataset_1d_fixture):
     timeseries = Timeseries(
-        label=timeseries_dataset_fixture[1],
-        measurement_name=timeseries_dataset_fixture[2],
-        unit=timeseries_dataset_fixture[2],
-        timeseries_type=TimeseriesType(timeseries_dataset_fixture[4]),
-        timeseries_region=TimeseriesRegion(timeseries_dataset_fixture[5]),
+        label=timeseries_dataset_1d_fixture[1],
+        measurement_name=timeseries_dataset_1d_fixture[2],
+        unit=timeseries_dataset_1d_fixture[2],
+        timeseries_type=TimeseriesType(timeseries_dataset_1d_fixture[4]),
+        timeseries_region=TimeseriesRegion(timeseries_dataset_1d_fixture[5]),
     )
 
     mask_geometries = {"ice_shelf": None, "ocean": None, "climate": None}
 
     timeseries.process_timeseries(
-        data=timeseries_dataset_fixture[0],
-        measurement_name=timeseries_dataset_fixture[3],
+        data=timeseries_dataset_1d_fixture[0],
+        measurement_name=timeseries_dataset_1d_fixture[3],
         measurement_uncertainty_name="measurement_uncertainties",
         mask_geometries=mask_geometries,
         apply_mask=False,
@@ -204,15 +233,15 @@ def test_process_timeseries_1d(timeseries_dataset_fixture):
         t0_normalisation=None,
     )
 
-    assert timeseries.label == timeseries_dataset_fixture[1]
-    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
+    assert timeseries.label == timeseries_dataset_1d_fixture[1]
+    assert np.allclose(timeseries.measurements.values, timeseries_dataset_1d_fixture[0]["measurement"].values.ravel())
     assert np.allclose(timeseries.measurement_std.values, np.zeros(timeseries.measurements.values.shape))
     assert np.allclose(timeseries.measurement_n.values, np.ones(timeseries.measurements.values.shape))
     assert np.allclose(
         timeseries.measurement_uncertainties.values,
-        timeseries_dataset_fixture[0]["measurement_uncertainties"].values.ravel(),
+        timeseries_dataset_1d_fixture[0]["measurement_uncertainties"].values.ravel(),
     )
-    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
+    assert np.allclose(timeseries.measurements.values, timeseries_dataset_1d_fixture[0]["measurement"].values.ravel())
     assert np.allclose(
         timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
     )
@@ -221,20 +250,24 @@ def test_process_timeseries_1d(timeseries_dataset_fixture):
     )
 
 
-def test_process_timeseries_3d(timeseries_dataset_fixture):
+def test_process_timeseries_3d(timeseries_dataset_3d_fixture):
     timeseries = Timeseries(
-        label=timeseries_dataset_fixture[1],
-        measurement_name=timeseries_dataset_fixture[2],
-        unit=timeseries_dataset_fixture[2],
-        timeseries_type=TimeseriesType(timeseries_dataset_fixture[4]),
-        timeseries_region=TimeseriesRegion(timeseries_dataset_fixture[5]),
+        label=timeseries_dataset_3d_fixture[1],
+        measurement_name=timeseries_dataset_3d_fixture[2],
+        unit=timeseries_dataset_3d_fixture[2],
+        timeseries_type=TimeseriesType(timeseries_dataset_3d_fixture[4]),
+        timeseries_region=TimeseriesRegion(timeseries_dataset_3d_fixture[5]),
     )
 
-    mask_geometries = {"ice_shelf": None, "ocean": None, "climate": None}
+    mask_geometries = {
+        "ice_shelf": Polygon(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))),
+        "ocean": None,
+        "climate": None,
+    }
 
     timeseries.process_timeseries(
-        data=timeseries_dataset_fixture[0],
-        measurement_name=timeseries_dataset_fixture[3],
+        data=timeseries_dataset_3d_fixture[0],
+        measurement_name=timeseries_dataset_3d_fixture[3],
         measurement_uncertainty_name="measurement_uncertainties",
         mask_geometries=mask_geometries,
         apply_mask=False,
@@ -245,20 +278,19 @@ def test_process_timeseries_3d(timeseries_dataset_fixture):
         t0_normalisation=None,
     )
 
-    assert timeseries.label == timeseries_dataset_fixture[1]
-    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
-    assert np.allclose(timeseries.measurement_std.values, np.zeros(timeseries.measurements.values.shape))
-    assert np.allclose(timeseries.measurement_n.values, np.ones(timeseries.measurements.values.shape))
+    assert timeseries.label == timeseries_dataset_3d_fixture[1]
+    assert np.allclose(timeseries.measurements.values, np.array([5.5, 14, 23.166667]))
+    assert np.allclose(timeseries.measurement_std.values, np.array([2.29128785, 2.44948974, 2.9107082]))
+    assert np.allclose(timeseries.measurement_n.values, np.array([8, 7, 6]))
     assert np.allclose(
         timeseries.measurement_uncertainties.values,
-        timeseries_dataset_fixture[0]["measurement_uncertainties"].values.ravel(),
+        np.array([0.176777, 0.188982, 0.204124]), # need to calculate the uncertainites
     )
-    assert np.allclose(timeseries.measurements.values, timeseries_dataset_fixture[0]["measurement"].values.ravel())
     assert np.allclose(
         timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
     )
     assert np.allclose(
-        timeseries.measurement_uncertainties_n.values, np.ones(timeseries.measurement_uncertainties.values.shape)
+        timeseries.measurement_uncertainties_n.values, np.array([8, 7, 6])
     )
 
 
