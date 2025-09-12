@@ -63,3 +63,22 @@ class TimeseriesModuleEntryPointSchema(BaseModel):
     uncertainty: UncertaintyType | None = Field(None, description="The statistics type describing the uncertainty.")
     independent: bool = Field(False, description="Whether the uncertainties are independent or not.")
     t0_normalisation: NormalisationType | None = Field(None, description="The type of normalisation to apply, if any.")
+
+
+class TimeseriesPreprocessorModuleEntryPointSchema(BaseModel):
+    """Schema for the timeseries preprocessor module entry point."""
+
+    timeseries: list[str] = Field(
+        ...,
+        description="List of paths to the input timeseries .zarr files, formatted as `input.zarr:output.zarr`",
+    )
+    time_period: AggregationPeriod = Field(
+        AggregationPeriod.MONTH,
+        description=(
+            "Time period for aggregation. If None, a single value will be computed for the entire timeseries."
+        ),
+    )
+    aggregation: AggregationStrategy = Field(
+        AggregationStrategy.MEAN,
+        description="Aggregation strategy to apply when multiple measurements fall within the same time bin.",
+    )

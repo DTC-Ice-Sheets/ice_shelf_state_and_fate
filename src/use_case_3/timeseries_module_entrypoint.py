@@ -73,14 +73,27 @@ def main() -> None:
     output = xr.Dataset(
         data_vars={
             "measurement": (["time"], timeseries.measurements.values),
-            "uncertainty": (
-                (["time"], timeseries.measurement_uncertainties.values)
-                if timeseries.measurement_uncertainties is not None
-                else None
+            "std": (["time"], timeseries.measurement_std.values),
+            "n": (["time"], timeseries.measurement_n.values),
+            **(
+                {
+                    "uncertainty": (["time"], timeseries.measurement_uncertainties.values),
+                    "uncertainty_std": (["time"], timeseries.measurement_uncertainties_std.values),
+                    "uncertainty_n": (["time"], timeseries.measurement_uncertainties_n.values),
+                }
+                if model.measurement_uncertainty_name is not None
+                else {}
             ),
         },
         coords={
             "time": timeseries.measurements.index.values,
+        },
+        attrs={
+            "label": timeseries.label,
+            "timeseries_type": timeseries.timeseries_type.value,
+            "timeseries_region": timeseries.timeseries_region.value,
+            "measurement_name": model.measurement_name,
+            "measurement_uncertainty_name": model.measurement_uncertainty_name,
         },
     )
 
