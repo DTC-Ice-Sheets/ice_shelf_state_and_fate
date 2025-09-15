@@ -1,7 +1,9 @@
-import os.path as path
+"""Helper functions for Use Case 3."""
+
+from pathlib import Path
+
 import geopandas as gpd
 from shapely.geometry import MultiPolygon, Polygon
-from pathlib import Path
 
 
 def get_plot_base_path() -> Path:

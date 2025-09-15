@@ -303,7 +303,7 @@ class Timeseries:
         uncertainty: None | UncertaintyType = None,
         independent: bool = False,
         t0_normalisation: None | str = None,
-    ):
+    ) -> None:
         """
         Process 1-d data into a timeseries. Specifically this will be run when the number of dims = 1.
 
@@ -471,8 +471,9 @@ class Timeseries:
         dimension_names : list[str]
             List of dimension names with indexes corresponding to the axes in data.
         aggregate : AggregationStrategy, optional
-            The type of aggregation performed on the data, by default AggregationStrategy.MEAN. Currently these are limited to:
-            mean, median, max, min. Note, the aggregation chosen determines the spread according to the following rules:
+            The type of aggregation performed on the data, by default AggregationStrategy.MEAN. Currently these are
+            limited to: mean, median, max, min. Note, the aggregation chosen determines the spread according to the
+            following rules:
                 - mean: standard deviation
                 - median: IQR
                 - max/min: NaN

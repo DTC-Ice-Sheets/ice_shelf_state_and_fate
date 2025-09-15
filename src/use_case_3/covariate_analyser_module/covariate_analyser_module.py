@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import textwrap
 from copy import deepcopy
-from enum import Enum
 from textwrap import wrap
 
 import matplotlib.pyplot as plt
@@ -25,8 +24,8 @@ from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    ModelEvaluationMetric,
     JointPlotAnalysisType,
+    ModelEvaluationMetric,
 )
 
 
