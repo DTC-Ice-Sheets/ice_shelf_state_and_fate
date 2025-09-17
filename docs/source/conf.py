@@ -6,10 +6,10 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-import os
+import pathlib
 import sys
 
-src_root = os.path.abspath("../..")
+src_root = pathlib.Path("../..").resolve()
 sys.path.insert(0, src_root)
 project = "State and Fate of Antarctic Ice Shelves"
 company_copyright = "2025, Earthwave Ltd."

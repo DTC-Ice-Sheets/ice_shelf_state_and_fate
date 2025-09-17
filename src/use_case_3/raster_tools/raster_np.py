@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import math
-from typing import Any, List, Optional, Tuple, Union
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -36,7 +37,7 @@ class RasterNp(np.ndarray):
         bounding_box: BoundingBox,
         resolution: float,
         y_affine_negative: bool,
-        proj4_code: Union[str, None],
+        proj4_code: str | None,
     ) -> None:
         self.bounding_box = self._get_corrected_bounding_box(bounding_box, resolution, y_affine_negative)
         self.resolution = resolution
@@ -49,8 +50,8 @@ class RasterNp(np.ndarray):
         input_array: NDArray[np.float64],
         bounding_box: BoundingBox,
         resolution: float,
-        y_affine_negative: Optional[bool] = True,
-        proj4_code: Optional[Union[str, None]] = None,
+        y_affine_negative: bool = True,
+        proj4_code: str | None = None,
     ) -> RasterNp:
         """
         Create a RasterNp object.
@@ -66,9 +67,9 @@ class RasterNp(np.ndarray):
         resolution : float
             The spacing between each pixel. Strictly redundant information for the creation of this object
             but it is usually known and helps catch obvious misunderstandings of raster extents.
-        y_affine_negative : Optional[bool]
+        y_affine_negative : bool = True
             If True the data is assumed to decrease in y coordinate as y index increases, by default True
-        proj4_code : Optional[Union[str, None]]
+        proj4_code : str | None
             The CRS metadata for the extent, assumed to be in proj4 convention, by default None
 
         Returns
@@ -121,8 +122,8 @@ class RasterNp(np.ndarray):
         return transform
 
     def yx_from_rows_cols(
-        self: RasterNp, y_idx: Union[int, NDArray], x_idx: Union[int, NDArray]
-    ) -> Tuple[Union[float, NDArray], Union[float, NDArray]]:
+        self: RasterNp, y_idx: int | NDArray, x_idx: int | NDArray
+    ) -> tuple[float | NDArray, float | NDArray]:
         """
         Get y, x coordinates (centre points) for corresponding index values in the array data.
 
@@ -130,14 +131,14 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        y_idx : Union[int, NDArray]
+        y_idx : int | NDArray
             y index or indices to retrieve coordinates for.
-        x_idx : Union[int, NDArray]
+        x_idx : int | NDArray
             x index or indices to retrieve coordinates for.
 
         Returns
         -------
-        Tuple[Union[float, NDArray], Union[float, NDArray]]
+        tuple[float | NDArray, float | NDArray]
             y coordinate value(s)
             x coordinate value(s)
         """
@@ -145,8 +146,8 @@ class RasterNp(np.ndarray):
         return y, x
 
     def rows_cols_from_yx(
-        self: RasterNp, y: Union[float, NDArray, Tuple, List], x: Union[float, NDArray, Tuple, List]
-    ) -> Tuple[Union[int, np.int64, NDArray], Union[int, np.int64, NDArray]]:
+        self: RasterNp, y: float | NDArray | tuple | list, x: float | NDArray | tuple | list
+    ) -> tuple[int | np.int64 | NDArray, int | np.int64 | NDArray]:
         """
         Return row, col array indices for for real y, x coordinates values.
 
@@ -157,37 +158,31 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        y : Union[float, NDArray, Tuple, List]
+        y : float | NDArray | tuple | list
             y coordinates to retrieve index/indices for.
-        x : Union[float, NDArray, Tuple, List]
+        x : float | NDArray | tuple | list
             x coordinates to retrieve index/indices for.
 
         Returns
         -------
-        Tuple[Union[int, np.int64, NDArray], Union[int, np.int64, NDArray]]
+        tuple[int | np.int64 | NDArray, int | np.int64 | NDArray]
             y index or indices.
             x index or indices.
         """
-        if x is not np.iterable:
-            x_iter = [x]
-        else:
-            x_iter = x
-        if y is not np.iterable:
-            y_iter = [y]
-        else:
-            y_iter = y
+        x_iter = [x] if x is not np.iterable else x
+        y_iter = [y] if y is not np.iterable else y
 
         x_idx, y_idx = np.floor(~self.transform * np.array(*zip(x_iter, y_iter, strict=False))).astype(int)
 
         return y_idx, x_idx
 
-    def yx_gridpoints(self: RasterNp) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def yx_gridpoints(self: RasterNp) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         """
         Return arrays of y and x coordinates for the entire raster.
 
         Returns
         -------
-        Tuple[NDArray[np.float64], NDArray[np.float64]]
+        tuple[NDArray[np.float64], NDArray[np.float64]]
             List of centre point coordinates for y axis
             List of centre point coordinates for x axis
         """
@@ -199,8 +194,8 @@ class RasterNp(np.ndarray):
     def new_extent_copy(
         self: RasterNp,
         bounding_box: BoundingBox,
-        fill_to_extent: Optional[bool] = False,
-        fill_value: Optional[float] = np.nan,
+        fill_to_extent: bool = False,
+        fill_value: float = np.nan,
     ) -> RasterNp:
         """
         Return a new RasterNp object, resized to the new extent.
@@ -209,9 +204,9 @@ class RasterNp(np.ndarray):
         ----------
         bounding_box : BoundingBox
             Target extent for new array.
-        fill_to_extent : Optional[bool]
+        fill_to_extent : bool
             If True and extent is greater than source image, fill with fill_value, by default False
-        fill_value : Optional[float]
+        fill_value : float
             Default value for pixels outside the extent of the existing array (e.g. if resizing to a larger extent),
             by default np.nan
 
@@ -263,7 +258,7 @@ class RasterNp(np.ndarray):
 
         return new_raster
 
-    def at_yx(self: RasterNp, y: Union[NDArray[np.float64], List], x: Union[NDArray[np.float64], List]) -> NDArray:
+    def at_yx(self: RasterNp, y: NDArray[np.float64] | list, x: NDArray[np.float64] | list) -> NDArray:
         """
         Return values from raster for given y and x coordinate lists.
 
@@ -271,9 +266,9 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        y : Union[NDArray[np.float64], List]
+        y : NDArray[np.float64] | list
             List of y coordinates to extract values for.
-        x : Union[NDArray[np.float64], List]
+        x : NDArray[np.float64] | list
             List of x coordinates to extract values for.
 
         Returns
@@ -284,7 +279,7 @@ class RasterNp(np.ndarray):
         y_idx, x_idx = self.rows_cols_from_yx(y, x)
         return self[y_idx, x_idx]
 
-    def get_centre_points(self: RasterNp) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    def get_centre_points(self: RasterNp) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         """
         Get x coords, y coords, and values in an x-oriented array for mesh grid consistency.
 
@@ -292,25 +287,22 @@ class RasterNp(np.ndarray):
 
         Returns
         -------
-        Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
+        tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
             x centre point coordinates.
             y centre point coordinates.
             Array values in x-oriented order.
         """
         y, x = self.yx_gridpoints()
-        if self.y_affine_negative:
-            values = self[::-1]
-        else:
-            values = self
+        values = self[::-1] if self.y_affine_negative else self
 
         return x, y, np.transpose(values)
 
     def save_as_tiff(
         self: RasterNp,
-        file_path: str,
-        data_type: Optional[str] = "float32",
-        no_data: Optional[float] = None,
-        **kwargs: Optional[Union[dict[str, Any], None, str]],
+        file_path: Path,
+        data_type: str = "float32",
+        no_data: float | None = None,
+        **kwargs: dict[str, Any] | str | None,
     ) -> None:
         """
         Save object as a geotiff.
@@ -319,11 +311,11 @@ class RasterNp(np.ndarray):
         ----------
         file_path : str
             Output file path.
-        data_type : Optional[str]
+        data_type : str
             Override the output number type, by default 'float32'
-        no_data : Optional[float]
+        no_data : float | None
             Override the no-data value, by default None
-        kwargs : Optional[Union[dict[str, Any], None, str]]
+        kwargs : dict[str, Any] | str | None
             Keyword arguments for rasterio.open. These are passed to format drivers as directives
             for creating or interpreting datasets.
         """
@@ -371,13 +363,13 @@ class RasterNp(np.ndarray):
         return Window(left, top, right - left, bottom - top)
 
     @staticmethod
-    def _bounding_box_intersects_bounds(bounds: Tuple[float, float, float, float], bounding_box: BoundingBox) -> bool:
+    def _bounding_box_intersects_bounds(bounds: tuple[float, float, float, float], bounding_box: BoundingBox) -> bool:
         """
         Check if any data exists in the bounds for the given extent.
 
         Parameters
         ----------
-        bounds : Tuple[float, float, float, float]
+        bounds : tuple[float, float, float, float]
             Rasterio bounds
         bounding_box : BoundingBox
             Bounding box extent.
@@ -393,7 +385,7 @@ class RasterNp(np.ndarray):
         return bounding_box.intersects(bounds_as_extent)
 
     @staticmethod
-    def load_from_tiff(file_path: str, band: Optional[int] = 1, bounding_box: Optional[BoundingBox] = None) -> RasterNp:
+    def load_from_tiff(file_path: Path, band: int = 1, bounding_box: BoundingBox | None = None) -> RasterNp:
         """
         Build a RasterNp object from a tiff file.
 
@@ -401,11 +393,11 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        file_path : str
+        file_path : Path
             The file path to attempt to load.
-        band : Optional[int]
+        band : int
             Which raster band to load, by default 1 (the first one)
-        bounding_box : Optional[BoundingBox]
+        bounding_box : BoundingBox | None
             If a bounding box is passed, only a sub-area of the tiff is loaded. If the bounding box bounds are greater
             than the image bounds, they are trimmed down to the image bounds. All partial pixels touched by the bounding
             box are returned. If None, the entire tiff is loaded. By default None.
@@ -458,20 +450,17 @@ class RasterNp(np.ndarray):
             )
             resolution = transform.a
             y_affine_negative = transform.e < 0
-            if rst.crs is None:
-                proj4_code = None
-            else:
-                proj4_code = rst.crs.to_proj4()
+            proj4_code = None if rst.crs is None else rst.crs.to_proj4()
 
         return RasterNp(data, bounding_box, resolution, y_affine_negative, proj4_code)
 
-    def convert_to_dataframe(self: RasterNp, value_name: Optional[str] = "value") -> pd.DataFrame:
+    def convert_to_dataframe(self: RasterNp, value_name: str = "value") -> pd.DataFrame:
         """
         Convert object to a dataframe with x coordinates, y coordinates, and values.
 
         Parameters
         ----------
-        value_name : Optional[str]
+        value_name : str
             The new column name for the data in the DataFrame, by default 'value'
 
         Returns
@@ -481,11 +470,10 @@ class RasterNp(np.ndarray):
         """
         x, y, data = self.get_centre_points()
         x, y = make_grid_mesh_xy(x, y)
-        df = pd.DataFrame(data={"x": x, "y": y, value_name: data.flatten()})
-        return df
+        return pd.DataFrame(data={"x": x, "y": y, value_name: data.flatten()})
 
     @staticmethod
-    def _from_bounds(bounds: Tuple[float, float, float, float], new_extent: BoundingBox, transform: Affine) -> Window:
+    def _from_bounds(bounds: tuple[float, float, float, float], new_extent: BoundingBox, transform: Affine) -> Window:
         top = bounds.top if new_extent.max_y > bounds.top else new_extent.max_y
         left = bounds.left if new_extent.min_x < bounds.left else new_extent.min_x
         bottom = bounds.bottom if new_extent.min_y < bounds.bottom else new_extent.min_y
@@ -494,13 +482,13 @@ class RasterNp(np.ndarray):
         return from_bounds(left, bottom, right, top, transform)
 
     @staticmethod
-    def bounding_box_intersects_tiff(file_path: str, bounding_box: BoundingBox) -> bool:
+    def bounding_box_intersects_tiff(file_path: Path, bounding_box: BoundingBox) -> bool:
         """
         Check if any data exists in the tiff for the given extent.
 
         Parameters
         ----------
-        file_path : str
+        file_path : Path
             Tiff file path.
         bounding_box : BoundingBox
             Extent to check tiff data exists for.
@@ -517,20 +505,20 @@ class RasterNp(np.ndarray):
 
     def mask_from_file(
         self: RasterNp,
-        file_path: str,
-        include_mask_value: Optional[float] = 1,
-        outside_mask_return_value: Optional[float] = np.nan,
+        file_path: Path,
+        include_mask_value: float = 1,
+        outside_mask_return_value: float = np.nan,
     ) -> None:
         """
         Mask object in place from another geotiff file.
 
         Parameters
         ----------
-        file_path : str
+        file_path : Path
             File path of mask file.
-        include_mask_value : Optional[float]
+        include_mask_value : float
             The in-mask value in the mask geotiff, by default 1.
-        outside_mask_return_value : Optional[float]
+        outside_mask_return_value : float
             The value assinged to data found outside of the mask, by default np.nan. note - the default
             outside_mask_return_value value of np.nan does not work with int-based arrays.
         """
@@ -555,8 +543,8 @@ class RasterNp(np.ndarray):
     def mask_from_raster_np(
         self: RasterNp,
         mask: RasterNp,
-        include_mask_value: Optional[Union[float, bool]] = 1,
-        outside_mask_return_value: Optional[float] = np.nan,
+        include_mask_value: float = 1,
+        outside_mask_return_value: float = np.nan,
     ) -> None:
         """
         Mask object in place from a np.ndarray mask.
@@ -565,9 +553,9 @@ class RasterNp(np.ndarray):
         ----------
         mask : RasterNp
             The mask represented as a RasterNp.
-        include_mask_value : Optional[float]
+        include_mask_value :float
             The in-mask value in the mask geotiff, by default 1.
-        outside_mask_return_value : Optional[float]
+        outside_mask_return_value : float
             The value assigned to data found outside of the mask, by default np.nan. note - the default
             outside_mask_return_value value of np.nan does not work with int-based arrays.
 

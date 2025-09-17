@@ -111,7 +111,7 @@ class TimeSeriesPreprocessor:
         end_date : pd.Timestamp
             The end date to trim.
         """
-        for ts_label in self.timeseries.keys():
+        for ts_label in self.timeseries:
             self.timeseries[ts_label].measurements = self.timeseries[ts_label].measurements[
                 (self.timeseries[ts_label].measurements.index >= start_date)
                 & (self.timeseries[ts_label].measurements.index <= end_date)
@@ -166,7 +166,7 @@ class TimeSeriesPreprocessor:
         self: TimeSeriesPreprocessor,
     ) -> None:
         """Resamples any missing data and then linearly interpolates a timeseries according to a specified period."""
-        for ts_label in self.timeseries.keys():
+        for ts_label in self.timeseries:
             timeseries_interp = deepcopy(self.timeseries[ts_label])
             # Generate the list of date idx
             date_idx = pd.date_range(

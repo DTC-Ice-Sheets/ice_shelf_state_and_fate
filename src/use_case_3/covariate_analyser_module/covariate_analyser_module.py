@@ -92,9 +92,7 @@ class CovariateAnalyser:
         axis_labels : list | None
             A list of labels which can be used to customise the axis labels if required, by default None
         """
-        joint_grid_plot = self.jointplot_grid(axis_labels=axis_labels, max_lag=max_lag, analysis_type=analysis_type)
-
-        return joint_grid_plot
+        return self.jointplot_grid(axis_labels=axis_labels, max_lag=max_lag, analysis_type=analysis_type)
 
     def correlation_coefficient(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, altered: bool = False
@@ -122,10 +120,7 @@ class CovariateAnalyser:
             "The labels specified are not in the altered timeseries container"
         """
         if altered:
-            if (
-                timeseries_label_1 not in self._timeseries_altered.keys()
-                or timeseries_label_2 not in self._timeseries_altered.keys()
-            ):
+            if timeseries_label_1 not in self._timeseries_altered or timeseries_label_2 not in self._timeseries_altered:
                 raise ValueError("The labels specified are not in the altered timeseries container")
             timeseries_1 = self._timeseries_altered[timeseries_label_1]
             timeseries_2 = self._timeseries_altered[timeseries_label_2]
@@ -325,7 +320,7 @@ class CovariateAnalyser:
         timeseries_label_1: str,
         timeseries_label_2: str,
         metric: AggregationStrategy = AggregationStrategy.MEAN,
-    ) -> tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None]:
+    ) -> tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None] | None:
         """
         Calculate a temporal offset.
 
@@ -360,6 +355,8 @@ class CovariateAnalyser:
         if metric == AggregationStrategy.MIN:
             return diff.min(), diff.argmin()
 
+        return None
+
     def temporal_slope(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, plot: bool = False
     ) -> tuple[float, float, float, float, float]:
@@ -391,7 +388,7 @@ class CovariateAnalyser:
         )
 
         if plot:
-            fig, axes = plt.subplots(nrows=1, ncols=2)
+            _fig, axes = plt.subplots(nrows=1, ncols=2)
             axes[0].plot(
                 np.arange(0, self.timeseries_container.timeseries[timeseries_label_1].measurements.shape[0]).reshape(
                     -1, 1
@@ -460,8 +457,8 @@ class CovariateAnalyser:
             If true a linear fit is displayed using robust linear regression, by default True
         """
         reg_1 = LinearRegression().fit(
-            self.timeseries.get_timeseries([timeseries_label_1])[0].values.reshape(-1, 1),
-            self.timeseries.get_timeseries([timeseries_label_2])[0].values.reshape(-1, 1),
+            self.timeseries.get_timeseries([timeseries_label_1])[0].to_numpy().reshape(-1, 1),
+            self.timeseries.get_timeseries([timeseries_label_2])[0].to_numpy().reshape(-1, 1),
         )
 
         joint = sns.jointplot(
@@ -652,8 +649,8 @@ class CovariateAnalyser:
             if self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties is not None:
                 sns.lineplot(
                     x=self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.index,
-                    y=self.timeseries_container.timeseries[timeseries_labels[n]].measurements.values
-                    + self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.values,
+                    y=self.timeseries_container.timeseries[timeseries_labels[n]].measurements.to_numpy()
+                    + self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.to_numpy(),
                     ax=axes[n],
                     c=self.colours[n],
                     linestyle="--",
@@ -661,8 +658,8 @@ class CovariateAnalyser:
                 )
                 sns.lineplot(
                     x=self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.index,
-                    y=self.timeseries_container.timeseries[timeseries_labels[n]].measurements.values
-                    - self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.values,
+                    y=self.timeseries_container.timeseries[timeseries_labels[n]].measurements.to_numpy()
+                    - self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.to_numpy(),
                     ax=axes[n],
                     c=self.colours[n],
                     linestyle="--",
@@ -670,17 +667,14 @@ class CovariateAnalyser:
                 )
                 axes[n].fill_between(
                     self.timeseries_container.timeseries[timeseries_labels[n]].measurements.index,
-                    self.timeseries_container.timeseries[timeseries_labels[n]].measurements.values
-                    + self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.values,
-                    self.timeseries_container.timeseries[timeseries_labels[n]].measurements.values
-                    - self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.values,
+                    self.timeseries_container.timeseries[timeseries_labels[n]].measurements.to_numpy()
+                    + self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.to_numpy(),
+                    self.timeseries_container.timeseries[timeseries_labels[n]].measurements.to_numpy()
+                    - self.timeseries_container.timeseries[timeseries_labels[n]].measurement_uncertainties.to_numpy(),
                     alpha=0.5,
                     facecolor=self.colours[n],
                 )
-            if yaxis_labels is None:
-                yaxis_label = timeseries_labels[n]
-            else:
-                yaxis_label = yaxis_labels[n]
+            yaxis_label = timeseries_labels[n] if yaxis_labels is None else yaxis_labels[n]
             axes[n].set_ylabel(
                 "\n".join(wrap(yaxis_label, 15))
                 + " \n ("

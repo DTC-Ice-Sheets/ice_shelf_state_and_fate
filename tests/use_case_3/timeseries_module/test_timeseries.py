@@ -193,14 +193,14 @@ def timeseries_dataset_3d_fixture(data_array_nans_fixture, data_array_uncertaint
 def timeseries_dataset_1d_fixture(timeseries_fixture):
     ds = xr.Dataset(
         data_vars={
-            "measurement": (["time", "y", "x"], timeseries_fixture[0].values.reshape((-1, 1, 1)).astype(float)),
+            "measurement": (["time", "y", "x"], timeseries_fixture[0].to_numpy().reshape((-1, 1, 1)).astype(float)),
             "measurement_uncertainties": (
                 ["time", "y", "x"],
-                timeseries_fixture[1].values.reshape((-1, 1, 1)).astype(float),
+                timeseries_fixture[1].to_numpy().reshape((-1, 1, 1)).astype(float),
             ),
         },
         coords={
-            "time": timeseries_fixture[0].index.values,
+            "time": timeseries_fixture[0].index.to_numpy(),
             "x": [0],
             "y": [1],
         },
@@ -234,19 +234,25 @@ def test_process_timeseries_1d(timeseries_dataset_1d_fixture):
     )
 
     assert timeseries.label == timeseries_dataset_1d_fixture[1]
-    assert np.allclose(timeseries.measurements.values, timeseries_dataset_1d_fixture[0]["measurement"].values.ravel())
-    assert np.allclose(timeseries.measurement_std.values, np.zeros(timeseries.measurements.values.shape))
-    assert np.allclose(timeseries.measurement_n.values, np.ones(timeseries.measurements.values.shape))
     assert np.allclose(
-        timeseries.measurement_uncertainties.values,
-        timeseries_dataset_1d_fixture[0]["measurement_uncertainties"].values.ravel(),
+        timeseries.measurements.to_numpy(), timeseries_dataset_1d_fixture[0]["measurement"].to_numpy().ravel()
     )
-    assert np.allclose(timeseries.measurements.values, timeseries_dataset_1d_fixture[0]["measurement"].values.ravel())
+    assert np.allclose(timeseries.measurement_std.to_numpy(), np.zeros(timeseries.measurements.to_numpy().shape))
+    assert np.allclose(timeseries.measurement_n.to_numpy(), np.ones(timeseries.measurements.to_numpy().shape))
     assert np.allclose(
-        timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
+        timeseries.measurement_uncertainties.to_numpy(),
+        timeseries_dataset_1d_fixture[0]["measurement_uncertainties"].to_numpy().ravel(),
     )
     assert np.allclose(
-        timeseries.measurement_uncertainties_n.values, np.ones(timeseries.measurement_uncertainties.values.shape)
+        timeseries.measurements.to_numpy(), timeseries_dataset_1d_fixture[0]["measurement"].to_numpy().ravel()
+    )
+    assert np.allclose(
+        timeseries.measurement_uncertainties_std.to_numpy(),
+        np.zeros(timeseries.measurement_uncertainties.to_numpy().shape),
+    )
+    assert np.allclose(
+        timeseries.measurement_uncertainties_n.to_numpy(),
+        np.ones(timeseries.measurement_uncertainties.to_numpy().shape),
     )
 
 
@@ -279,19 +285,18 @@ def test_process_timeseries_3d(timeseries_dataset_3d_fixture):
     )
 
     assert timeseries.label == timeseries_dataset_3d_fixture[1]
-    assert np.allclose(timeseries.measurements.values, np.array([5.5, 14, 23.166667]))
-    assert np.allclose(timeseries.measurement_std.values, np.array([2.29128785, 2.44948974, 2.9107082]))
-    assert np.allclose(timeseries.measurement_n.values, np.array([8, 7, 6]))
+    assert np.allclose(timeseries.measurements.to_numpy(), np.array([5.5, 14, 23.166667]))
+    assert np.allclose(timeseries.measurement_std.to_numpy(), np.array([2.29128785, 2.44948974, 2.9107082]))
+    assert np.allclose(timeseries.measurement_n.to_numpy(), np.array([8, 7, 6]))
     assert np.allclose(
-        timeseries.measurement_uncertainties.values,
+        timeseries.measurement_uncertainties.to_numpy(),
         np.array([0.176777, 0.188982, 0.204124]),  # need to calculate the uncertainites
     )
     assert np.allclose(
-        timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
+        timeseries.measurement_uncertainties_std.to_numpy(),
+        np.zeros(timeseries.measurement_uncertainties.to_numpy().shape),
     )
-    assert np.allclose(
-        timeseries.measurement_uncertainties_n.values, np.array([8, 7, 6])
-    )
+    assert np.allclose(timeseries.measurement_uncertainties_n.to_numpy(), np.array([8, 7, 6]))
 
 
 def test_timeseries_type():
@@ -665,9 +670,9 @@ def test__calculate_aggregate_timeseries_3d_mean(
     )
     assert data_df.index.to_list() == [10, 11, 12]
     assert list(data_df.columns) == ["aggregation", "data_std", "aggregation_n"]
-    assert np.allclose(data_df["aggregation"].values, np.array([11.5, 14, 14.25]), rtol=1e-2)
-    assert np.allclose(data_df["data_std"].values, np.array([5.123, 8.635, 7.902]), rtol=1e-2)
-    assert np.allclose(data_df["aggregation_n"].values, np.array([6, 7, 8]), rtol=1e-2)
+    assert np.allclose(data_df["aggregation"].to_numpy(), np.array([11.5, 14, 14.25]), rtol=1e-2)
+    assert np.allclose(data_df["data_std"].to_numpy(), np.array([5.123, 8.635, 7.902]), rtol=1e-2)
+    assert np.allclose(data_df["aggregation_n"].to_numpy(), np.array([6, 7, 8]), rtol=1e-2)
 
 
 def test__calculate_aggregate_timeseries_3d_median(
@@ -695,9 +700,9 @@ def test__calculate_aggregate_timeseries_3d_max(
     )
     assert data_df.index.to_list() == [10, 11, 12]
     assert list(data_df.columns) == ["aggregation", "data_None", "aggregation_n"]
-    assert np.allclose(data_df["aggregation"].values, np.array([19, 26, 27]), rtol=1e-2)
-    assert np.allclose(data_df["data_None"].values, np.array([0, 0, 0]), rtol=1e-2)
-    assert np.allclose(data_df["aggregation_n"].values, np.array([0, 0, 0]), rtol=1e-2)
+    assert np.allclose(data_df["aggregation"].to_numpy(), np.array([19, 26, 27]), rtol=1e-2)
+    assert np.allclose(data_df["data_None"].to_numpy(), np.array([0, 0, 0]), rtol=1e-2)
+    assert np.allclose(data_df["aggregation_n"].to_numpy(), np.array([0, 0, 0]), rtol=1e-2)
 
 
 def test__combine_uncertainties_quadrature(uncertainty_vector_fixture):
@@ -779,16 +784,16 @@ def test__propagate_uncertainties_timeseries(
     )
 
     assert np.allclose(
-        result["uncertainty"].values,
+        result["uncertainty"].to_numpy(),
         np.array([0.129, 0.204]),
         rtol=1e-2,
     )
     assert np.allclose(
-        result["uncertainty_std"].values,
+        result["uncertainty_std"].to_numpy(),
         np.array([0, 0]),
         rtol=1e-2,
     )
-    assert np.allclose(result["uncertainty_n"].values, np.array([15, 6]))
+    assert np.allclose(result["uncertainty_n"].to_numpy(), np.array([15, 6]))
     assert result.index.to_list() == [2012, 2014]
 
 
@@ -802,11 +807,14 @@ def test__determine_coverage(timeseries_obj_fixture, mask_fixture, data_array_na
 
 
 def test__determine_coverage_point(timeseries_obj_fixture, mask_fixture, data_array_nans_fixture):
-    assert pytest.approx(
-        timeseries_obj_fixture._determine_coverage_point(
-            data_observations=data_array_nans_fixture, mask_raster=mask_fixture
+    assert (
+        pytest.approx(
+            timeseries_obj_fixture._determine_coverage_point(
+                data_observations=data_array_nans_fixture, mask_raster=mask_fixture
+            )
         )
-    ) == 0.875
+        == 0.875
+    )
 
 
 def test_determine_count_pixels(mask_fixture, data_array_nans_fixture):
@@ -874,7 +882,7 @@ def test__calculate_percentiles_timeseries(
         percentiles=(25, 75),
     )
 
-    assert np.allclose(np.array([[3.75, 7.25, 8], [12.5, 15.5, 7], [20.75, 25.5, 6]]), percentiles.values)
+    assert np.allclose(np.array([[3.75, 7.25, 8], [12.5, 15.5, 7], [20.75, 25.5, 6]]), percentiles.to_numpy())
 
 
 def test__determine_percentiles(timeseries_obj_fixture, data_array_nans_fixture, time_index_fixture):

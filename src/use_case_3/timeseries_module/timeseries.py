@@ -97,11 +97,11 @@ class Timeseries:
         t0_normalisation : str | None
             Whether to normalise the time series against time zero, by default None
         """
-        data_observations = data[measurement_name].values
+        data_observations = data[measurement_name].to_numpy()
         if measurement_uncertainty_name is not None:
-            data_uncertainties = data[measurement_uncertainty_name].values
+            data_uncertainties = data[measurement_uncertainty_name].to_numpy()
             data_uncertainties[data_uncertainties < -200] = np.nan
-        dimension_data = {key: data[key] for key in data.coords.keys()}
+        dimension_data = {key: data[key] for key in data.coords}
 
         dimension_names = list(data[measurement_name].dims)
 
@@ -223,18 +223,15 @@ class Timeseries:
             If true the data is masked, by default False
         """
         if mask_geometry is not None:
-            resolution = float(np.abs(dimension_data["y"][1].values - dimension_data["y"][0].values))
-            if dimension_data["y"][1].values > dimension_data["y"][0].values:
-                y_affine_negative = False
-            else:
-                y_affine_negative = True
+            resolution = float(np.abs(dimension_data["y"][1].to_numpy() - dimension_data["y"][0].to_numpy()))
+            y_affine_negative = not dimension_data["y"][1].to_numpy() > dimension_data["y"][0].to_numpy()
 
             data_mask = RasterNp.rasterise_mask_from_geometry(
                 geometries=[mask_geometry],
-                y_min=float(dimension_data["y"].min().values),
-                y_max=float(dimension_data["y"].max().values + resolution),
-                x_min=float(dimension_data["x"].min().values),
-                x_max=float(dimension_data["x"].max().values + resolution),
+                y_min=float(dimension_data["y"].min().to_numpy()),
+                y_max=float(dimension_data["y"].max().to_numpy() + resolution),
+                x_min=float(dimension_data["x"].min().to_numpy()),
+                x_max=float(dimension_data["x"].max().to_numpy() + resolution),
                 resolution=resolution,
                 y_affine_negative=y_affine_negative,
             )
@@ -384,7 +381,7 @@ class Timeseries:
         data_observations : np.ndarray
             Input data with axes ordered according to the dimension names.
         dimension_data : dict
-            The data for each of the data dimensions, i.e. coordinate values.
+            The data for each of the data dimensions, i.e. coordinate to_numpy().
         dimension_names : list[str]
             List of dimension names with indexes corresponding to the axes in data.
         aggregate : AggregationStrategy
@@ -469,7 +466,7 @@ class Timeseries:
         data_uncertainties : np.ndarray
             Input data uncertainties with axes ordered according to the dimension names.
         dimension_data : dict
-            The data for each of the data dimensions, i.e. coordinate values.
+            The data for each of the data dimensions, i.e. coordinate to_numpy().
         dimension_names : list[str]
             List of dimension names with indexes corresponding to the axes in data.
         aggregate : AggregationStrategy
@@ -500,9 +497,9 @@ class Timeseries:
         Raises
         ------
         ValueError
-            The aggregation type is not one of the specified values.
+            The aggregation type is not one of the specified to_numpy().
         ValueError
-            The uncertainty type is not one of the specified values.
+            The uncertainty type is not one of the specified to_numpy().
         """
         data_observations, dimension_names = self._expand_dimensions(
             data=data_observations, dimension_names=dimension_names, modify_dimension_names=modify
@@ -571,7 +568,7 @@ class Timeseries:
         data : np.ndarray
             Input data array.
         non_nan : bool
-            If False then the number of NaN values are counted, if True then the number of non-NaN values are
+            If False then the number of NaN to_numpy() are counted, if True then the number of non-NaN to_numpy() are
             counted, by default False.
         time_index : dict | None
             The time indexes over which to do the aggregations, by default None
@@ -579,13 +576,13 @@ class Timeseries:
         Returns
         -------
         np.ndarray
-            The count of either NaN or non-NaN values.
+            The count of either NaN or non-NaN to_numpy().
         """
         if time_index is None:
             time_index = {0: [0]}
 
         data_agg_n = []
-        for time_point in time_index.keys():
+        for time_point in time_index:
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             if non_nan:
@@ -603,7 +600,7 @@ class Timeseries:
         dimension_aggregate: int | tuple[int, int] | None = None,
     ) -> tuple[np.ndarray, list]:
         """
-        Calculate the mean along the none time axes resulting in a 1d timeseries of mean values with associated
+        Calculate the mean along the none time axes resulting in a 1d timeseries of mean to_numpy() with associated
         uncertainties.
 
         Parameters
@@ -628,10 +625,10 @@ class Timeseries:
         -------
         np.ndarray
             The aggregated data.
-        """
+        """  # noqa: D205
         # If the dimensions over which to aggregate are not specified, then infer this from the dim_names:
         if dimension_aggregate is None:
-            dimension_aggregate = tuple([i for i, dim_name in enumerate(dimension_names) if dim_name != "time"])
+            dimension_aggregate = tuple(i for i, dim_name in enumerate(dimension_names) if dim_name != "time")
 
         time_coords_agg = []
         data_agg = []
@@ -639,7 +636,7 @@ class Timeseries:
         if time_index is None:
             time_index = {0: [0]}
 
-        for time_point in time_index.keys():
+        for time_point in time_index:
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             if aggregate == AggregationStrategy.MEAN:
@@ -701,7 +698,7 @@ class Timeseries:
         if time_index is None:
             time_index = {0: [0]}
 
-        for i, time_point in enumerate(time_index.keys()):
+        for i, time_point in enumerate(time_index):
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             time_coords_agg.append(time_point)
@@ -757,7 +754,7 @@ class Timeseries:
         if time_index is None:
             time_index = {0: [0]}
 
-        for time_point in time_index.keys():
+        for time_point in time_index:
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             time_coords_agg.append(time_point)
@@ -815,7 +812,7 @@ class Timeseries:
         if time_index is None:
             time_index = {0: [0]}
 
-        for time_point in time_index.keys():
+        for time_point in time_index:
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             time_coords_agg.append(time_point)
@@ -838,7 +835,7 @@ class Timeseries:
         self: Timeseries,
         data_observation: np.ndarray,
         normalisation_type: NormalisationType = NormalisationType.FIRST,
-    ) -> np.ndarray:
+    ) -> np.ndarray | None:
         """
         Normalise a 1D time series against a time zero (t0).
 
@@ -860,7 +857,7 @@ class Timeseries:
         Raises
         ------
         ValueError
-            The normalisation type is not one of the allowed values.
+            The normalisation type is not one of the allowed to_numpy().
         """
         if normalisation_type == NormalisationType.FIRST:
             return data_observation - data_observation[0]
@@ -869,12 +866,13 @@ class Timeseries:
             model = LinearRegression().fit(x.reshape((-1, 1)), data_observation.reshape((-1, 1)))
             y_0 = model.predict(np.array(0).reshape((-1, 1)))
             return data_observation - y_0
+        return None
 
     def _t0_normalisation_uncertainties(
         self: Timeseries,
         data_uncertainties: np.ndarray | None,
         normalisation_type: NormalisationType = NormalisationType.FIRST,
-    ) -> np.ndarray:
+    ) -> np.ndarray | None:
         """
         Propagate uncertainties when normalising a 1D time series against a time zero (t0).
 
@@ -896,13 +894,14 @@ class Timeseries:
         Raises
         ------
         ValueError
-            The normalisation type is not one of the allowed values.
+            The normalisation type is not one of the allowed to_numpy().
         """
         if normalisation_type == NormalisationType.FIRST:
             return self._combine_uncertainties_quadrature(data_uncertainties, data_uncertainties[0])
         if normalisation_type == NormalisationType.LINEAR_REGRESSION:
             # This needs fixing as the uncertainties will not be propagated correctly when fitting the model.
             return self._combine_uncertainties_quadrature(data_uncertainties, data_uncertainties[0])
+        return None
 
     def _calculate_percentiles_timeseries(
         self: Timeseries,
@@ -994,7 +993,7 @@ class Timeseries:
         if time_index is None:
             time_index = {0: [0]}
 
-        for time_point in time_index.keys():
+        for time_point in time_index:
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             time_coords_agg.append(time_point)
@@ -1086,7 +1085,7 @@ class Timeseries:
         if time_index is None:
             time_index = {0: [0]}
 
-        for time_point in time_index.keys():
+        for time_point in time_index:
             time_min = time_index[time_point][0]
             time_max = time_index[time_point][-1] + 1
             time_coords_agg.append(time_point)
@@ -1184,17 +1183,9 @@ class Timeseries:
         np.ndarray
             The reordered data.
         """
-        if "time" in dimension_names:
-            dimension_aggregate = dimension_names.index("time")
-        else:
-            dimension_aggregate = 0
+        dimension_aggregate = dimension_names.index("time") if "time" in dimension_names else 0
 
-        if dimension_aggregate != 0:
-            data_reordered = np.moveaxis(data, dimension_aggregate, 0)
-        else:
-            data_reordered = data
-
-        return data_reordered
+        return np.moveaxis(data, dimension_aggregate, 0) if dimension_aggregate != 0 else data
 
     @staticmethod
     def _move_axes_time_labels(dimension_names: list[str]) -> list[str]:
@@ -1214,13 +1205,10 @@ class Timeseries:
         list[str]
             The reordered data and dimension names.
         """
-        if "time" in dimension_names:
-            dimension_aggregate = dimension_names.index("time")
-        else:
-            dimension_aggregate = 0
+        dimension_aggregate = dimension_names.index("time") if "time" in dimension_names else 0
 
         if dimension_aggregate != 0:
-            dimension_names_reordered = [dimension_names.pop(dimension_aggregate)] + dimension_names
+            dimension_names_reordered = [dimension_names.pop(dimension_aggregate), *dimension_names]
         else:
             dimension_names_reordered = dimension_names.copy()
 
@@ -1258,7 +1246,8 @@ class Timeseries:
 
         if modify_dimension_names:
             if len(dimension_names) == 2:
-                dimension_names = ["blank"] + dimension_names
+                dimension_names = ["blank", *dimension_names]
+                # dimension_names = ["blank"] + dimension_names
             elif len(dimension_names) == 1:
                 dimension_names = ["blank"] * 2 + dimension_names
 
@@ -1299,6 +1288,7 @@ class Timeseries:
                 date_month: time_coord_df[time_coord_df["date_month"] == date_month].index
                 for date_month in time_coord_df["date_month"].unique()
             }
+        return None
 
     def _process_time_indexes(
         self: Timeseries,
@@ -1451,7 +1441,7 @@ class Timeseries:
             error_pos = self.measurements + self.measurement_uncertainties
             error_neg = self.measurements - self.measurement_uncertainties
 
-        fig, axes = plt.subplots(1, 1)
+        _fig, axes = plt.subplots(1, 1)
         sns.lineplot(
             x=self.measurements.index,
             y=self.measurements,
@@ -1518,7 +1508,7 @@ class Timeseries:
         x_label : str | None
             A X-axis label to use, by default None
         """
-        fig, axes = plt.subplots(1, 1)
+        _fig, axes = plt.subplots(1, 1)
         sns.lineplot(
             x=self.measurement_coverage.index,
             y=self.measurement_coverage,
@@ -1571,9 +1561,11 @@ class Timeseries:
         coverage_median = self.measurement_coverage.median()
 
         observation_uncertainty_corr = np.corrcoef(
-            self.measurements.values.flatten(), self.measurement_uncertainties.values.flatten()
+            self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten()
         )[0, -1]
-        linearity_corr = np.corrcoef(np.arange(self.measurements.shape[0]), self.measurements.values.flatten())[0, -1]
+        linearity_corr = np.corrcoef(np.arange(self.measurements.shape[0]), self.measurements.to_numpy().flatten())[
+            0, -1
+        ]
 
         data = np.zeros((18, 3))
 

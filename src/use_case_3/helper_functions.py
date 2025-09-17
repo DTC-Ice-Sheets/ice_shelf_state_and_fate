@@ -71,9 +71,6 @@ def ocean_polygon(
     Extract the ice shelf ocean multipolygon for an ice shelf in both EPSG4326(lat/lon) and the input projection. To do
     this a buffer of 'distance' units is applied to the ice shelf polygon.
 
-    TODO: This is far to simplistic, the ocean polygon should be the difference between buffered ice shelf polygon, the
-    unbuffered ice shelf polygon and the ice sheet polygon.
-
     Parameters
     ----------
     ice_shelf_polygons : gpd.GeoDataFrame
@@ -89,7 +86,7 @@ def ocean_polygon(
     tuple[Polygon | MultiPolygon, Polygon | MultiPolygon]
         The shapely object for the ocean around the specified ice shelf in both EPSG4326(lat/lon) and the input
         projection.
-    """
+    """  # noqa: D205
     ice_shelf_polygon = ice_shelf_polygons[ice_shelf_polygons["Name"] == ice_shelf_name].copy()
     ice_shelf_polygon["geometry"] = (
         ice_shelf_polygon["geometry"].values[0].buffer(distance=distance, join_style="bevel")
