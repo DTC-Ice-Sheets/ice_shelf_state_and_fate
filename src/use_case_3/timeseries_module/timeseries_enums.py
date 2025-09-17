@@ -82,7 +82,9 @@ class TimeseriesType(Enum):
 
 class TimeseriesRegion(Enum):
     """
-    Define the region type of the timeseries. This can be iceshelf, ocean or climate. This defines how the mask is
+    Define the region type of the timeseries.
+
+    This can be iceshelf, ocean or climate. This defines how the mask is
     calculated and applied.
 
     Parameters

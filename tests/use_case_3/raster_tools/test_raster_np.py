@@ -1,6 +1,7 @@
 """Test the RasterNp class."""
 
 import os
+import pathlib
 
 import numpy as np
 import pandas as pd
@@ -67,7 +68,7 @@ def assert_save_and_load_tiff(save_path: str, raster_np: RasterNp, data_type: DT
         raster_np.save_as_tiff(save_path, data_type=data_type)
         raster_np_test = raster_np.astype(data_type)
 
-    assert os.path.exists(save_path)
+    assert pathlib.Path(save_path).exists()
 
     raster_np_loaded = RasterNp.load_from_tiff(save_path)
     np.testing.assert_array_equal(raster_np_test, raster_np_loaded)

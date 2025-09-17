@@ -537,7 +537,7 @@ def fixture_series_y():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def fixture_data(fixture_series_x, fixture_series_y):
     return pd.concat([fixture_series_x.measurements, fixture_series_y.measurements], axis=1)
 

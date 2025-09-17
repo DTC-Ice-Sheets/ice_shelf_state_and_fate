@@ -284,7 +284,7 @@ def test_process_timeseries_3d(timeseries_dataset_3d_fixture):
     assert np.allclose(timeseries.measurement_n.values, np.array([8, 7, 6]))
     assert np.allclose(
         timeseries.measurement_uncertainties.values,
-        np.array([0.176777, 0.188982, 0.204124]), # need to calculate the uncertainites
+        np.array([0.176777, 0.188982, 0.204124]),  # need to calculate the uncertainites
     )
     assert np.allclose(
         timeseries.measurement_uncertainties_std.values, np.zeros(timeseries.measurement_uncertainties.values.shape)
@@ -802,11 +802,11 @@ def test__determine_coverage(timeseries_obj_fixture, mask_fixture, data_array_na
 
 
 def test__determine_coverage_point(timeseries_obj_fixture, mask_fixture, data_array_nans_fixture):
-    assert 0.875 == pytest.approx(
+    assert pytest.approx(
         timeseries_obj_fixture._determine_coverage_point(
             data_observations=data_array_nans_fixture, mask_raster=mask_fixture
         )
-    )
+    ) == 0.875
 
 
 def test_determine_count_pixels(mask_fixture, data_array_nans_fixture):

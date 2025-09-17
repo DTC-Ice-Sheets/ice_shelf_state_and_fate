@@ -12,7 +12,7 @@ def get_plot_base_path() -> Path:
 
     Returns
     -------
-    str
+    Path
         The path to the investigations/plots folder
     """
     return Path.cwd() / "investigations" / "Plots"
@@ -24,14 +24,14 @@ def get_plot_path(base_path: Path, file_name: str) -> Path:
 
     Parameters
     ----------
-    base_path : str
+    base_path : Path
         The base folder
     file_name : str
         The plot filename
 
     Returns
     -------
-    str
+    Path
         The full path to the plot
     """
     return base_path / file_name

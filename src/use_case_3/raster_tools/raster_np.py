@@ -177,7 +177,7 @@ class RasterNp(np.ndarray):
         else:
             y_iter = y
 
-        x_idx, y_idx = np.floor(~self.transform * np.array(*zip(x_iter, y_iter))).astype(int)
+        x_idx, y_idx = np.floor(~self.transform * np.array(*zip(x_iter, y_iter, strict=False))).astype(int)
 
         return y_idx, x_idx
 
@@ -604,19 +604,19 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        geometries : Union[list, gpd.G
+        geometries : list | MultiPolygon | Polygon
             A list of multipolygons
-        y_min : Union[int, float]
+        y_min : int | float
             The extent y_min.
-        y_max : Union[int, float]
+        y_max : int | float
             The extent y_max.
-        x_min : Union[int, float]
+        x_min : int | float
             The extent x_min.
-        x_max : Union[int, float]
+        x_max : int | float
             The extent x_max.
-        resolution : Union[int, float]
+        resolution : int | float
             The resolution.
-        y_affine_negative : bool, optional
+        y_affine_negative : bool
             Whether the raster is y affine negative, by default False
 
         Returns

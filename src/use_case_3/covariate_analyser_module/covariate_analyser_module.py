@@ -30,31 +30,28 @@ from use_case_3.timeseries_module.timeseries_enums import (
 
 
 class CovariateAnalyser:
-    """The covariate analysis module."""
+    """The covariate analysis module.
+
+    TODO: None of the plotting functions are tested!
+
+    NOTE: It is generally considered unsafe to use the timeseries in the self._timeseries_altered attribute as
+    these have been altered with no history of how and when. There are no gaurentees that a timeseries label which
+    is in self.timeseries is in self._timeseries_altered. Only use these timeseries if you know what is stored
+    there!
+
+    Parameters
+    ----------
+    timeseries_container : TimeSeriesPreprocessor
+        The timeseries container.
+    alpha : float
+        The default significance value used in any hypothesis tests, by default 0.05
+    """
 
     def __init__(
         self: CovariateAnalyser,
         timeseries_container: TimeSeriesPreprocessor,
         alpha: float = 0.05,
     ) -> None:
-        """
-        Initialise the module by passing in the timeseries container with the processed timeseries for covariate
-        analysis.
-
-        TODO: None of the plotting functions are tested!
-
-        NOTE: It is generally considered unsafe to use the timeseries in the self._timeseries_altered attribute as
-        these have been altered with no history of how and when. There are no gaurentees that a timeseries label which
-        is in self.timeseries is in self._timeseries_altered. Only use these timeseries if you know what is stored
-        there!
-
-        Parameters
-        ----------
-        timeseries : TimeSeriesPreprocessor | None
-            The timeseries container.
-        alpha : float, optional
-            The default significance value used in any hypothesis tests, by default 0.05
-        """
         self.alpha = alpha  # The critical value
         self.colours = [  # Some colours for the plots to use.
             "black",
@@ -75,22 +72,24 @@ class CovariateAnalyser:
 
     def covariate_analysis(
         self: CovariateAnalyser,
-        axis_labels: list = None,
-        max_lag: int = None,
+        axis_labels: list | None = None,
+        max_lag: int | None = None,
         analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
-    ) -> tuple[plt.figure, plt.axes]:  # noqa
+    ) -> tuple[plt.figure, plt.axes]:
         """
-        Conduct the covariate analysis. This will be the main entrypoint to run the covariate analysis. Currently this
+        Conduct the covariate analysis.
+
+        This will be the main entrypoint to run the covariate analysis. Currently this
         only runs one method, but the final version will output multiple plots and statistics.
 
         Parameters
         ----------
         crosscorr : bool, optional
             Whether or not the crosscorrelation is used to align the series, by default False
-        max_lag : int, optional
+        max_lag : int | None
             The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
             default None
-        axis_labels : list, optional
+        axis_labels : list | None
             A list of labels which can be used to customise the axis labels if required, by default None
         """
         joint_grid_plot = self.jointplot_grid(axis_labels=axis_labels, max_lag=max_lag, analysis_type=analysis_type)
@@ -151,9 +150,9 @@ class CovariateAnalyser:
         ----------
         time_series : list[str]
             The list of timeseries labels to include in the covariance matrix.
-        normalisation : normalisation: Union[None, str], optional
+        normalisation : normalisation: str | None
             The type of normalisation applied, this can be None, or corrcoef.
-        altered : bool, optional
+        altered : bool
             A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.
 
         Returns
@@ -174,8 +173,7 @@ class CovariateAnalyser:
         df = pd.concat(timeseries, axis=1)
         if normalisation == "corrcoef":
             return pd.DataFrame(np.corrcoef(df.T), columns=df.columns, index=df.columns)
-        else:
-            return pd.DataFrame(np.cov(df.T), columns=df.columns, index=df.columns)
+        return pd.DataFrame(np.cov(df.T), columns=df.columns, index=df.columns)
 
     def crosscorrelation(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, altered: bool = False
@@ -189,7 +187,7 @@ class CovariateAnalyser:
             The first time series.
         timeseries_label_2 : str
             The second time series.
-        altered : bool, optional
+        altered : bool
             A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.
 
         Returns
@@ -230,7 +228,7 @@ class CovariateAnalyser:
             The label for the first timeseries.
         timeseries_label_2 : str
             The label for the second timeseries.
-        max_lag : Union[int, None], optional
+        max_lag : int | np.int64 | None
             The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
             directions. If set to None there is no maximum lag, by default None
 
@@ -265,7 +263,7 @@ class CovariateAnalyser:
             The label for the first timeseries.
         timeseries_label_2 : str
             The label for the second timeseries.
-        max_lag : int | None, optional
+        max_lag : int | None
             The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
             directions. If set to None there is no maximum lag, by default None
 
@@ -329,7 +327,9 @@ class CovariateAnalyser:
         metric: AggregationStrategy = AggregationStrategy.MEAN,
     ) -> tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None]:
         """
-        Calculate a temporal offset. This is the difference between two series. This can be done using various
+        Calculate a temporal offset.
+
+        This is the difference between two series. This can be done using various
         statistics such as the mean, median, maximum and minimum.
 
         Parameters
@@ -338,7 +338,7 @@ class CovariateAnalyser:
             The label for the first timeseries.
         timeseries_label_2 : str
             The label for the second timeseries.
-        metric : str, optional
+        metric : AggregationStrategy
             The statistic to quantify the difference between the two time series, by default "mean".
 
         Returns
@@ -353,11 +353,11 @@ class CovariateAnalyser:
 
         if metric == AggregationStrategy.MEAN:
             return diff.mean(), None
-        elif metric == AggregationStrategy.MEDIAN:
+        if metric == AggregationStrategy.MEDIAN:
             return diff.median(), None
-        elif metric == AggregationStrategy.MAX:
+        if metric == AggregationStrategy.MAX:
             return diff.max(), diff.argmax()
-        elif metric == AggregationStrategy.MIN:
+        if metric == AggregationStrategy.MIN:
             return diff.min(), diff.argmin()
 
     def temporal_slope(
@@ -485,12 +485,14 @@ class CovariateAnalyser:
 
     def jointplot_grid(  # noqa C901
         self: CovariateAnalyser,
-        axis_labels: list = None,
-        max_lag: int = None,
+        axis_labels: list | None = None,
+        max_lag: int | None = None,
         analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
     ) -> tuple[plt.figure, plt.axes]:
         """
-        Plot a gridded jointplot for the given set of timeseries. Note that you can pass crosscorr True if the maximum
+        Plot a gridded jointplot for the given set of timeseries.
+
+        Note that you can pass crosscorr True if the maximum
         cross-correlation is desired. This method returns a matplotlib figure and associated axes.
 
         TODO: This is currently a fairly horrible method, but not sure how to simplify currently.
@@ -499,12 +501,12 @@ class CovariateAnalyser:
         ----------
         timeseries_labels : list[str]
             The timeseries labels to be plotted.
-        max_lag : int, optional
+        max_lag : int | None
             The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
             default None.
-        axis_labels : list, optional
+        axis_labels : list | None
             A list of labels which can be used to customise the axis labels if required, by default None.
-        analysis_type : JointPlotAnalysisType, optional
+        analysis_type : JointPlotAnalysisType
             Define the analysis type to be conducted.
         """
         timeseries = list(self.timeseries_container.timeseries.values())
@@ -623,13 +625,13 @@ class CovariateAnalyser:
         plt.plot()
         return f, axes
 
-    def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list = None) -> tuple[plt.figure, plt.axes]:
+    def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list | None = None) -> tuple[plt.figure, plt.axes]:
         """
         Plot all the timeseries in the timeseries container.
 
         Parameters
         ----------
-        yaxis_labels : list, optional
+        yaxis_labels : list | None
             A list of labels which can be used to customise the y-axis labels if required, by default None.
         """
         timeseries_labels = list(self.timeseries_container.timeseries)
@@ -707,7 +709,7 @@ class CovariateAnalyser:
             A 2d dataset with two variable columns.
         max_lags : int
             The maximum number of lags which must be <= floor((n - 1) / 3) - 1 where n is the no. rows in data.
-        metric : ModelEvaluationMetric, optional
+        metric : ModelEvaluationMetric
             The evaluation metric used to evaluate the best model fit, by default ModelEvaluationMetric.BIC
 
         Returns
@@ -754,9 +756,11 @@ class CovariateAnalyser:
         metric: ModelEvaluationMetric = ModelEvaluationMetric.BIC,
     ) -> tuple[float, float]:
         """
-        Conduct a granger causality test to determine causality between two variables. This finds the lag (i.e. the
-        number of lag variables in time for both X and Y) which results in the best model fit. Note, that in this case
-        we are checking whether time_series_label_1 can be used to forecast time_series_2.
+        Conduct a granger causality test to determine causality between two variables.
+
+        This finds the lag (i.e. the number of lag variables in time for both X and Y) which results in the best
+        model fit. Note, that in this case we are checking whether time_series_label_1 can be used to forecast
+        time_series_2.
 
         Parameters
         ----------
@@ -767,7 +771,7 @@ class CovariateAnalyser:
         max_lags : int
             The maximum number of lags, if to large will be adjusted to floor((n - 1) / 3) - 1 where n is the no. rows
              in data.
-        metric : ModelEvaluationMetric, optional
+        metric : ModelEvaluationMetric
             The evaluation metric used to evaluate the best model fit, by default ModelEvaluationMetric.BIC
 
         Returns
