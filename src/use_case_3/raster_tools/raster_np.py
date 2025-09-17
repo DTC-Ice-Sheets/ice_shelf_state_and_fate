@@ -67,7 +67,7 @@ class RasterNp(np.ndarray):
         resolution : float
             The spacing between each pixel. Strictly redundant information for the creation of this object
             but it is usually known and helps catch obvious misunderstandings of raster extents.
-        y_affine_negative : bool = True
+        y_affine_negative : bool
             If True the data is assumed to decrease in y coordinate as y index increases, by default True
         proj4_code : str | None
             The CRS metadata for the extent, assumed to be in proj4 convention, by default None
@@ -309,13 +309,13 @@ class RasterNp(np.ndarray):
 
         Parameters
         ----------
-        file_path : str
+        file_path : Path
             Output file path.
         data_type : str
             Override the output number type, by default 'float32'
         no_data : float | None
             Override the no-data value, by default None
-        kwargs : dict[str, Any] | str | None
+        **kwargs : dict[str, Any] | str | None
             Keyword arguments for rasterio.open. These are passed to format drivers as directives
             for creating or interpreting datasets.
         """
@@ -553,13 +553,11 @@ class RasterNp(np.ndarray):
         ----------
         mask : RasterNp
             The mask represented as a RasterNp.
-        include_mask_value :float
+        include_mask_value : float
             The in-mask value in the mask geotiff, by default 1.
         outside_mask_return_value : float
             The value assigned to data found outside of the mask, by default np.nan. note - the default
             outside_mask_return_value value of np.nan does not work with int-based arrays.
-
-        TODO: Check and return error when using int-based arrays.
         """
         # For each point in current file, get mask value and mask nan accordingly
         y, x = self.yx_gridpoints()

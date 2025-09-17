@@ -493,13 +493,6 @@ class Timeseries:
         pd.DataFrame
             A dataframe containing the aggregated uncertainties, the spread of that uncertainties and the number of
             points in the aggregation. The index of the dataframe is time.
-
-        Raises
-        ------
-        ValueError
-            The aggregation type is not one of the specified to_numpy().
-        ValueError
-            The uncertainty type is not one of the specified to_numpy().
         """
         data_observations, dimension_names = self._expand_dimensions(
             data=data_observations, dimension_names=dimension_names, modify_dimension_names=modify
@@ -623,7 +616,7 @@ class Timeseries:
 
         Returns
         -------
-        np.ndarray
+        tuple[np.ndarray, list]
             The aggregated data.
         """  # noqa: D205
         # If the dimensions over which to aggregate are not specified, then infer this from the dim_names:
@@ -687,7 +680,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple[np.ndarray, list]
+        tuple[np.ndarray, list]
             The aggregated uncertainties and a list of time indexes.
         """
         data_agg_n = self._count_nan_elements(data=data_uncertainties, non_nan=True, time_index=time_index)
@@ -745,7 +738,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple(np.ndarray, list)
+        tuple[np.ndarray, list]
             The aggregated uncertainties and a list of time indexes.
         """
         time_coords_agg = []
@@ -803,7 +796,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple(np.ndarray, list)
+        tuple[np.ndarray, list]
             The aggregated uncertainties and a list of time indexes.
         """
         time_coords_agg = []
@@ -851,13 +844,8 @@ class Timeseries:
 
         Returns
         -------
-        np.ndarray
+        np.ndarray | None
             The normalised 1D timeseries using the chosen normalisation method.
-
-        Raises
-        ------
-        ValueError
-            The normalisation type is not one of the allowed to_numpy().
         """
         if normalisation_type == NormalisationType.FIRST:
             return data_observation - data_observation[0]
@@ -888,13 +876,8 @@ class Timeseries:
 
         Returns
         -------
-        np.ndarray
+        np.ndarray | None
             The normalised 1D timeseries using the chosen normalisation method.
-
-        Raises
-        ------
-        ValueError
-            The normalisation type is not one of the allowed to_numpy().
         """
         if normalisation_type == NormalisationType.FIRST:
             return self._combine_uncertainties_quadrature(data_uncertainties, data_uncertainties[0])
@@ -984,7 +967,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple[np.ndarray, list]
+        tuple[np.ndarray, list]
             The percentiles and associated time coordinates for each percentile.
         """
         data_percentile = []
@@ -1076,7 +1059,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple[np.ndarray, list]
+        tuple[np.ndarray, list]
             The spacial coverage for each time slice and the time index.
         """
         data_coverage = []
@@ -1235,7 +1218,7 @@ class Timeseries:
 
         Returns
         -------
-        Tuple[np.ndarray, list]
+        tuple[np.ndarray, list]
             A 3D data array with three named dimensions.
         """
         if len(data.shape) == 2:
@@ -1386,7 +1369,7 @@ class Timeseries:
 
         Returns
         -------
-        np.ndarray
+        tuple[np.ndarray, bool]
             The masked data cube.
 
         Raises

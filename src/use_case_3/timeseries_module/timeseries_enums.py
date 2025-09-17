@@ -55,26 +55,8 @@ class NormalisationType(Enum):
         self.normalisation_type = normalisation_type
 
 
-# class PlotSpreadType(Enum):
-#     """The available plot spread types."""
-
-#     NONE = None
-#     UNCERTAINTIES = "uncertainties"
-#     PERCENTILES = "percentiles"
-
-#     def __init__(self, plotspread_type: str) -> None:
-#         self.plotspread_type = plotspread_type
-
-
 class TimeseriesType(Enum):
-    """
-    Define the type of timeseries. This can be cumulative or derivative.
-
-    Parameters
-    ----------
-    Enum : str
-        The timeseries type.
-    """
+    """Define the type of timeseries. This can be cumulative or derivative."""
 
     CUMULATIVE = "cumulative"
     DERIVATIVE = "derivative"
@@ -86,11 +68,6 @@ class TimeseriesRegion(Enum):
 
     This can be iceshelf, ocean or climate. This defines how the mask is
     calculated and applied.
-
-    Parameters
-    ----------
-    Enum : str
-        The timeseries type.
     """
 
     ICE_SHELF = "ice_shelf"

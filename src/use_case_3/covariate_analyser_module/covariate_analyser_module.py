@@ -84,13 +84,18 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        crosscorr : bool, optional
-            Whether or not the crosscorrelation is used to align the series, by default False
+        axis_labels : list | None
+            A list of labels which can be used to customise the axis labels if required, by default None
         max_lag : int | None
             The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
             default None
-        axis_labels : list | None
-            A list of labels which can be used to customise the axis labels if required, by default None
+        analysis_type : JointPlotAnalysisType, optional
+            Whether or not the crosscorrelation is used to align the series, by default JointPlotAnalysisType.CORR
+
+        Returns
+        -------
+        tuple[plt.figure, plt.axes]
+            The grid joint plots of the covariate analysis.
         """
         return self.jointplot_grid(axis_labels=axis_labels, max_lag=max_lag, analysis_type=analysis_type)
 
@@ -143,9 +148,9 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        time_series : list[str]
+        timeseries_labels : list[str]
             The list of timeseries labels to include in the covariance matrix.
-        normalisation : normalisation: str | None
+        normalisation : str | None
             The type of normalisation applied, this can be None, or corrcoef.
         altered : bool
             A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.
@@ -226,10 +231,12 @@ class CovariateAnalyser:
         max_lag : int | np.int64 | None
             The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
             directions. If set to None there is no maximum lag, by default None
+        altered : bool
+            A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.
 
         Returns
         -------
-        tuple[float, int]
+        tuple[np.float64, np.int64]
             The maximum cross-correlation and associated lag.
         """
         corr, corr_lags = self.crosscorrelation(
@@ -338,7 +345,7 @@ class CovariateAnalyser:
 
         Returns
         -------
-        tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None]
+        tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None] | None
             The temporal offset and if applicable the associated index.
         """
         diff = (
@@ -455,6 +462,11 @@ class CovariateAnalyser:
             The label for the second timeseries.
         linear : bool
             If true a linear fit is displayed using robust linear regression, by default True
+
+        Returns
+        -------
+        plt.plot
+            The plot object.
         """
         reg_1 = LinearRegression().fit(
             self.timeseries.get_timeseries([timeseries_label_1])[0].to_numpy().reshape(-1, 1),
@@ -496,15 +508,18 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        timeseries_labels : list[str]
-            The timeseries labels to be plotted.
+        axis_labels : list | None
+            A list of labels which can be used to customise the axis labels if required, by default None.
         max_lag : int | None
             The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
             default None.
-        axis_labels : list | None
-            A list of labels which can be used to customise the axis labels if required, by default None.
         analysis_type : JointPlotAnalysisType
             Define the analysis type to be conducted.
+
+        Returns
+        -------
+        tuple[plt.figure, plt.axes]
+            The figure and axes.
         """
         timeseries = list(self.timeseries_container.timeseries.values())
 
@@ -630,6 +645,11 @@ class CovariateAnalyser:
         ----------
         yaxis_labels : list | None
             A list of labels which can be used to customise the y-axis labels if required, by default None.
+
+        Returns
+        -------
+        tuple[plt.figure, plt.axes]
+            The figure and axes.
         """
         timeseries_labels = list(self.timeseries_container.timeseries)
         f, axes = plt.subplots(

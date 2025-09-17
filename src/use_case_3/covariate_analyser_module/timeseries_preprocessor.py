@@ -21,7 +21,13 @@ class TimeSeriesPreprocessor:
     Parameters
     ----------
     timeseries : list[Timeseries]
-        The timeseries as Timeseries objects.
+            The list of timeseries objects.
+    time_period : AggregationPeriod
+        The aggregation period to apply.
+    aggregation : AggregationStrategy, optional
+        The aggregation type to apply, by default AggregationStrategy.MEAN
+    process_timeseries : bool, optional
+        Whether to preprocess all of the input timeseries, by default True
     """
 
     def __init__(
