@@ -1,11 +1,11 @@
-# A reuseable generic pipeline for building a container (if necessary) for testing and deploying python packages
+# A reuseable generic pipeline for building a container (if necessary) for testing and deploying DTC Ice Sheets python packages
 name: generic_build_container_if_needed
 
 on:
   workflow_call:
     inputs:
       package_name:
-        description: "The name of the package to build."
+        description: 'The name of the package to build.'
         required: true
         type: string
 
@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: "2"
+          fetch-depth: '2'
 
       - name: Generate hash of pyproject.toml, poetry.lock and Dockerfile
         id: generate_hash
@@ -63,14 +63,14 @@ jobs:
           fi
 
       - name: Tag existing test image as latest
-        if: ${{ steps.check_if_image_exists.outputs.image_exists == 'true'}}
+        if:  ${{ steps.check_if_image_exists.outputs.image_exists == 'true'}}
         run: |
           docker pull "${{ steps.name_container.outputs.image_name }}:$CURRENT_HASH"
           docker tag "${{ steps.name_container.outputs.image_name }}:$CURRENT_HASH" "${{ steps.name_container.outputs.image_name }}:latest"
           docker push "${{ steps.name_container.outputs.image_name }}:latest"
 
       - name: Build and push this package's test image
-        if: ${{ steps.check_if_image_exists.outputs.image_exists == 'false'}}
+        if:  ${{ steps.check_if_image_exists.outputs.image_exists == 'false'}}
         run: |
           docker build \
             --cache-from ${{ steps.name_container.outputs.image_name }} \
