@@ -1,16 +1,9 @@
-from dash import Dash, html, dcc, callback, Output, Input, State
-import dash_bootstrap_components as dbc
-import plotly.express as px
-import pandas as pd
-import textwrap
-import xarray as xr
 
-import query_data
+import dash_bootstrap_components as dbc
 import mapping
 import plotting
-
-import plotly.graph_objects as go
-import json
+import query_data
+from dash import Dash, Input, Output, State, callback, dcc, html
 
 ice_shelf_inital = "Thwaites"
 
