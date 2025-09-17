@@ -61,36 +61,36 @@ jobs:
       - name: Install package
         run: poetry install --with dev
 
-      # - name: Enforce no jupyter notebooks allowed
-      #   if: ${{ ! inputs.notebooks_allowed }}
-      #   run: |
-      #     [[ ! $(find . -type f -name *.ipynb | grep .) ]]
+      - name: Enforce no jupyter notebooks allowed
+        if: ${{ ! inputs.notebooks_allowed }}
+        run: |
+          [[ ! $(find . -type f -name *.ipynb | grep .) ]]
 
-      # - name: Enforce max noqa statement count
-      #   # an additional check against those trying to dodge the linter
-      #   run: |
-      #     test $(grep -r --exclude-dir=.venv . -e "noqa:" | wc -l) -le 100
+      - name: Enforce max noqa statement count
+        # an additional check against those trying to dodge the linter
+        run: |
+          test $(grep -r --exclude-dir=.venv . -e "noqa:" | wc -l) -le 100
 
-      # - name: Enforce no hard-coded home directories
-      #   if: ${{ ! inputs.home_directories_allowed }}
-      #   run: |
-      #     [[ ! $(grep -r -e "/home/" --exclude-dir=.venv --include=\*.py --include=\*.ipynb .) ]]
+      - name: Enforce no hard-coded home directories
+        if: ${{ ! inputs.home_directories_allowed }}
+        run: |
+          [[ ! $(grep -r -e "/home/" --exclude-dir=.venv --include=\*.py --include=\*.ipynb .) ]]
 
-      # - name: Enforce no large files
-      #   run: |
-      #     [[ $(find . -printf '%s %p\n'| grep -v .git | grep -v .venv | sort -nr | head -1 | awk '{print $1}') -le ${{ inputs.file_size_limit_mb }}*1024*1024 ]]
+      - name: Enforce no large files
+        run: |
+          [[ $(find . -printf '%s %p\n'| grep -v .git | grep -v .venv | sort -nr | head -1 | awk '{print $1}') -le ${{ inputs.file_size_limit_mb }}*1024*1024 ]]
 
-      # - name: Check linting
-      #   run: |
-      #     poetry run ruff check --config pyproject.toml
+      - name: Check linting
+        run: |
+          poetry run ruff check --config pyproject.toml
 
       - name: Check docstrings
         run: |
           poetry run pydoclint --config pyproject.toml --quiet src/
 
-      # - name: Check for security issues
-      #   run: |
-      #     poetry run bandit -r src --severity-level medium --confidence-level medium --quiet
+      - name: Check for security issues
+        run: |
+          poetry run bandit -r src --severity-level medium --confidence-level medium --quiet
 
       - name: Run unit tests
         run: |
