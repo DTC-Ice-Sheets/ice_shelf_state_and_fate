@@ -5,6 +5,7 @@ This helps us ensure the intended usage of the package is well defined and well 
 
 # schemas/entry_point_schemas.py
 from pathlib import Path
+
 from pydantic import BaseModel, Field
 
 from use_case_3.timeseries_module.timeseries_enums import (
@@ -68,10 +69,11 @@ class TimeseriesModuleEntryPointSchema(BaseModel):
 class TimeseriesPreprocessorModuleEntryPointSchema(BaseModel):
     """Schema for the timeseries preprocessor module entry point."""
 
-    timeseries: list[str] = Field(
+    input_paths: list[Path] = Field(
         ...,
-        description="List of paths to the input timeseries .zarr files, formatted as `input.zarr:output.zarr`",
+        description="List of paths to the input timeseries .zarr files",
     )
+    output_path: Path = Field(..., description="Path to save the output .zarr file.")
     time_period: AggregationPeriod = Field(
         AggregationPeriod.MONTH,
         description=(

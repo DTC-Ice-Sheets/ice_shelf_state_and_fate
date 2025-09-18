@@ -1,6 +1,9 @@
+"""Module entrypoint for the timeseries pre-processor module."""
+
 import argparse
 from types import NoneType, UnionType
-from typing import get_origin, get_args
+from typing import get_args, get_origin
+
 import xarray as xr
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
@@ -9,8 +12,8 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesType,
     TimeseriesRegion,
+    TimeseriesType,
 )
 
 
@@ -24,28 +27,27 @@ def main() -> None:
     # Add arguments to the parser
     for name, field in TimeseriesPreprocessorModuleEntryPointSchema.model_fields.items():
         # The type argument needs to be a cast function
-        _type = field.annotation
-        required = True
+        type_ = field.annotation
+        default = field.default
         extra_args = {}
         # If `None`, just default to int
-        if _type is None:
-            _type = int
+        if type_ is None:
+            type_ = int
         # If list, set to element type, and add `append` to parameter
-        if get_origin(_type) is list:
-            _type = get_args(_type)[0]
-            extra_args["append"] = True
-        if isinstance(_type, UnionType) and get_args(_type)[1] is NoneType:
-            _type = get_args(_type)[0]
-            required = False
+        if get_origin(type_) is list:
+            type_ = get_args(type_)[0]
+            default = []
+            extra_args["action"] = "append"
+        if isinstance(type_, UnionType) and get_args(type_)[1] is NoneType:
+            type_ = get_args(type_)[0]
 
         parser.add_argument(
             f"--{name}",
             dest=name,
-            type=_type,
-            default=field.default,
+            type=type_,
+            default=default,
             help=field.description,
-            required=required,
-            append=True,
+            required=default is None,
             **extra_args,
         )
 
@@ -54,33 +56,30 @@ def main() -> None:
 
     model = TimeseriesPreprocessorModuleEntryPointSchema(**vars(args))
 
-    input_paths, output_paths = zip(*(p.split(":") for p in model.timeseries))
-
     timeseries = []
-    xarrays = []
-    for path in input_paths:
+    xarrays = {}
+    for path in model.input_paths:
         ds = xr.open_zarr(path)
-        xarrays.append(ds)
-        timeseries.append(
-            Timeseries(
-                label=ds.attrs["label"],
-                timeseries_type=TimeseriesType(ds.attrs["timeseries_type"]),
-                timeseries_region=TimeseriesRegion(ds.attrs["timeseries_region"]),
-                measurement_name=ds.attrs["measurement_name"],
-                measurements=ds["measurements"].to_series(),
-                measurement_std=ds["std"].to_series(),
-                measurement_n=ds["n"].to_series(),
-                **(
-                    {
-                        "measurement_uncertainties": ds["uncertainty"].to_series(),
-                        "measurement_uncertainties_std": ds["uncertainty_std"].to_series(),
-                        "measurement_uncertainties_n": ds["uncertainty_n"].to_series(),
-                    }
-                    if "uncertainty" in ds
-                    else {}
-                ),
-            )
+        ts = Timeseries(
+            label=ds.attrs["label"],
+            timeseries_type=TimeseriesType(ds.attrs["timeseries_type"]),
+            timeseries_region=TimeseriesRegion(ds.attrs["timeseries_region"]),
+            measurement_name=ds.attrs["measurement_name"],
+            measurements=ds["measurement"].to_series(),
+            measurement_std=ds["std"].to_series(),
+            measurement_n=ds["n"].to_series(),
+            **(
+                {
+                    "measurement_uncertainties": ds["uncertainty"].to_series(),
+                    "measurement_uncertainties_std": ds["uncertainty_std"].to_series(),
+                    "measurement_uncertainties_n": ds["uncertainty_n"].to_series(),
+                }
+                if "uncertainty" in ds
+                else {}
+            ),
         )
+        timeseries.append(ts)
+        xarrays[ts.label] = ds
 
     preprocessor = TimeSeriesPreprocessor(
         timeseries=timeseries,
@@ -88,25 +87,15 @@ def main() -> None:
         aggregation=AggregationStrategy(model.aggregation),
     )
 
-    for output_path, xarray, ts in zip(output_paths, xarrays, preprocessor.timeseries):
-        output = xr.Dataset(
-            data_vars={
-                "measurement": (["time"], ts.measurements.values),
-                "std": (["time"], ts.measurement_std.values),
-                "n": (["time"], ts.measurement_n.values),
-                **(
-                    {
-                        "uncertainty": (["time"], ts.measurement_uncertainties.values),
-                        "uncertainty_std": (["time"], ts.measurement_uncertainties_std.values),
-                        "uncertainty_n": (["time"], ts.measurement_uncertainties_n.values),
-                    }
-                    if ts.measurement_uncertainties is not None
-                    else {}
-                ),
-            },
-            coords={
-                "time": ts.measurements.index.values,
-            },
-            attrs=xarray.attrs,
-        )
-        output.to_zarr(output_path, mode="w")
+    data_vars = {}
+    for ts_name, ts in preprocessor.timeseries.items():
+        data_vars[f"{ts_name}_{ts.measurement_name}"] = (["time"], ts.measurements.values)
+        data_vars[f"{ts_name}_{ts.measurement_name}_uncertainty"] = (["time"], ts.measurement_uncertainties.values)
+
+    output = xr.Dataset(
+        data_vars=data_vars,
+        coords={
+            "time": next(iter(preprocessor.timeseries.values())).measurements.index.values,
+        },
+    )
+    output.to_zarr(model.output_path, mode="w")

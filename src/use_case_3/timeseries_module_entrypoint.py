@@ -3,12 +3,14 @@
 import argparse
 import json
 import logging
-import xarray as xr
 from types import UnionType
 from typing import get_args
 
-from use_case_3.timeseries_module.timeseries import Timeseries
+import xarray as xr
+from shapely.geometry import MultiPolygon, Polygon
+
 from use_case_3.schemas import TimeseriesModuleEntryPointSchema
+from use_case_3.timeseries_module.timeseries import Timeseries
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +25,16 @@ def main() -> None:
     # Add arguments to the parser
     for name, field in TimeseriesModuleEntryPointSchema.model_fields.items():
         # The type argument needs to be a function, so remove ` | None` if present
-        _type = field.annotation
-        if _type is None:
-            _type = int
-        elif isinstance(_type, UnionType):
-            _type = get_args(_type)[0]
+        type_ = field.annotation
+        if type_ is None:
+            type_ = int
+        elif isinstance(type_, UnionType):
+            type_ = get_args(type_)[0]
 
         parser.add_argument(
             f"--{name}",
             dest=name,
-            type=_type,
+            type=type_,
             default=field.default,
             help=field.description,
             required=name in ["label", "dataset_path", "output_path", "measurement_name"],
@@ -51,6 +53,7 @@ def main() -> None:
     )
 
     data = xr.open_zarr(model.dataset_path)
+    mask_geometries: dict[str, Polygon | MultiPolygon | None]
     if model.masks_json_path is not None:
         with model.masks_json_path.open("r") as f:
             mask_geometries = json.load(f)
@@ -67,7 +70,7 @@ def main() -> None:
         period=model.period,
         uncertainty=model.uncertainty,
         independent=model.independent,
-        t0_normalisation=model.t0_normalisation,
+        t0_normalisation=str(model.t0_normalisation) if model.t0_normalisation is not None else None,
     )
 
     output = xr.Dataset(
