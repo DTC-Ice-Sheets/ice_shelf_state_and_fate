@@ -84,3 +84,12 @@ class TimeseriesPreprocessorModuleEntryPointSchema(BaseModel):
         AggregationStrategy.MEAN,
         description="Aggregation strategy to apply when multiple measurements fall within the same time bin.",
     )
+
+
+class CovariateAnalyserModuleEntryPointSchema(BaseModel):
+    """Schema for the covariate analyser module entry point."""
+
+    input_path: Path = Field(..., description="Path to the input .zarr file containing pre-processed timeseries.")
+    output_path: Path = Field(
+        ..., description="Path to save the output plot image file. Can use any filetype supported by matplotlib."
+    )

@@ -784,7 +784,9 @@ class CovariateAnalyser:
             1,
             figsize=(10, 4 * len(timeseries_labels)),
             sharex="col",
+            squeeze=False,
         )
+        axes = axes.flatten()
 
         for n, _ in enumerate(timeseries_labels):
             sns.lineplot(

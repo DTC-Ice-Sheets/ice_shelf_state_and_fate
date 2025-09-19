@@ -47,7 +47,7 @@ def main() -> None:
             type=type_,
             default=default,
             help=field.description,
-            required=default is None,
+            required=name in ["input_paths", "output_path"],
             **extra_args,
         )
 
