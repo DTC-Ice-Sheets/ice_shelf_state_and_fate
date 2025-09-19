@@ -1,39 +1,33 @@
-
+import dash
 import dash_bootstrap_components as dbc
-import mapping
-import plotting
-import query_data
-from dash import Dash, Input, Output, State, callback, dcc, html
+from dash import dcc, html
 
+from use_case_3.dashboard import query_data
+from use_case_3.dashboard.dashboard_layout import layout_navbar
+
+dash.register_page(__name__)
+
+# Import data ###
 ice_shelf_inital = "Thwaites"
-
-### Import data ###
 ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
 summary_data_initial, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
 
-# print(summary_data[variable_initial])
+navbar = layout_navbar(page_title="Ice Shelf Summary")
 
-### Create the initial map ###
-ice_shelf_map = mapping.create_ice_shelf_map(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital)
-
-### Build Dash app ###
-
-# app = Dash()
-app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-structure = html.Div(
+layout = html.Div(
     [
-        dbc.Row(
-            dbc.Col(html.H1(children="Ice Shelf Summary", style={"textAlign": "center", "border": "2px black solid"}))
-        ),
+        navbar,
+        # Ice Shelf summary content
         dbc.Row(
             [
+                # This column is for the summary gauges, as well as the map / selectors
                 dbc.Col(
                     [
                         dbc.Row(
                             [
+                                # This column is for the initial summary gauges
                                 dbc.Col(
                                     [
                                         dbc.Row(
@@ -186,6 +180,7 @@ structure = html.Div(
                                     ],
                                     width=4,
                                 ),
+                                # This column is for the map, ice shelf selector and time range selector.
                                 dbc.Col(
                                     [
                                         html.Div(
@@ -227,6 +222,7 @@ structure = html.Div(
                         ),
                     ]
                 ),
+                # This column is for the time series plots
                 dbc.Col(
                     [
                         # Row for cummulative:
@@ -527,217 +523,5 @@ structure = html.Div(
                 ),
             ]
         ),
-        dbc.Row(
-            dbc.Col(html.H1(children="Covaraite Analysis", style={"textAlign": "center", "border": "2px black solid"}))
-        ),
     ]
 )
-
-# Requires Dash 2.17.0 or later
-app.layout = [structure]
-
-
-@callback(Output("ice_shelf_map", "children"), Input("ice_shelf_selection", "value"))
-def update_graph(value):
-    ice_shelf_map = mapping.create_ice_shelf_map(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=value)
-
-    return ice_shelf_map
-
-
-@callback(
-    Output("indicator_1_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_1_store", "data"),
-)
-def plot_summary_indicator1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_2_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_2_store", "data"),
-)
-def plot_summary_indicator2(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_3_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_3_store", "data"),
-)
-def plot_summary_indicator3(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_4_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_4_store", "data"),
-)
-def plot_summary_indicator4(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_5_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_5_store", "data"),
-)
-def plot_summary_indicator5(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_1_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_1_store_deriv", "data"),
-)
-def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_2_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_2_store_deriv", "data"),
-)
-def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_3_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_3_store_deriv", "data"),
-)
-def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_4_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_4_store_deriv", "data"),
-)
-def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("indicator_5_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-    State("indicator_5_store_deriv", "data"),
-)
-def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
-    return fig
-
-
-@callback(
-    Output("gauge_1_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    State("gauge_1_store", "data"),
-)
-def plot_gauge_indicator1(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
-    return fig
-
-
-@callback(
-    Output("gauge_2_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    State("gauge_2_store", "data"),
-)
-def plot_gauge_indicator2(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
-    return fig
-
-
-@callback(
-    Output("gauge_3_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    State("gauge_3_store", "data"),
-)
-def plot_gauge_indicator3(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
-    return fig
-
-
-@callback(
-    Output("gauge_4_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    State("gauge_4_store", "data"),
-)
-def plot_gauge_indicator4(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
-    return fig
-
-
-@callback(
-    Output("gauge_5_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    State("gauge_5_store", "data"),
-)
-def plot_gauge_indicator5(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
-
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
-    return fig
-
-
-if __name__ == "__main__":
-    app.run(debug=False)
