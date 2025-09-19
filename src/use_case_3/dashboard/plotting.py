@@ -33,10 +33,7 @@ def plot_summary_indicator(summary_data, variable, year_range):
     if max(abs(uncertainty_upper), abs(uncertainty_lower)) > max_value:
         max_value = max(abs(uncertainty_upper), abs(uncertainty_lower))
 
-    if total_change_value >= 0:
-        bar_range = [0, total_change_value]
-    else:
-        bar_range = [total_change_value, 0]
+    bar_range = [0, total_change_value] if total_change_value >= 0 else [total_change_value, 0]
     fig = go.Figure(
         go.Indicator(
             mode="gauge+delta",

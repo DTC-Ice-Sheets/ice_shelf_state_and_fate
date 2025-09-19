@@ -39,6 +39,17 @@ def update_graph(value):
 
 
 @callback(
+    Output("figure_1_div", "style"),
+    Input("switch-cumulative-mass-change", "value"),
+)
+def plot_summary_indicator1_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
     Output("indicator_1_figure", "figure"),
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),

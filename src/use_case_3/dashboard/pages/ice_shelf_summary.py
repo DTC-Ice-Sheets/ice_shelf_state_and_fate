@@ -225,45 +225,124 @@ layout = html.Div(
                 # This column is for the time series plots
                 dbc.Col(
                     [
-                        # Row for cummulative:
+                        html.Div(
+                            [
+                                html.P(
+                                    f"Overall the {ice_shelf_inital} Glacier is losing mass approximately at a rate of X Gt per annum and this ice loss has several contributing factors."
+                                ),
+                                html.P(
+                                    f"Basal melting has resulted in a steady state mass loss of approximately 9.7 Gt per annum.  While a significant calving event occured in 2009 where over 1000Gt calved from the ice shelf."
+                                ),
+                            ],
+                            className="summary_text",
+                        ),
+                        # Add switches for timeseries selection
                         dbc.Row(
                             [
-                                html.Div(
-                                    html.H2("Cummulative"),
-                                    style={
-                                        "border": "0px black solid",
-                                        "text-align": "center",
-                                        "text-decoration": "underline",
-                                    },
-                                )
-                            ],
+                                dbc.Col(
+                                    html.Div(
+                                        [
+                                            dbc.Switch(
+                                                id="switch-cumulative-mass-change",
+                                                label="Cumulative mass change",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-cumulative-thinning",
+                                                label="Cumulative thinning",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-cumulative-discharge-change",
+                                                label="Cumulative discharge change",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-cumulative-SBM-anomolies",
+                                                label="Cumulative SBM anomolies",
+                                                value=False,
+                                            ),
+                                        ],
+                                    )
+                                ),
+                                dbc.Col(
+                                    html.Div(
+                                        [
+                                            dbc.Switch(
+                                                id="switch-cumulative-retreat",
+                                                label="Cumulative retreat",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-mass-balance",
+                                                label="Mass balance",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-calving-rate",
+                                                label="Calving rate",
+                                                value=False,
+                                            ),
+                                        ]
+                                    )
+                                ),
+                                dbc.Col(
+                                    html.Div(
+                                        [
+                                            dbc.Switch(
+                                                id="switch-basal-melt-flux",
+                                                label="Basal melt flux",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-smb",
+                                                label="SMB",
+                                                value=False,
+                                            ),
+                                            dbc.Switch(
+                                                id="switch-discharge-rate",
+                                                label="Discharge rate",
+                                                value=False,
+                                            ),
+                                        ]
+                                    )
+                                ),
+                            ]
                         ),
+                        # Row for cummulative:
                         dbc.Row(
                             [
                                 dbc.Col(
                                     [
-                                        dbc.Row(
-                                            html.Div(
-                                                html.P("Cumulative mass change (Gt)"),
-                                                style={
-                                                    "padding": 0,
-                                                    "margin": 0,
-                                                    "border": "0px black solid",
-                                                    "font-size": "0.75rem",
-                                                    "text-decoration": "underline",
-                                                    "text-align": "center",
-                                                    "font-weight": "bold",
-                                                },
-                                            )
-                                        ),
-                                        dbc.Row(
-                                            html.Div(
-                                                [
-                                                    dcc.Graph(id="indicator_1_figure"),
-                                                    dcc.Store(data="cumulative_mass_change", id="indicator_1_store"),
-                                                ],
-                                                style={"padding": 0, "margin": 0, "border": "0px black solid"},
-                                            )
+                                        html.Div(
+                                            [
+                                                dbc.Row(
+                                                    html.Div(
+                                                        html.P("Cumulative mass change (Gt)"),
+                                                        style={
+                                                            "padding": 0,
+                                                            "margin": 0,
+                                                            "border": "0px black solid",
+                                                            "font-size": "0.75rem",
+                                                            "text-decoration": "underline",
+                                                            "text-align": "center",
+                                                            "font-weight": "bold",
+                                                        },
+                                                    )
+                                                ),
+                                                dbc.Row(
+                                                    html.Div(
+                                                        [
+                                                            dcc.Graph(id="indicator_1_figure"),
+                                                            dcc.Store(
+                                                                data="cumulative_mass_change", id="indicator_1_store"
+                                                            ),
+                                                        ],
+                                                        style={"padding": 0, "margin": 0, "border": "0px black solid"},
+                                                    )
+                                                ),
+                                            ],
+                                            id="figure_1_div",
                                         ),
                                         dbc.Row(
                                             html.Div(
@@ -367,28 +446,6 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
-                                    ],
-                                    width=6,
-                                ),
-                            ],
-                        ),
-                        # Row for derivatives:
-                        dbc.Row(
-                            [
-                                html.Div(
-                                    html.H2("Derivatives"),
-                                    style={
-                                        "border": "0px black solid",
-                                        "text-align": "center",
-                                        "text-decoration": "underline",
-                                    },
-                                )
-                            ],
-                        ),
-                        dbc.Row(
-                            [
-                                dbc.Col(
-                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Mass balance (Gt yr-1)"),
@@ -412,6 +469,16 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
+                                    ],
+                                    width=6,
+                                ),
+                            ],
+                        ),
+                        # Row for derivatives:
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Calving (Gt yr-1)"),
