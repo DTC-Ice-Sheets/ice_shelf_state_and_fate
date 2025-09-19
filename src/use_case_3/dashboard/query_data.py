@@ -29,7 +29,7 @@ import use_case_3.helper_functions as hf
 
 OUTPUT_DIRECTORY = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
 
-with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/Dashboard/variable_mappings.yml") as f:
+with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashboard/variable_mappings.yml") as f:
     config_dict = yaml.safe_load(f)
 
 

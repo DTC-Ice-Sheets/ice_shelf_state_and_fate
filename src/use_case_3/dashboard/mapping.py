@@ -1,11 +1,11 @@
-import contextily as cx
-import matplotlib.pyplot as plt
-import geopandas as gpd
-from pathlib import Path
-from io import BytesIO
 import base64
-from dash import html
+from io import BytesIO
+from pathlib import Path
 
+import contextily as cx
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from dash import html
 
 BUFFER_PATH = Path("/data/yak1/working/dtc_ice_sheets/dashboard_map_buffer")
 
