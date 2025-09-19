@@ -3,41 +3,32 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from enum import Enum
 
 import numpy as np
 import pandas as pd
 
 from use_case_3.timeseries_module.timeseries import Timeseries
-
-
-class AggregationStrategy(Enum):
-    """The available aggregation types."""
-
-    MEAN = "mean"
-    MEDIAN = "median"
-    MAX = "max"
-    MIN = "min"
-
-    def __init__(self, aggregation: str) -> None:
-        self.aggregation = aggregation
-
-
-class AggregationPeriod(Enum):
-    """The available aggregation periods."""
-
-    YEAR = ("YS", "Y")
-    QUARTER = ("QS", "Q")
-    MONTH = ("MS", "M")
-    DAY = ("d", "d")
-
-    def __init__(self, period: str, time_period_shorthand: str) -> None:
-        self.period = period
-        self.time_period_shorthand = time_period_shorthand
+from use_case_3.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+)
 
 
 class TimeSeriesPreprocessor:
-    """Module for the manipulation of timeseries."""
+    """
+    Module for the manipulation of timeseries.
+
+    Parameters
+    ----------
+    timeseries : list[Timeseries]
+            The list of timeseries objects.
+    time_period : AggregationPeriod
+        The aggregation period to apply.
+    aggregation : AggregationStrategy, optional
+        The aggregation type to apply, by default AggregationStrategy.MEAN
+    process_timeseries : bool, optional
+        Whether to preprocess all of the input timeseries, by default True
+    """
 
     def __init__(
         self: TimeSeriesPreprocessor,
@@ -46,14 +37,6 @@ class TimeSeriesPreprocessor:
         aggregation: AggregationStrategy = AggregationStrategy.MEAN,
         process_timeseries: bool = True,
     ) -> None:
-        """
-        Initialise and create the necessary timeseries container.
-
-        Parameters
-        ----------
-        timeseries : list[Timeseries]
-            The timeseries as Timeseries objects.
-        """
         self.timeseries = {}
         self.aggregation_period = time_period
         self.aggregation = aggregation
@@ -67,9 +50,11 @@ class TimeSeriesPreprocessor:
         self: TimeSeriesPreprocessor,
     ) -> None:
         """
-        Process the timeseries for the covariate analysis. This first checks that all the timeseries intersect in time,
-        it then resamples the timeseries to be the same frequency, trims the time series to be the same length and then
-        interpolates any missing values using linear interpolation.
+        Process the timeseries for the covariate analysis.
+
+        This first checks that all the timeseries intersect in time, it then resamples the timeseries to be the
+        same frequency, trims the time series to be the same length and then interpolates any missing values
+        using linear interpolation.
         """
         if not self._check_timeseries_intersection():
             raise ValueError("One or more of the specified time series don't intersect temporally")
@@ -86,8 +71,9 @@ class TimeSeriesPreprocessor:
         self: TimeSeriesPreprocessor,
     ) -> bool:
         """
-        Determine whether all time series intersect in time by at least one time point. If both input parameters are
-        None then it will check all of the timeseries in the container.
+        Determine whether all time series intersect in time by at least one time point.
+
+        If both input parameters are None then it will check all of the timeseries in the container.
         """
         start_datetime, end_datetime = self._find_start_end_dates()
 
@@ -97,8 +83,9 @@ class TimeSeriesPreprocessor:
         self: TimeSeriesPreprocessor,
     ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
         """
-        Return the greatest common start and the smallest common end time for a set of time series. If both input
-        parameters are None then it will check all of the timeseries in the container.
+        Return the greatest common start and the smallest common end time for a set of time series.
+
+        If both input parameters are None then it will check all of the timeseries in the container.
 
         Returns
         -------
@@ -119,8 +106,9 @@ class TimeSeriesPreprocessor:
         end_date: pd.Timestamp,
     ) -> None:
         """
-        Trim a time series using a start and end date time. If both input parameters are None then it will check all of
-        the timeseries in the container.
+        Trim a time series using a start and end date time.
+
+        If both input parameters are None then it will check all of the timeseries in the container.
 
         Parameters
         ----------
@@ -129,7 +117,7 @@ class TimeSeriesPreprocessor:
         end_date : pd.Timestamp
             The end date to trim.
         """
-        for ts_label in self.timeseries.keys():
+        for ts_label in self.timeseries:
             self.timeseries[ts_label].measurements = self.timeseries[ts_label].measurements[
                 (self.timeseries[ts_label].measurements.index >= start_date)
                 & (self.timeseries[ts_label].measurements.index <= end_date)
@@ -184,7 +172,7 @@ class TimeSeriesPreprocessor:
         self: TimeSeriesPreprocessor,
     ) -> None:
         """Resamples any missing data and then linearly interpolates a timeseries according to a specified period."""
-        for ts_label in self.timeseries.keys():
+        for ts_label in self.timeseries:
             timeseries_interp = deepcopy(self.timeseries[ts_label])
             # Generate the list of date idx
             date_idx = pd.date_range(
@@ -216,7 +204,9 @@ class TimeSeriesPreprocessor:
         timeseries: list[Timeseries],
     ) -> None:
         """
-        Set all the time series. It is required that labels and units are also provided for every timeseries.
+        Set all the time series.
+
+        It is required that labels and units are also provided for every timeseries.
 
         Parameters
         ----------

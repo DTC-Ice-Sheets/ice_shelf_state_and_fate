@@ -1,25 +1,25 @@
-# A reuseable generic pipeline for testing
+# A reuseable generic pipeline for testing a DTC Ice Sheets Python package
 name: generic_test_with_container
 
 on:
   workflow_call:
     inputs:
       package_name:
-        description: "The name of the package to build."
+        description: 'The name of the package to build.'
         required: true
         type: string
       notebooks_allowed:
-        description: "Whether or not Jupyter notebooks are permitted in the package."
+        description: 'Whether or not Jupyter notebooks are permitted in the package.'
         default: false
         required: false
         type: boolean
       home_directories_allowed:
-        description: "Whether or not hardcoded home directories are permitted in the package."
+        description: 'Whether or not hardcoded home directories are permitted in the package.'
         default: false
         required: false
         type: boolean
       file_size_limit_mb:
-        description: "The CI chain will fail if there are any files present larger than this size in MB."
+        description: 'The CI chain will fail if there are any files present larger than this size in MB.'
         default: 5
         required: false
         type: number
@@ -95,6 +95,10 @@ jobs:
       - name: Check linting
         run: |
           poetry run ruff check --config pyproject.toml
+
+      - name: Check docstrings
+        run: |
+          poetry run pydoclint --config pyproject.toml --quiet src/
 
       - name: Check for security issues
         run: |

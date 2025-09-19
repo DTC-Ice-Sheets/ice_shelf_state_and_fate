@@ -45,6 +45,7 @@ def test_bounding_box_intersect():
     # Touching
     assert not bounding_box_1.intersects(bounding_box_6)
 
+
 def test_bounding_box_intersect_3d():
     bounding_box_1 = BoundingBox(0, 2, 4, 6, 0, 2)
     bounding_box_2 = BoundingBox(1, 2, 4, 5, 1, 3)

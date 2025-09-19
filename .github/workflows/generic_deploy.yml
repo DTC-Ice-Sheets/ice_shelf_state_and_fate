@@ -1,4 +1,4 @@
-# A reuseable generic pipeline for deploying
+# A reuseable generic pipeline for deploying a DTC Ice Sheets package.
 name: generic_deploy
 
 on:

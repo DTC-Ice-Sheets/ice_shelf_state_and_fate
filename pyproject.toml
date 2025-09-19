@@ -33,9 +33,23 @@ netcdf4 = "^1.7.2"
 rioxarray = "^0.19.0"
 contextily = "^1.6.2"
 statsmodels = "^0.14.5"
+folium = "^0.20.0"
+schema = "^0.7.7"
+botocore = "^1.40.18"
+aiohttp = "^3.12.15"
+pystac-client = "^0.9.0"
+specklia = "^1.9.66"
+dask = "^2025.7.0"
+plotly = "^6.3.0"
+nbformat = "^5.10.4"
+dash = "^3.2.0"
+dash-bootstrap-components = "^2.0.4"
+dotenv = "^0.9.9"
+ipywidgets = "^8.1.7"
+jupyter = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.4.1"
+pytest = "^8.4.2"
 typeguard = "^4.4.4"
 pre-commit = "^4.3"
 ruff = "^0.13.0"
@@ -45,26 +59,43 @@ sphinx = "^8.2.3"
 sphinx-rtd-theme = "^3.0.2"
 sphinx-copybutton = "^0.5.2"
 commitizen = "^4.9.1"
+pydoclint = "^0.6.10"
 
 [tool.ruff]
 line-length = 120
+target-version = "py312"
 
 [tool.ruff.lint]
+preview = true
 select = [
-    "T201", # Disallow print statements
-    "A",    # Ambiguity
-    "ANN",  # Annotations
-    "B",    # Bad practices
-    "C",    # Complexity
-    "D",    # Documentation
-    "E",    # Errors
-    "F",    # Pyflakes (e.g. unused imports and vars)
-    "I",    # Imports
-    "N",    # Naming
-    "Q",    # Quoting
-    "S",    # Stylistic
-    "W",    # Warnings
+    "T20", # Disallow print statements
+    "A",   # Ambiguity
+    "ANN", # Annotations
+    "B",   # Bad practices
+    "C90", # Complexity
+    "D",   # Documentation
+    "E",   # Errors
+    "F",   # Pyflakes (e.g. unused imports and vars)
+    "G",   # logging formatting
+    "I",   # Imports
+    "N",   # Naming
+    "Q",   # Quoting
+    "W",   # Warnings
+    "PT",  # pytest-style
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+    "ARG", # flake8-unused-arguments
+    "PIE", # flake8-pie
+    "RUF", # Ruff-specific rules
+    "BLE", # Blind except
+    "RET", # Return statements
+    "PTH", # Use pathlib
+    "PD",  # Pandas
 ]
+
+[tool.pydoclint]
+style = 'numpy'
+check_style_mismatch = "true"
 
 mccabe = { max-complexity = 10 }
 
@@ -82,7 +113,7 @@ ignore = [
     "E402", # Allow 'import' statements not being at the top of the file (common in test files for clarity)
     "S101", # Allow the use of 'assert' statements in test files (common practice in pytest)
     "D103", # Ignore missing docstring warnings for functions in test files (commonly not required for small test functions)
-    "ANN", # Ignore missing type annotations for functions in test files (commonly not required for small test functions)
+    "ANN",  # Ignore missing type annotations for functions in test files (commonly not required for small test functions)
 ]
 
 [tool.ruff.lint.pydocstyle]
