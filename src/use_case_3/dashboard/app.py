@@ -5,9 +5,6 @@ import plotting
 import query_data
 from dash import Dash, Input, Output, State, callback, html
 
-# from use_case_3.dashboard.dashboard_layout import column_summary_guages, column_summary_map
-# from use_case_3.dashboard.dashboard_callbacks import *
-
 ice_shelf_inital = "Thwaites"
 
 # Import data ###
@@ -15,8 +12,6 @@ ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shel
 summary_data_initial, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
-
-# print(summary_data[variable_initial])
 
 # Create the initial map ###
 ice_shelf_map = mapping.create_ice_shelf_map(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital)
@@ -39,10 +34,121 @@ def update_graph(value):
 
 
 @callback(
+    Output("iceshelf-summary-text-div", "value"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def update_ice_shelf_summary(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
     Output("figure_1_div", "style"),
     Input("switch-cumulative-mass-change", "value"),
 )
 def plot_summary_indicator1_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_2_div", "style"),
+    Input("switch-cumulative-thinning", "value"),
+)
+def plot_summary_indicator2_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_3_div", "style"),
+    Input("switch-cumulative-discharge-change", "value"),
+)
+def plot_summary_indicator3_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_4_div", "style"),
+    Input("switch-cumulative-SBM-anomolies", "value"),
+)
+def plot_summary_indicator4_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_5_div", "style"),
+    Input("switch-cumulative-retreat", "value"),
+)
+def plot_summary_indicator5_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_6_div", "style"),
+    Input("switch-mass-balance", "value"),
+)
+def plot_summary_indicator6_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_7_div", "style"),
+    Input("switch-calving-rate", "value"),
+)
+def plot_summary_indicator7_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_8_div", "style"),
+    Input("switch-basal-melt-flux", "value"),
+)
+def plot_summary_indicator8_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_9_div", "style"),
+    Input("switch-smb", "value"),
+)
+def plot_summary_indicator9_visable(visability):
+    if visability:
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    Output("figure_10_div", "style"),
+    Input("switch-discharge-rate", "value"),
+)
+def plot_summary_indicator10_visable(visability):
     if visability:
         return {"display": "block"}
     else:
