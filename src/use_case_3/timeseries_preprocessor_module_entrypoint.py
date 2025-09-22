@@ -99,3 +99,7 @@ def main() -> None:
         },
     )
     output.to_zarr(model.output_path, mode="w")
+
+
+if __name__ == "__main__":
+    main()

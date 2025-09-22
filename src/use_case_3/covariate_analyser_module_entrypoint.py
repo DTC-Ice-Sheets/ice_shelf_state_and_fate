@@ -76,3 +76,7 @@ def main() -> None:
     fig, _ = analyser.plot_timeseries()
 
     fig.savefig(model.output_path)
+
+
+if __name__ == "__main__":
+    main()
