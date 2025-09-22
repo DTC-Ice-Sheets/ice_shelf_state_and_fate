@@ -1534,7 +1534,7 @@ pydantic = "^2.11.7"
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git"
 reference = "initial-wrapper"
-resolved_reference = "eea10e53e20cc0079bd98ddc658197249d4297fd"
+resolved_reference = "1e705a382da771d4141fbf8c9735490b1a9ea29f"
 
 [[package]]
 name = "executing"
