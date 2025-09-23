@@ -10,7 +10,7 @@ dash.register_page(__name__)
 # Import data ###
 ice_shelf_inital = "Thwaites"
 ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
-summary_data_initial, _, _ = query_data.query_summary_data(
+summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
 
@@ -36,7 +36,11 @@ layout = html.Div(
                                                     dcc.Graph(id="gauge_1_figure"),
                                                     dcc.Store(data="mass_trend", id="gauge_1_store"),
                                                 ],
-                                                style={"padding": 0, "margin": 0, "border": "0px black solid"},
+                                                style={
+                                                    "padding-top": "10px",
+                                                    "margin": "0px",
+                                                    "border": "0px black solid",
+                                                },
                                             )
                                         ),
                                         dbc.Row(
@@ -190,7 +194,7 @@ layout = html.Div(
                                                 id="ice_shelf_selection",
                                                 style={},
                                             ),
-                                            style={"border": "0px black solid"},
+                                            style={"border": "0px black solid", "padding-top": "10px"},
                                         ),
                                         html.Div(
                                             dcc.RangeSlider(
@@ -209,7 +213,7 @@ layout = html.Div(
                                                     "style": {"color": "White", "fontSize": "20px"},
                                                 },
                                             ),
-                                            style={"border": "0px black solid"},
+                                            style={"border": "0px black solid", "padding-top": "10px"},
                                         ),
                                         html.Div(
                                             id="ice_shelf_map",
@@ -226,15 +230,9 @@ layout = html.Div(
                 dbc.Col(
                     [
                         html.Div(
-                            [
-                                html.P(
-                                    f"Overall the {ice_shelf_inital} Glacier is losing mass approximately at a rate of X Gt per annum and this ice loss has several contributing factors."
-                                ),
-                                html.P(
-                                    f"Basal melting has resulted in a steady state mass loss of approximately 9.7 Gt per annum.  While a significant calving event occured in 2009 where over 1000Gt calved from the ice shelf."
-                                ),
-                            ],
-                            className="summary_text",
+                            html.Div(),
+                            className="summary-text",
+                            id="iceshelf-summary-text-div",
                         ),
                         # Add switches for timeseries selection
                         dbc.Row(
@@ -312,38 +310,36 @@ layout = html.Div(
                         # Row for cummulative:
                         dbc.Row(
                             [
-                                dbc.Col(
+                                html.Div(
                                     [
-                                        html.Div(
-                                            [
-                                                dbc.Row(
-                                                    html.Div(
-                                                        html.P("Cumulative mass change (Gt)"),
-                                                        style={
-                                                            "padding": 0,
-                                                            "margin": 0,
-                                                            "border": "0px black solid",
-                                                            "font-size": "0.75rem",
-                                                            "text-decoration": "underline",
-                                                            "text-align": "center",
-                                                            "font-weight": "bold",
-                                                        },
-                                                    )
-                                                ),
-                                                dbc.Row(
-                                                    html.Div(
-                                                        [
-                                                            dcc.Graph(id="indicator_1_figure"),
-                                                            dcc.Store(
-                                                                data="cumulative_mass_change", id="indicator_1_store"
-                                                            ),
-                                                        ],
-                                                        style={"padding": 0, "margin": 0, "border": "0px black solid"},
-                                                    )
-                                                ),
-                                            ],
-                                            id="figure_1_div",
+                                        dbc.Row(
+                                            html.Div(
+                                                html.P("Cumulative mass change (Gt)"),
+                                                style={
+                                                    "padding": 0,
+                                                    "margin": 0,
+                                                    "border": "0px black solid",
+                                                    "font-size": "0.75rem",
+                                                    "text-decoration": "underline",
+                                                    "text-align": "center",
+                                                    "font-weight": "bold",
+                                                },
+                                            )
                                         ),
+                                        dbc.Row(
+                                            html.Div(
+                                                [
+                                                    dcc.Graph(id="indicator_1_figure"),
+                                                    dcc.Store(data="cumulative_mass_change", id="indicator_1_store"),
+                                                ],
+                                                style={"padding": 0, "margin": 0, "border": "0px black solid"},
+                                            )
+                                        ),
+                                    ],
+                                    id="figure_1_div",
+                                ),
+                                html.Div(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Cumulative discharge change (Gt)"),
@@ -369,6 +365,11 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
+                                    ],
+                                    id="figure_2_div",
+                                ),
+                                html.Div(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Cumulative retreat (Gt)"),
@@ -393,9 +394,9 @@ layout = html.Div(
                                             )
                                         ),
                                     ],
-                                    width=6,
+                                    id="figure_3_div",
                                 ),
-                                dbc.Col(
+                                html.Div(
                                     [
                                         dbc.Row(
                                             html.Div(
@@ -420,6 +421,11 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
+                                    ],
+                                    id="figure_4_div",
+                                ),
+                                html.Div(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Cumulative SBM anomolies (Gt)"),
@@ -446,6 +452,11 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
+                                    ],
+                                    id="figure_5_div",
+                                ),
+                                html.Div(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Mass balance (Gt yr-1)"),
@@ -470,14 +481,9 @@ layout = html.Div(
                                             )
                                         ),
                                     ],
-                                    width=6,
+                                    id="figure_6_div",
                                 ),
-                            ],
-                        ),
-                        # Row for derivatives:
-                        dbc.Row(
-                            [
-                                dbc.Col(
+                                html.Div(
                                     [
                                         dbc.Row(
                                             html.Div(
@@ -502,6 +508,11 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
+                                    ],
+                                    id="figure_7_div",
+                                ),
+                                html.Div(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("SMB (Gt yr-1)"),
@@ -528,9 +539,9 @@ layout = html.Div(
                                             )
                                         ),
                                     ],
-                                    width=6,
+                                    id="figure_8_div",
                                 ),
-                                dbc.Col(
+                                html.Div(
                                     [
                                         dbc.Row(
                                             html.Div(
@@ -555,6 +566,11 @@ layout = html.Div(
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
+                                    ],
+                                    id="figure_9_div",
+                                ),
+                                html.Div(
+                                    [
                                         dbc.Row(
                                             html.Div(
                                                 html.P("Discharge (Gt yr-1)"),
@@ -582,7 +598,7 @@ layout = html.Div(
                                             )
                                         ),
                                     ],
-                                    width=6,
+                                    id="figure_10_div",
                                 ),
                             ],
                         ),
