@@ -3,13 +3,15 @@ import dash_bootstrap_components as dbc
 import mapping
 import plotting
 import query_data
+import process_data
 from dash import Dash, Input, Output, State, callback, html
+import numpy as np
 
 ice_shelf_inital = "Thwaites"
 
 # Import data ###
 ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
-summary_data_initial, _, _ = query_data.query_summary_data(
+summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
 
@@ -34,15 +36,62 @@ def update_graph(value):
 
 
 @callback(
-    Output("iceshelf-summary-text-div", "value"),
+    Output("iceshelf-summary-text-div", "children"),
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def update_ice_shelf_summary(visability):
-    if visability:
-        return {"display": "block"}
-    else:
-        return {"display": "none"}
+def update_ice_shelf_summary(ice_shelf, year_range):
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
+
+    total_mass_loss, negative_cummulative_contributors, derivative_summary = process_data.generate_statistics(
+        timeseries_container, year_range
+    )
+    year_diff = year_range[1] - year_range[0]
+
+    neg_list = []
+    for var in negative_cummulative_contributors.index:
+        neg_list.append(
+            html.Li(
+                f"{' '.join(var.split('_')).capitalize()} has contributed approximately {int(np.round(np.abs(negative_cummulative_contributors.loc[var, 'Total'])))} Gt to this total loss over this period."
+            )
+        )
+    return html.Div(
+        [
+            html.P(" "),
+            html.H5(f"{ice_shelf} Ice Shelf Summary:"),
+            html.P(
+                f"Overall the {ice_shelf} Ice Shelf has lost a total mass of approximately {int(np.round(np.abs(total_mass_loss)))} Gt over the past {year_diff} years. There are a number of key contributing factors to this ice loss:",
+                style={"padding-right": "100px", "padding-top": "10px"},
+            ),
+            html.Ul(neg_list),
+            html.P(
+                f"Other important sources of ice loss from {ice_shelf} ice shelf in the {year_diff} year period are:",
+                style={"padding-right": "100px", "padding-top": "0px"},
+            ),
+            html.Ul(
+                [
+                    html.Li(
+                        f"There has been approximately {int(np.round(np.abs(derivative_summary.loc['calving', 'Total'])))} Gt of ice lost from the ice shelf as a result of calving."
+                    ),
+                    html.Li(
+                        f"There has been approximately {int(np.round(np.abs(derivative_summary.loc['discharge', 'Total'])))} Gt of ice discharged as water."
+                    ),
+                    html.Li(
+                        f"Finally, there has been approximately {int(np.round(np.abs(derivative_summary.loc['basal_melt_flux', 'Total'])))} Gt of ice lost through basal melting."
+                    ),
+                ]
+            ),
+            html.H5(
+                "Timeseries Analysis:",
+                style={"padding-right": "100px", "padding-top": "10px"},
+            ),
+            html.P(f"Use the toggle switches below to investigate temporal trends in key Ice shelf parameters."),
+        ]
+    )
 
 
 @callback(
@@ -57,7 +106,7 @@ def plot_summary_indicator1_visable(visability):
 
 
 @callback(
-    Output("figure_2_div", "style"),
+    Output("figure_4_div", "style"),
     Input("switch-cumulative-thinning", "value"),
 )
 def plot_summary_indicator2_visable(visability):
@@ -68,7 +117,7 @@ def plot_summary_indicator2_visable(visability):
 
 
 @callback(
-    Output("figure_3_div", "style"),
+    Output("figure_2_div", "style"),
     Input("switch-cumulative-discharge-change", "value"),
 )
 def plot_summary_indicator3_visable(visability):
@@ -79,7 +128,7 @@ def plot_summary_indicator3_visable(visability):
 
 
 @callback(
-    Output("figure_4_div", "style"),
+    Output("figure_5_div", "style"),
     Input("switch-cumulative-SBM-anomolies", "value"),
 )
 def plot_summary_indicator4_visable(visability):
@@ -90,7 +139,7 @@ def plot_summary_indicator4_visable(visability):
 
 
 @callback(
-    Output("figure_5_div", "style"),
+    Output("figure_3_div", "style"),
     Input("switch-cumulative-retreat", "value"),
 )
 def plot_summary_indicator5_visable(visability):
@@ -123,7 +172,7 @@ def plot_summary_indicator7_visable(visability):
 
 
 @callback(
-    Output("figure_8_div", "style"),
+    Output("figure_9_div", "style"),
     Input("switch-basal-melt-flux", "value"),
 )
 def plot_summary_indicator8_visable(visability):
@@ -134,7 +183,7 @@ def plot_summary_indicator8_visable(visability):
 
 
 @callback(
-    Output("figure_9_div", "style"),
+    Output("figure_8_div", "style"),
     Input("switch-smb", "value"),
 )
 def plot_summary_indicator9_visable(visability):
@@ -162,10 +211,15 @@ def plot_summary_indicator10_visable(visability):
     State("indicator_1_store", "data"),
 )
 def plot_summary_indicator1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
     # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -176,10 +230,13 @@ def plot_summary_indicator1(ice_shelf, year_range, variable):
     State("indicator_2_store", "data"),
 )
 def plot_summary_indicator2(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
-    # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -190,10 +247,15 @@ def plot_summary_indicator2(ice_shelf, year_range, variable):
     State("indicator_3_store", "data"),
 )
 def plot_summary_indicator3(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
     # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -204,10 +266,15 @@ def plot_summary_indicator3(ice_shelf, year_range, variable):
     State("indicator_4_store", "data"),
 )
 def plot_summary_indicator4(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
     # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -218,10 +285,15 @@ def plot_summary_indicator4(ice_shelf, year_range, variable):
     State("indicator_5_store", "data"),
 )
 def plot_summary_indicator5(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
     # fig = plotting.plot_summary_indicator(summary_data, variable, year_range)
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -232,9 +304,14 @@ def plot_summary_indicator5(ice_shelf, year_range, variable):
     State("indicator_1_store_deriv", "data"),
 )
 def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -245,9 +322,14 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):
     State("indicator_2_store_deriv", "data"),
 )
 def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -258,9 +340,14 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):
     State("indicator_3_store_deriv", "data"),
 )
 def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -271,9 +358,14 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):
     State("indicator_4_store_deriv", "data"),
 )
 def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -284,9 +376,14 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):
     State("indicator_5_store_deriv", "data"),
 )
 def plot_summary_timeseries1(ice_shelf, year_range, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
 
-    fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    # fig = plotting.plot_summary_timeseries(summary_data, variable, year_range)
+    fig = plotting.plot_summary_timeseries(timeseries_container.timeseries[variable])
     return fig
 
 
@@ -296,7 +393,9 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):
     State("gauge_1_store", "data"),
 )
 def plot_gauge_indicator1(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+    )
 
     fig = plotting.plot_gauge_indicator(summary_data, variable)
     return fig
@@ -308,7 +407,9 @@ def plot_gauge_indicator1(ice_shelf, variable):
     State("gauge_2_store", "data"),
 )
 def plot_gauge_indicator2(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+    )
 
     fig = plotting.plot_gauge_indicator(summary_data, variable)
     return fig
@@ -320,7 +421,9 @@ def plot_gauge_indicator2(ice_shelf, variable):
     State("gauge_3_store", "data"),
 )
 def plot_gauge_indicator3(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+    )
 
     fig = plotting.plot_gauge_indicator(summary_data, variable)
     return fig
@@ -332,7 +435,9 @@ def plot_gauge_indicator3(ice_shelf, variable):
     State("gauge_4_store", "data"),
 )
 def plot_gauge_indicator4(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+    )
 
     fig = plotting.plot_gauge_indicator(summary_data, variable)
     return fig
@@ -344,11 +449,19 @@ def plot_gauge_indicator4(ice_shelf, variable):
     State("gauge_5_store", "data"),
 )
 def plot_gauge_indicator5(ice_shelf, variable):
-    summary_data, _, _ = query_data.query_summary_data(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf)
+    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+    )
 
     fig = plotting.plot_gauge_indicator(summary_data, variable)
     return fig
 
+@callback(
+        
+)
+def conduct_covariate_analysis():
+    pass
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
