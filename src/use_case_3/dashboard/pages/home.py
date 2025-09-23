@@ -17,8 +17,11 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "Welcome to the Digital Twin Ice Sheets. This dashboard allows to you to investigate the current and "
-                    "future state of the Antarctic ice shelves using earth observation data. "
+                    "Welcome to Digital Twin Ice Sheets. This dashboard allows to you to investigate the current and "
+                    "future state of the Antarctic ice shelves using earth observation data. It provides an up-to-date reconstruction of Antarctic Ice Shelves, their interactions with the ice sheet, atmosphere, and ocean, and enables the forecast of their evolution."
+                ),
+                html.P(
+                    "The DTC Ice Sheets Project is part of the European Space Agency’s Digital Twin Earth (DTE) initiative, developed under the Lead Digital Twin Components (DTC) Development Actions for the Ice Sheets."
                 ),
                 html.Div(
                     [
@@ -32,7 +35,9 @@ layout = html.Div(
                     className="d-grid gap-2 col-6 mx-auto",
                 ),
                 html.P(""),
-                html.P("TODO: Add consortium member logos and a better description."),
+                html.P(
+                    "TODO: Add consortium member logos and a better description and remove unnecessary white space around logo."
+                ),
             ],
             className="website_text",
         ),

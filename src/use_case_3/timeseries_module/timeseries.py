@@ -26,7 +26,7 @@ from use_case_3.timeseries_module.timeseries_enums import (
 
 @dataclass
 class Timeseries:
-    """The timeseries data class. A wrapped to maintain metadata with the timeseries."""
+    """The timeseries data class. A wrapper to maintain metadata with the timeseries."""
 
     label: str
     timeseries_type: TimeseriesType
@@ -1545,12 +1545,20 @@ class Timeseries:
         percentile_50 = np.percentile(self.measurements, 50)
         percentile_25 = np.percentile(self.measurements, 25)
         percentile_10 = np.percentile(self.measurements, 10)
-        coverage_maximum = self.measurement_coverage.max()
-        coverage_minimum = self.measurement_coverage.min()
-        coverage_range = coverage_maximum - coverage_minimum
-        coverage_mean = self.measurement_coverage.mean()
-        coverage_std = self.measurement_coverage.std()
-        coverage_median = self.measurement_coverage.median()
+        if self.measurement_coverage is not None:
+            coverage_maximum = self.measurement_coverage.max()
+            coverage_minimum = self.measurement_coverage.min()
+            coverage_range = coverage_maximum - coverage_minimum
+            coverage_mean = self.measurement_coverage.mean()
+            coverage_std = self.measurement_coverage.std()
+            coverage_median = self.measurement_coverage.median()
+        else:
+            coverage_maximum = np.nan
+            coverage_minimum = np.nan
+            coverage_range = np.nan
+            coverage_mean = np.nan
+            coverage_std = np.nan
+            coverage_median = np.nan
 
         observation_uncertainty_corr = np.corrcoef(
             self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten()
@@ -1559,7 +1567,16 @@ class Timeseries:
             0, -1
         ]
 
-        data = np.zeros((18, 3))
+        rate_of_change = (
+            LinearRegression()
+            .fit(self.measurements.index.to_numpy().reshape(-1, 1), self.measurements.to_numpy().flatten())
+            .coef_[0]
+        )
+
+        mean = self.measurements.mean()
+        total = self.measurements.sum()
+
+        data = np.zeros((21, 3))
 
         # Start
         data[0, 0] = start
@@ -1647,17 +1664,32 @@ class Timeseries:
         data[17, 1] = np.nan
         data[17, 2] = np.nan
 
+        # rate_of_change
+        data[18, 0] = rate_of_change
+        data[18, 1] = np.nan
+        data[18, 2] = np.nan
+
+        # mean
+        data[19, 0] = mean
+        data[19, 1] = np.nan
+        data[19, 2] = np.nan
+
+        # total
+        data[20, 0] = total
+        data[20, 1] = np.nan
+        data[20, 2] = np.nan
+
         indexes = [
-            f"{self.label} - Initial Value ({self.unit})",
-            f"{self.label} - Final Value ({self.unit})",
-            f"{self.label} - Difference ({self.unit})",
-            f"{self.label} - Maximum Value ({self.unit})",
-            f"{self.label} - Minimum Value ({self.unit})",
-            f"{self.label} - 10th Percentile Value ({self.unit})",
-            f"{self.label} - 25th Percentile Value ({self.unit})",
-            f"{self.label} - 50th Percentile Value ({self.unit})",
-            f"{self.label} - 75th Percentile Value ({self.unit})",
-            f"{self.label} - 90th Percentile Value ({self.unit})",
+            "Initial Value",
+            "Final Value",
+            "Difference",
+            "Maximum Value",
+            "Minimum Value",
+            "10th Percentile Value",
+            "25th Percentile Value",
+            "50th Percentile Value",
+            "75th Percentile Value",
+            "90th Percentile Value",
             "Coverage Maximum (%)",
             "Coverage Minimum (%)",
             "Coverage Range (%)",
@@ -1666,6 +1698,9 @@ class Timeseries:
             "Coverage Standard Deviation (%)",
             "Observation/Uncertainty Correlation",
             "Observation Linearity (correlation coef.)",
+            "rate of change",
+            "Mean",
+            "Total",
         ]
 
         summary_statistics = pd.DataFrame(
