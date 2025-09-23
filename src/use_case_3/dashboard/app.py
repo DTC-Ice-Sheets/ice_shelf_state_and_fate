@@ -1,11 +1,11 @@
 import dash
 import dash_bootstrap_components as dbc
 import mapping
-import plotting
-import query_data
-import process_data
-from dash import Dash, Input, Output, State, callback, html
 import numpy as np
+import plotting
+import process_data
+import query_data
+from dash import Dash, Input, Output, State, callback, html
 
 ice_shelf_inital = "Thwaites"
 
@@ -89,7 +89,7 @@ def update_ice_shelf_summary(ice_shelf, year_range):
                 "Timeseries Analysis:",
                 style={"padding-right": "100px", "padding-top": "10px"},
             ),
-            html.P(f"Use the toggle switches below to investigate temporal trends in key Ice shelf parameters."),
+            html.P("Use the toggle switches below to investigate temporal trends in key Ice shelf parameters."),
         ]
     )
 
@@ -101,8 +101,7 @@ def update_ice_shelf_summary(ice_shelf, year_range):
 def plot_summary_indicator1_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -112,8 +111,7 @@ def plot_summary_indicator1_visable(visability):
 def plot_summary_indicator2_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -123,8 +121,7 @@ def plot_summary_indicator2_visable(visability):
 def plot_summary_indicator3_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -134,8 +131,7 @@ def plot_summary_indicator3_visable(visability):
 def plot_summary_indicator4_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -145,8 +141,7 @@ def plot_summary_indicator4_visable(visability):
 def plot_summary_indicator5_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -156,8 +151,7 @@ def plot_summary_indicator5_visable(visability):
 def plot_summary_indicator6_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -167,8 +161,7 @@ def plot_summary_indicator6_visable(visability):
 def plot_summary_indicator7_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -178,8 +171,7 @@ def plot_summary_indicator7_visable(visability):
 def plot_summary_indicator8_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -189,8 +181,7 @@ def plot_summary_indicator8_visable(visability):
 def plot_summary_indicator9_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -200,8 +191,7 @@ def plot_summary_indicator9_visable(visability):
 def plot_summary_indicator10_visable(visability):
     if visability:
         return {"display": "block"}
-    else:
-        return {"display": "none"}
+    return {"display": "none"}
 
 
 @callback(
@@ -456,8 +446,9 @@ def plot_gauge_indicator5(ice_shelf, variable):
     fig = plotting.plot_gauge_indicator(summary_data, variable)
     return fig
 
+
 @callback(
-        
+
 )
 def conduct_covariate_analysis():
     pass
