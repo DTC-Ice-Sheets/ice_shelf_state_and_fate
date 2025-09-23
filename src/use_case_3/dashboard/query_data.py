@@ -10,17 +10,21 @@ sys.path.insert(0, module_path)
 
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import xarray as xr
 
-# from use_case_3.timeseries_module.timeseries import Timeseries
-# from use_case_3.timeseries_module.timeseries_enums import (
-#     AggregationStrategy,
-#     AggregationPeriod,
-#     UncertaintyType,
-#     NormalisationType,
-#     # PlotSpreadType,
-#     TimeseriesType,
-# )
+from use_case_3.timeseries_module.timeseries import Timeseries
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+    NormalisationType,
+    TimeseriesRegion,
+    TimeseriesType,
+    UncertaintyType,
+)
+
 import yaml
 from data_download_module.main import download_data
 from data_download_module.schemas import DataDownloadRequest
@@ -48,10 +52,15 @@ def query_ice_shelf_wide_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
 
 
 def query_summary_data(
-    ice_shelf_polygons: gpd.GeoDataFrame, ice_shelf: str = "Thwaites"
+    ice_shelf_polygons: gpd.GeoDataFrame,
+    ice_shelf: str = "Thwaites",
+    year_range: list[pd.Timestamp | np.datetime64 | None, pd.Timestamp | np.datetime64 | None] | None = None,
 ) -> tuple[xr.Dataset, MultiPolygon, MultiPolygon]:
+    if year_range is None:
+        year_range = [None, None]
     ice_shelf_polygon_epsg4326, ice_shelf_polygon = hf.iceshelf_polygon(
-        ice_shelf_polygons=ice_shelf_polygons, ice_shelf_name=ice_shelf
+        ice_shelf_polygons=ice_shelf_polygons,
+        ice_shelf_name=ice_shelf,
     )
 
     local_raw_request = DataDownloadRequest(dataset_id=f"{ice_shelf}_SUMMARY".upper(), raw_download=False)
@@ -60,4 +69,54 @@ def query_summary_data(
 
     summary_data = xr.open_zarr(store=summary_data_path, zarr_format=2)
 
-    return summary_data, ice_shelf_polygon_epsg4326, ice_shelf_polygon
+    timeseries_list = []
+
+    for var in summary_data.keys():
+        if var in config_dict["timeseries_summary"]:
+            timeseries = Timeseries(
+                label=var,
+                timeseries_type=TimeseriesType(config_dict["timeseries_summary"][var]["timeseries_type"]),
+                timeseries_region=TimeseriesRegion(config_dict["timeseries_summary"][var]["region"]),
+            )
+
+            timeseries.process_timeseries(
+                data=summary_data,
+                measurement_name=var,
+                measurement_uncertainty_name=config_dict["timeseries_summary"][var]["measurement_uncertainties"],
+                mask_geometries={"ice_shelf": None, "ocean": None, "climate": None},
+                apply_mask=False,
+                aggregate=AggregationStrategy.MEAN,
+                period=AggregationPeriod.YEAR,
+                uncertainty=UncertaintyType(config_dict["timeseries_summary"][var]["measurement_uncertainty_type"]),
+                independent=True,
+                t0_normalisation=None,
+            )
+
+            timeseries_list.append(timeseries)
+
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=timeseries_list,
+        time_period=AggregationPeriod.YEAR,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+
+    if year_range is None:
+        start_date, end_date = timeseries_container._find_start_end_dates()
+    else:
+        if year_range[0] is None and year_range[1] is None:
+            start_date, end_date = timeseries_container._find_start_end_dates()
+        elif year_range[0] is None and year_range[1] is not None:
+            start_date, _ = timeseries_container._find_start_end_dates()
+            end_date = year_range[1]
+        elif year_range[0] is None and year_range[1] is not None:
+            _, end_date = timeseries_container._find_start_end_dates()
+            start_date = year_range[0]
+        else:
+            start_date = year_range[0]
+            end_date = year_range[1]
+
+    timeseries_container._trim_timeseries_date(start_date=start_date, end_date=end_date)
+
+    return summary_data, timeseries_container, ice_shelf_polygon_epsg4326, ice_shelf_polygon
+
