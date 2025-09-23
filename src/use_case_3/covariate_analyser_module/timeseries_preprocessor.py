@@ -145,7 +145,8 @@ class TimeSeriesPreprocessor:
                 self.timeseries[ts_label]
                 .measurements.groupby(
                     pd.PeriodIndex(
-                        self.timeseries[ts_label].measurements.index, freq=self.aggregation_period.time_period_shorthand
+                        self.timeseries[ts_label].measurements.index,
+                        freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
                     )
                 )
                 .agg(self.aggregation.aggregation)
@@ -156,7 +157,7 @@ class TimeSeriesPreprocessor:
                     .measurement_uncertainties.groupby(
                         pd.PeriodIndex(
                             self.timeseries[ts_label].measurement_uncertainties.index,
-                            freq=self.aggregation_period.time_period_shorthand,
+                            freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
                         )
                     )
                     .agg(self.aggregation.aggregation)
@@ -178,7 +179,7 @@ class TimeSeriesPreprocessor:
             date_idx = pd.date_range(
                 start=timeseries_interp.measurements.index[0],
                 end=timeseries_interp.measurements.index[-1],
-                freq=self.aggregation_period.period,
+                freq=AggregationPeriod.pd_date_range_freq(self.aggregation_period),
             )
 
             timeseries_interp.measurements = timeseries_interp.measurements.reindex(
@@ -190,7 +191,7 @@ class TimeSeriesPreprocessor:
                 date_idx = pd.date_range(
                     start=timeseries_interp.measurement_uncertainties.index[0],
                     end=timeseries_interp.measurement_uncertainties.index[-1],
-                    freq=self.aggregation_period.period,
+                    freq=AggregationPeriod.pd_date_range_freq(self.aggregation_period),
                 )
 
                 timeseries_interp.measurement_uncertainties = timeseries_interp.measurement_uncertainties.reindex(

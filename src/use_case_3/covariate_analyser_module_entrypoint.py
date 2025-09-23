@@ -52,23 +52,29 @@ def main() -> None:
 
     timeseries = []
     ds = xr.open_zarr(model.input_path)
-    for name, var in ds.data_vars.items():
-        if name.endswith("_uncertainty"):
-            continue
+    for name, attr in ds.attrs["timeseries"].items():
+        label, measurement_name = name.split("_", 1)
         timeseries.append(
             Timeseries(
-                label=name,
-                timeseries_type=TimeseriesType.CUMULATIVE,
-                timeseries_region=TimeseriesRegion.ICE_SHELF,
-                measurement_name=name,
-                measurements=var.to_series(),
+                label=label,
+                timeseries_type=TimeseriesType(attr["timeseries_type"]),
+                timeseries_region=TimeseriesRegion(attr["timeseries_region"]),
+                measurement_name=measurement_name,
+                measurements=ds[name].to_series(),
+                **(
+                    {
+                        "measurement_uncertainties": ds[attr["uncertainty_name"]].to_series(),
+                    }
+                    if "uncertainty_name" in attr
+                    else {}
+                ),
             )
         )
 
     preprocessor = TimeSeriesPreprocessor(
         timeseries=timeseries,
-        time_period=AggregationPeriod.MONTH,
-        aggregation=AggregationStrategy.MEAN,
+        time_period=AggregationPeriod(ds.attrs["time_period"]),
+        aggregation=AggregationStrategy(ds.attrs["aggregation"]),
         process_timeseries=False,
     )
     analyser = CovariateAnalyser(preprocessor)

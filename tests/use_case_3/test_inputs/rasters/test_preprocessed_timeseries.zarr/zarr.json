@@ -1,5 +1,15 @@
 {
-  "attributes": {},
+  "attributes": {
+    "time_period": "month",
+    "aggregation": "mean",
+    "timeseries": {
+      "test_label_measurement": {
+        "timeseries_type": "cumulative",
+        "timeseries_region": "ice_shelf",
+        "uncertainty_name": "test_label_measurement_uncertainties"
+      }
+    }
+  },
   "zarr_format": 3,
   "consolidated_metadata": {
     "kind": "inline",
@@ -50,7 +60,7 @@
         "node_type": "array",
         "storage_transformers": []
       },
-      "test_label_measurement_uncertainty": {
+      "test_label_measurement_uncertainties": {
         "shape": [
           5
         ],

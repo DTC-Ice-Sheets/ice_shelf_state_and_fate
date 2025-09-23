@@ -10,8 +10,6 @@ from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSer
 from use_case_3.schemas import TimeseriesPreprocessorModuleEntryPointSchema
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
-    AggregationPeriod,
-    AggregationStrategy,
     TimeseriesRegion,
     TimeseriesType,
 )
@@ -83,19 +81,34 @@ def main() -> None:
 
     preprocessor = TimeSeriesPreprocessor(
         timeseries=timeseries,
-        time_period=AggregationPeriod(model.time_period),
-        aggregation=AggregationStrategy(model.aggregation),
+        time_period=model.time_period,
+        aggregation=model.aggregation,
     )
 
     data_vars = {}
-    for ts_name, ts in preprocessor.timeseries.items():
-        data_vars[f"{ts_name}_{ts.measurement_name}"] = (["time"], ts.measurements.values)
-        data_vars[f"{ts_name}_{ts.measurement_name}_uncertainty"] = (["time"], ts.measurement_uncertainties.values)
+    timeseries_attrs = {}
+    for label, ts in preprocessor.timeseries.items():
+        name = f"{label}_{ts.measurement_name}"
+        data_vars[name] = (["time"], ts.measurements.values)
+        timeseries_attrs[name] = {
+            "timeseries_type": ts.timeseries_type,
+            "timeseries_region": ts.timeseries_region,
+        }
+
+        if ts.measurement_uncertainties is not None:
+            uncertainty_name = f"{label}_{xarrays[label].attrs['measurement_uncertainty_name']}"
+            data_vars[uncertainty_name] = (["time"], ts.measurement_uncertainties.values)
+            timeseries_attrs[name]["uncertainty_name"] = uncertainty_name
 
     output = xr.Dataset(
         data_vars=data_vars,
         coords={
             "time": next(iter(preprocessor.timeseries.values())).measurements.index.values,
+        },
+        attrs={
+            "time_period": model.time_period,
+            "aggregation": model.aggregation,
+            "timeseries": timeseries_attrs,
         },
     )
     output.to_zarr(model.output_path, mode="w")
