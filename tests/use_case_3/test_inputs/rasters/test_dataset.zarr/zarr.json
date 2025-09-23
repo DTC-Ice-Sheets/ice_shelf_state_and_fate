@@ -7,18 +7,69 @@
     "metadata": {
       "measurement": {
         "shape": [
+          20,
           5,
-          1,
-          1
+          5
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
+              20,
               5,
-              1,
-              1
+              5
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": 0.0,
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time",
+          "y",
+          "x"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "measurement_uncertainties": {
+        "shape": [
+          20,
+          5,
+          5
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              20,
+              5,
+              5
             ]
           }
         },
@@ -58,14 +109,14 @@
       },
       "time": {
         "shape": [
-          5
+          20
         ],
         "data_type": "int64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              20
             ]
           }
         },
@@ -92,7 +143,7 @@
           }
         ],
         "attributes": {
-          "units": "days since 2020-01-01 00:00:00",
+          "units": "days since 2000-01-01 00:00:00",
           "calendar": "proleptic_gregorian"
         },
         "dimension_names": [
@@ -104,61 +155,14 @@
       },
       "x": {
         "shape": [
-          1
-        ],
-        "data_type": "int64",
-        "chunk_grid": {
-          "name": "regular",
-          "configuration": {
-            "chunk_shape": [
-              1
-            ]
-          }
-        },
-        "chunk_key_encoding": {
-          "name": "default",
-          "configuration": {
-            "separator": "/"
-          }
-        },
-        "fill_value": 0,
-        "codecs": [
-          {
-            "name": "bytes",
-            "configuration": {
-              "endian": "little"
-            }
-          },
-          {
-            "name": "zstd",
-            "configuration": {
-              "level": 0,
-              "checksum": false
-            }
-          }
-        ],
-        "attributes": {},
-        "dimension_names": [
-          "x"
-        ],
-        "zarr_format": 3,
-        "node_type": "array",
-        "storage_transformers": []
-      },
-      "measurement_uncertainties": {
-        "shape": [
-          5,
-          1,
-          1
+          5
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5,
-              1,
-              1
+              5
             ]
           }
         },
@@ -188,8 +192,6 @@
           "_FillValue": "AAAAAAAA+H8="
         },
         "dimension_names": [
-          "time",
-          "y",
           "x"
         ],
         "zarr_format": 3,
@@ -198,14 +200,14 @@
       },
       "y": {
         "shape": [
-          1
+          5
         ],
-        "data_type": "int64",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              1
+              5
             ]
           }
         },
@@ -215,7 +217,7 @@
             "separator": "/"
           }
         },
-        "fill_value": 0,
+        "fill_value": 0.0,
         "codecs": [
           {
             "name": "bytes",
@@ -231,7 +233,9 @@
             }
           }
         ],
-        "attributes": {},
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
         "dimension_names": [
           "y"
         ],

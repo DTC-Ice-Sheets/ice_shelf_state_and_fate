@@ -13,14 +13,14 @@
     "metadata": {
       "measurement": {
         "shape": [
-          5
+          1
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },
@@ -58,14 +58,14 @@
       },
       "n": {
         "shape": [
-          5
+          1
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },
@@ -103,14 +103,14 @@
       },
       "std": {
         "shape": [
-          5
+          1
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },
@@ -148,14 +148,14 @@
       },
       "time": {
         "shape": [
-          5
+          1
         ],
         "data_type": "int64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },
@@ -182,7 +182,7 @@
           }
         ],
         "attributes": {
-          "units": "days since 2020-01-01 00:00:00",
+          "units": "days since 2000-01-01 00:00:00",
           "calendar": "proleptic_gregorian"
         },
         "dimension_names": [
@@ -194,14 +194,14 @@
       },
       "uncertainty": {
         "shape": [
-          5
+          1
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },
@@ -239,14 +239,14 @@
       },
       "uncertainty_n": {
         "shape": [
-          5
+          1
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },
@@ -284,14 +284,14 @@
       },
       "uncertainty_std": {
         "shape": [
-          5
+          1
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              5
+              1
             ]
           }
         },

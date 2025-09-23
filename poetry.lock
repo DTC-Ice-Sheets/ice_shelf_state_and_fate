@@ -1517,7 +1517,7 @@ python-dotenv = "*"
 
 [[package]]
 name = "dtc-wrapper"
-version = "0.0.0"
+version = "0.0.16"
 description = "Deployment wrapper for DTC Ice Sheets modules."
 optional = false
 python-versions = ">=3.12,<4.0"
@@ -1528,13 +1528,13 @@ develop = false
 [package.dependencies]
 boto3 = "^1.40.12"
 numpy = "^2.2"
-pydantic = "^2.11.7"
+pydantic = "^2.11.9"
 
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git"
 reference = "initial-wrapper"
-resolved_reference = "6738a275d30a989547ec9e42f1003e831b1b5b64"
+resolved_reference = "4ffee74d1af7d33a2ef1f2d407d9dfcdd1db471f"
 
 [[package]]
 name = "executing"
