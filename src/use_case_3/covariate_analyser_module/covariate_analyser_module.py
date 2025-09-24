@@ -122,16 +122,18 @@ class CovariateAnalyser:
         correlated_vars = {}
         for timeseries_label_1 in self.timeseries_container.timeseries:
             for timeseries_label_2 in self.timeseries_container.timeseries:
-                corr_coef, p_value = self.correlation_coefficient(timeseries_label_1, timeseries_label_2, altered=False)
-                # We only store a correlated variable if it is not already in the dict.
-                if (
-                    np.abs(corr_coef) >= corr_thresh
-                    and p_value <= self.alpha
-                    and timeseries_label_1 != timeseries_label_2
-                    and (timeseries_label_1, timeseries_label_2) not in correlated_vars
-                    and (timeseries_label_2, timeseries_label_1) not in correlated_vars
-                ):
-                    correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value)
+                if timeseries_label_1 != timeseries_label_2:
+                    corr_coef, p_value = self.correlation_coefficient(
+                        timeseries_label_1, timeseries_label_2, altered=False
+                    )
+                    # We only store a correlated variable if it is not already in the dict.
+                    if (
+                        np.abs(corr_coef) >= corr_thresh
+                        and p_value <= self.alpha
+                        and (timeseries_label_1, timeseries_label_2) not in correlated_vars
+                        and (timeseries_label_2, timeseries_label_1) not in correlated_vars
+                    ):
+                        correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value)
 
         return correlated_vars
 
@@ -163,27 +165,27 @@ class CovariateAnalyser:
         correlated_vars = {}
         for timeseries_label_1 in self.timeseries_container.timeseries:
             for timeseries_label_2 in self.timeseries_container.timeseries:
-                # First we allign the timeseries in time using the cross-correlation.
-                _, lag = self._align_timeseries(
-                    timeseries_label_1,
-                    timeseries_label_2,
-                    max_lag=max_lag,
-                )
-                # We now calculate the corr_coef and p_value using the alligned time series
-                corr_coef, p_value = self.correlation_coefficient(
-                    timeseries_label_1=timeseries_label_1,
-                    timeseries_label_2=timeseries_label_2,
-                    altered=True,
-                )
-                # We only store a correlated variable if it is not already in the dict.
-                if (
-                    np.abs(corr_coef) >= corr_thresh
-                    and timeseries_label_1 != timeseries_label_2
-                    and p_value <= self.alpha
-                    and (timeseries_label_1, timeseries_label_2) not in correlated_vars
-                    and (timeseries_label_2, timeseries_label_1) not in correlated_vars
-                ):
-                    correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value, lag)
+                if timeseries_label_1 != timeseries_label_2:
+                    # First we allign the timeseries in time using the cross-correlation.
+                    _, lag = self._align_timeseries(
+                        timeseries_label_1,
+                        timeseries_label_2,
+                        max_lag=max_lag,
+                    )
+                    # We now calculate the corr_coef and p_value using the alligned time series
+                    corr_coef, p_value = self.correlation_coefficient(
+                        timeseries_label_1=timeseries_label_1,
+                        timeseries_label_2=timeseries_label_2,
+                        altered=True,
+                    )
+                    # We only store a correlated variable if it is not already in the dict.
+                    if (
+                        np.abs(corr_coef) >= corr_thresh
+                        and p_value <= self.alpha
+                        and (timeseries_label_1, timeseries_label_2) not in correlated_vars
+                        and (timeseries_label_2, timeseries_label_1) not in correlated_vars
+                    ):
+                        correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value, lag)
 
         return correlated_vars
 
