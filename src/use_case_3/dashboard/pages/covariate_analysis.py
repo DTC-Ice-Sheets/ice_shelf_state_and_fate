@@ -24,11 +24,9 @@ layout = [
                 [
                     html.Div(
                         [
-                            # html.H5("Parameters:", className="analysis_heading5"),
                             html.P(
                                 "This is the analysis module of the digital twin. You can use the tools provided to conduct detailed analyses on the Antarctic ice shelves of your choice using both earth observation, in-situ and reanalysis datasets. Select from the ice, ocean and climate datasets provided to discover significant variables and interactions between variables which could have contributed to the current state of the ice shelves.",
                                 className="analysis_intro",
-                                # style={"padding-top": "40px"},
                             ),
                             html.P(
                                 "If you prefer to conduct the analysis offline, you can select the datasets of interest and use the download function to retrieve them within the specified spatial and temporal extents.",
@@ -96,7 +94,6 @@ layout = [
                 [
                     html.Div(
                         [
-                            # html.H5("Dataset Selection:", className="analysis_heading5"),
                             # Container for the ice related variables
                             html.Div(
                                 [
@@ -315,6 +312,7 @@ layout = [
                 ],
                 width=3,
             ),
+            # Column for the results
             dbc.Col(
                 [
                     html.Div(

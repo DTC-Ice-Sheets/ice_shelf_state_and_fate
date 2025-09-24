@@ -36,9 +36,5 @@ def create_ice_shelf_map(
 
     ice_shelf_map = "data:image/png;base64," + image_string
     ice_shelf_map = html.Img(src=ice_shelf_map, style={"max-width": "100%", "max-height": "100%"})
-    # ice_shelf_map = html.Img(
-    #     src=ice_shelf_map, style={"max-width": "80%", "max-height": "100%", "margin": "0", "padding": "0"}
-    # )
-    # ice_shelf_map = html.Img(src=ice_shelf_map, style={"max-width": "25%", "max-height": "25%"})
 
     return ice_shelf_map
