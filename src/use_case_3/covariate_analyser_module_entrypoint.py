@@ -53,7 +53,7 @@ def main() -> None:
     timeseries = []
     ds = xr.open_zarr(model.input_path)
     for name, attr in ds.attrs["timeseries"].items():
-        label, measurement_name = name.split("_", 1)
+        label, measurement_name = name.split(".", 1)
         timeseries.append(
             Timeseries(
                 label=label,
@@ -79,7 +79,7 @@ def main() -> None:
     )
     analyser = CovariateAnalyser(preprocessor)
 
-    fig, _ = analyser.plot_timeseries()
+    fig, _ = analyser.jointplot_grid()
 
     fig.savefig(model.output_path)
 

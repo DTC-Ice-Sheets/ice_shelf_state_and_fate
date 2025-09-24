@@ -26,7 +26,7 @@ def create_dataset():
             "measurement_uncertainties": (("time", "y", "x"), np.random.rand(nt, ny, nx) * 0.1),
         },
         coords={
-            "time": xr.date_range("2000-01-01", periods=nt),
+            "time": xr.date_range("2000-01-01", periods=nt, freq="1M"),
             "y": np.linspace(75, 77, ny),
             "x": np.linspace(-30, -20, nx),
         },

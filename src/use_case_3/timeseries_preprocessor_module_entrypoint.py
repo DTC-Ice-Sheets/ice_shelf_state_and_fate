@@ -88,7 +88,7 @@ def main() -> None:
     data_vars = {}
     timeseries_attrs = {}
     for label, ts in preprocessor.timeseries.items():
-        name = f"{label}_{ts.measurement_name}"
+        name = f"{label}.{ts.measurement_name}"
         data_vars[name] = (["time"], ts.measurements.values)
         timeseries_attrs[name] = {
             "timeseries_type": ts.timeseries_type,
@@ -96,7 +96,7 @@ def main() -> None:
         }
 
         if ts.measurement_uncertainties is not None:
-            uncertainty_name = f"{label}_{xarrays[label].attrs['measurement_uncertainty_name']}"
+            uncertainty_name = f"{label}.{xarrays[label].attrs['measurement_uncertainty_name']}"
             data_vars[uncertainty_name] = (["time"], ts.measurement_uncertainties.values)
             timeseries_attrs[name]["uncertainty_name"] = uncertainty_name
 

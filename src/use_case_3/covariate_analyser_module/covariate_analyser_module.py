@@ -749,7 +749,7 @@ class CovariateAnalyser:
 
             # Add the correct axis labels
             if axis_labels is None:
-                axis_label = f"{timeseries_row.measurement_name.replace('_', ' ').title()}"
+                axis_label = f"{timeseries_row.label} {timeseries_row.measurement_name}".replace("_", " ").title()
             else:
                 axis_label = axis_labels[row]
             label = textwrap.fill(
