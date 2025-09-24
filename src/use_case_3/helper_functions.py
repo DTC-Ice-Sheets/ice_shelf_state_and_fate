@@ -3,6 +3,8 @@
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
+import xarray as xr
 from shapely.geometry import MultiPolygon, Polygon
 
 
@@ -94,3 +96,48 @@ def ocean_polygon(
     ice_shelf_polygon_epsg4326 = ice_shelf_polygon.to_crs("epsg:4326")
 
     return ice_shelf_polygon_epsg4326["geometry"].values[0], ice_shelf_polygon["geometry"].values[0]
+
+
+def find_isotherm(data: xr.Dataset, var_name: str = "thetao", isotherm_temp: float = 0.8) -> np.ndarray:
+    """
+    Find the depth of the ocean isotherm.
+
+    This function finds the depth of a specified isotherm. Specifically it finds the first ocean depth where the
+    temperature is less than the isotherm specified. If the temperature never gets less than the isotherm it is recorded
+    as not a value. It makes some assumptions about the data. Firstly it assumes that the data is 4d and of the form
+    [time, depth, y, x]. Secondly it assumes that the depth is montonically increasing and that the temperature is
+    montonically decreasing. These assumptions need to be verified.
+
+    Parameters
+    ----------
+    data : xr.Dataset
+        An input dataset.
+    var_name : str, optional
+        The temperature variable name, by default "thetao"
+    isotherm_temp : float, optional
+        The specified isotherm temperature, by default 0.8
+
+    Returns
+    -------
+    np.ndarray
+        A 3D numpy array with coordinates [time, y, x].
+    """
+    temp_data = data[var_name].values
+    isotherm = np.zeros((temp_data.shape[0], temp_data.shape[2], temp_data.shape[3]))
+    isotherm[:] = np.nan
+
+    depth_coords = data["depth"].values
+
+    # If there is a way to vectorise this then this would be good ...
+    for t in range(temp_data.shape[0]):
+        for y in range(temp_data.shape[2]):
+            for x in range(temp_data.shape[3]):
+                point_temp_data = temp_data[t, :, y, x]
+                if np.any(~np.isnan(point_temp_data)):
+                    idx = np.searchsorted(-point_temp_data, -isotherm_temp)
+                    if idx >= 0 and idx < point_temp_data.shape[0]:
+                        isotherm[t, y, x] = depth_coords[idx]
+                    else:
+                        isotherm[t, y, x] = np.nan
+
+    return isotherm
