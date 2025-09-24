@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import geopandas as gpd
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Polygon, make_valid
 
 
 def get_plot_base_path() -> Path:
@@ -65,7 +65,10 @@ def iceshelf_polygon(
 
 
 def ocean_polygon(
-    ice_shelf_polygons: gpd.GeoDataFrame, ice_shelf_name: str, distance: int | float = 10000
+    ice_shelf_polygons: gpd.GeoDataFrame,
+    ice_sheet_polygons: gpd.GeoDataFrame,
+    ice_shelf_name: str,
+    distance: int | float = 100000,
 ) -> tuple[Polygon | MultiPolygon, Polygon | MultiPolygon]:
     """
     Extract the ice shelf ocean multipolygon for an ice shelf in both EPSG4326(lat/lon) and the input projection. To do
@@ -74,7 +77,10 @@ def ocean_polygon(
     Parameters
     ----------
     ice_shelf_polygons : gpd.GeoDataFrame
-        Input GeoDataFrame with atleas the column 'Name' for the ice shelf name and 'geometry' with the polygon. This
+        Input GeoDataFrame with atleast the column 'Name' for the ice shelf name and 'geometry' with the polygon. This
+        GeoDataFrame must have a valid CRS.
+    ice_sheet_polygons : gpd.GeoDataFrame
+        Input GeoDataFrame with atleast the column 'Name' and 'geometry' with the polygon. This
         GeoDataFrame must have a valid CRS.
     ice_shelf_name : str
         The ice shelf name
@@ -88,9 +94,24 @@ def ocean_polygon(
         projection.
     """  # noqa: D205
     ice_shelf_polygon = ice_shelf_polygons[ice_shelf_polygons["Name"] == ice_shelf_name].copy()
-    ice_shelf_polygon["geometry"] = (
+    ocean_polygon = ice_shelf_polygon.copy().reset_index(drop=True)
+    ocean_polygon_shap = make_valid(
         ice_shelf_polygon["geometry"].values[0].buffer(distance=distance, join_style="bevel")
     )
-    ice_shelf_polygon_epsg4326 = ice_shelf_polygon.to_crs("epsg:4326")
 
-    return ice_shelf_polygon_epsg4326["geometry"].values[0], ice_shelf_polygon["geometry"].values[0]
+    # first iterate through the ice shelves and check if they intersect with the ocean polygon, if the do then remove
+    # the intesection.
+    for ice_shelf_polygon in ice_shelf_polygons["geometry"]:
+        if ocean_polygon_shap.intersects(make_valid(ice_shelf_polygon)):
+            ocean_polygon_shap = ocean_polygon_shap.difference(make_valid(ice_shelf_polygon))
+
+    # Next iterate through the ice shelves and check if they intersect with the ocean polygon, if the do then remove
+    # the intesection.
+    for ice_sheet_polygon in ice_sheet_polygons["geometry"]:
+        if ocean_polygon_shap.intersects(ice_sheet_polygon):
+            ocean_polygon_shap = ocean_polygon_shap.difference(ice_sheet_polygon)
+
+    ocean_polygon.loc[0, "geometry"] = ocean_polygon_shap
+    ocean_polygon_epsg4326 = ocean_polygon.to_crs("epsg:4326")
+
+    return ocean_polygon_epsg4326["geometry"].values[0], ocean_polygon["geometry"].values[0]
