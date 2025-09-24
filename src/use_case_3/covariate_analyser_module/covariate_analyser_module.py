@@ -122,17 +122,16 @@ class CovariateAnalyser:
         correlated_vars = {}
         for timeseries_label_1 in self.timeseries_container.timeseries:
             for timeseries_label_2 in self.timeseries_container.timeseries:
-                if timeseries_label_1 != timeseries_label_2:
+                if (
+                    timeseries_label_1 != timeseries_label_2
+                    and (timeseries_label_1, timeseries_label_2) not in correlated_vars
+                    and (timeseries_label_2, timeseries_label_1) not in correlated_vars
+                ):
                     corr_coef, p_value = self.correlation_coefficient(
                         timeseries_label_1, timeseries_label_2, altered=False
                     )
                     # We only store a correlated variable if it is not already in the dict.
-                    if (
-                        np.abs(corr_coef) >= corr_thresh
-                        and p_value <= self.alpha
-                        and (timeseries_label_1, timeseries_label_2) not in correlated_vars
-                        and (timeseries_label_2, timeseries_label_1) not in correlated_vars
-                    ):
+                    if np.abs(corr_coef) >= corr_thresh and p_value <= self.alpha:
                         correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value)
 
         return correlated_vars
@@ -165,7 +164,11 @@ class CovariateAnalyser:
         correlated_vars = {}
         for timeseries_label_1 in self.timeseries_container.timeseries:
             for timeseries_label_2 in self.timeseries_container.timeseries:
-                if timeseries_label_1 != timeseries_label_2:
+                if (
+                    timeseries_label_1 != timeseries_label_2
+                    and (timeseries_label_1, timeseries_label_2) not in correlated_vars
+                    and (timeseries_label_2, timeseries_label_1) not in correlated_vars
+                ):
                     # First we allign the timeseries in time using the cross-correlation.
                     _, lag = self._align_timeseries(
                         timeseries_label_1,
@@ -179,12 +182,7 @@ class CovariateAnalyser:
                         altered=True,
                     )
                     # We only store a correlated variable if it is not already in the dict.
-                    if (
-                        np.abs(corr_coef) >= corr_thresh
-                        and p_value <= self.alpha
-                        and (timeseries_label_1, timeseries_label_2) not in correlated_vars
-                        and (timeseries_label_2, timeseries_label_1) not in correlated_vars
-                    ):
+                    if np.abs(corr_coef) >= corr_thresh and p_value <= self.alpha:
                         correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value, lag)
 
         return correlated_vars
@@ -210,7 +208,10 @@ class CovariateAnalyser:
         causal_vars = {}
         for timeseries_label_1 in self.timeseries_container.timeseries:
             for timeseries_label_2 in self.timeseries_container.timeseries:
-                if timeseries_label_1 != timeseries_label_2:
+                if (
+                    timeseries_label_1 != timeseries_label_2
+                    and (timeseries_label_1, timeseries_label_2) not in causal_vars
+                ):
                     # Calculate the f_score and p_value using the Granger Causality test
                     f_score, p_value = self._granger_causality_test(
                         timeseries_label_1=timeseries_label_1,
@@ -220,7 +221,7 @@ class CovariateAnalyser:
                     )
                     # We only store a correlated variable if it is not already in the dict. Note causality is
                     # directional!
-                    if p_value <= self.alpha and (timeseries_label_1, timeseries_label_2) not in causal_vars:
+                    if p_value <= self.alpha:
                         causal_vars[timeseries_label_1, timeseries_label_2] = (f_score, p_value)
 
         return causal_vars
