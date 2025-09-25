@@ -28,7 +28,7 @@ jobs:
   lint_and_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         id: setup-python
@@ -120,7 +120,7 @@ jobs:
         run: |
           echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_production" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: '2'
 

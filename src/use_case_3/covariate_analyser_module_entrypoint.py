@@ -1,7 +1,6 @@
 """Entrypoint for the covariate analyser module."""
 
 import argparse
-import logging
 from types import UnionType
 from typing import get_args
 
@@ -17,8 +16,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
     TimeseriesRegion,
     TimeseriesType,
 )
-
-logger = logging.getLogger(__name__)
 
 
 def main() -> None:

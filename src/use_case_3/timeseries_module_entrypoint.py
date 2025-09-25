@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import logging
 from types import UnionType
 from typing import get_args
 
@@ -11,8 +10,6 @@ from shapely.geometry import MultiPolygon, Polygon
 
 from use_case_3.schemas import TimeseriesModuleEntryPointSchema
 from use_case_3.timeseries_module.timeseries import Timeseries
-
-logger = logging.getLogger(__name__)
 
 
 def main() -> None:

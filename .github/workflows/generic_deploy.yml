@@ -19,7 +19,7 @@ jobs:
       run:
         shell: bash -eo pipefail {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: specify
         run: |
           echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
@@ -46,24 +46,12 @@ jobs:
         run: |
           echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_production" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: '2'
 
       - name: Configure runtime environment variable secrets
-        run: |
-          cat <<EOT > .env
-          SPECKLIA_TOKEN="${{ secrets.SPECKLIA_TOKEN }}"
-          EDH_TOKEN="${{ secrets.EDH_TOKEN }}"
-          EODS_USERNAME="${{ secrets.EODS_USERNAME }}"
-          EODS_PASSWORD="${{ secrets.EODS_PASSWORD }}"
-          AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
-          AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          AWS_DEFAULT_REGION="${{ secrets.AWS_DEFAULT_REGION }}"
-          AWS_S3_ENDPOINT="${{ secrets.AWS_S3_ENDPOINT }}"
-          EOT
-
-          echo "${{ secrets.GH_ADMIN_PAT }}" > .gh_token.txt
+        run: echo "${{ secrets.GH_ADMIN_PAT }}" > .gh_token.txt
 
       - name: Build and push this package's production image
       # We use Docker BuildKit to ensure the GitHub token remains a secret and is not shown in plaintext in build logs
@@ -97,7 +85,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Install dependencies not included in image
-        # Note we need to install git first or actions/checkout@v3 will use GitHub's REST API instead.
+        # Note we need to install git first or actions/checkout@v5 will use GitHub's REST API instead.
         # TODO: swap this out for a better base container.
         run: |
           apt-get update
@@ -109,7 +97,7 @@ jobs:
           app-id: ${{ secrets.VERSION_BUMPER_APPID }}
           private-key: ${{ secrets.VERSION_BUMPER_SECRET }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
@@ -246,4 +234,3 @@ jobs:
           else
               echo "Branch cleanup completed."
           fi
-  

@@ -34,7 +34,7 @@ jobs:
       run:
         shell: bash -leo pipefail {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - id: specify
         run: |
@@ -56,7 +56,7 @@ jobs:
         shell: bash -eo pipefail {0}
         working-directory: /app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Copy checked out repo to /app
         # Poetry determines whether to create a new venv or use an existing one based on the location of the package

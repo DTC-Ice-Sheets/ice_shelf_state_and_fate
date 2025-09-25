@@ -22,7 +22,7 @@ jobs:
         # are used to check whether to build the container or not.
         shell: sh -l {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: '2'
 
