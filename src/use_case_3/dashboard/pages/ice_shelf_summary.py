@@ -8,7 +8,7 @@ from use_case_3.dashboard.dashboard_layout import layout_navbar
 dash.register_page(__name__)
 
 # Import data ###
-ice_shelf_inital = "Thwaites"
+ice_shelf_inital = "thwaites"
 ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
 summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital

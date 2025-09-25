@@ -101,6 +101,8 @@ class Timeseries:
         if measurement_uncertainty_name is not None:
             data_uncertainties = data[measurement_uncertainty_name].to_numpy()
             data_uncertainties[data_uncertainties < -200] = np.nan
+        else:
+            data_uncertainties = None
         dimension_data = {key: data[key] for key in data.coords}
 
         dimension_names = list(data[measurement_name].dims)

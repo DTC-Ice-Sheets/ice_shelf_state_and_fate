@@ -1,6 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, Input, Output, State, callback, html, dcc
+from dash import dcc, html
 
 from use_case_3.dashboard import query_data
 from use_case_3.dashboard.dashboard_layout import layout_navbar
@@ -8,7 +8,7 @@ from use_case_3.dashboard.dashboard_layout import layout_navbar
 dash.register_page(__name__)
 
 # Import data ###
-ice_shelf_inital = "Thwaites"
+ice_shelf_inital = "thwaites"
 ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
 summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
@@ -20,6 +20,7 @@ layout = [
     navbar,
     dbc.Row(
         [
+            # Column for the analysis parameters
             dbc.Col(
                 [
                     html.Div(
@@ -90,6 +91,7 @@ layout = [
                 ],
                 width=4,
             ),
+            # Column for the datasets
             dbc.Col(
                 [
                     html.Div(
@@ -231,6 +233,58 @@ layout = [
                                                     )
                                                 ]
                                             ),
+                                            dbc.Switch(
+                                                id="thwaites-paper-moorings",
+                                                label="Thwaites Paper Moorings:",
+                                                value=True,
+                                            ),
+                                            html.Div(
+                                                [
+                                                    html.P(
+                                                        "Processed time series from the Thwaites paper for testing",
+                                                        className="analysis-data-desc",
+                                                    )
+                                                ]
+                                            ),
+                                            dbc.Switch(
+                                                id="thwaites-paper-basal-melt-anoms-pi",
+                                                label="Thwaites Paper Basala Melt Anoms - Pine Island:",
+                                                value=True,
+                                            ),
+                                            html.Div(
+                                                [
+                                                    html.P(
+                                                        "Processed time series from the Thwaites paper for testing",
+                                                        className="analysis-data-desc",
+                                                    )
+                                                ]
+                                            ),
+                                            dbc.Switch(
+                                                id="thwaites-paper-basal-melt-anoms-thwaites",
+                                                label="Thwaites Paper Basala Melt Anoms - Thwaites:",
+                                                value=True,
+                                            ),
+                                            html.Div(
+                                                [
+                                                    html.P(
+                                                        "Processed time series from the Thwaites paper for testing",
+                                                        className="analysis-data-desc",
+                                                    )
+                                                ]
+                                            ),
+                                            dbc.Switch(
+                                                id="thwaites-paper-subglacial-lake-disch",
+                                                label="Thwaites Paper Subglacial Lake Discharge:",
+                                                value=True,
+                                            ),
+                                            html.Div(
+                                                [
+                                                    html.P(
+                                                        "Processed time series from the Thwaites paper for testing",
+                                                        className="analysis-data-desc",
+                                                    )
+                                                ]
+                                            ),
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -332,6 +386,10 @@ layout = [
                             html.P(
                                 "A joint plot of the main variables included in the analyis can be seen below to explore these relationshipts further:",
                                 className="analysis_results",
+                            ),
+                            html.Div(
+                                id="results-plot",
+                                style={"text-align": "center"},
                             ),
                             html.Img(src="assets/analysis_output.png", className="analysis_output"),
                         ],

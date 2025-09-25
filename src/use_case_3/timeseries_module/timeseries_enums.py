@@ -41,6 +41,7 @@ class UncertaintyType(Enum):
     MAX = "max"
     MIN = "min"
     PVALUE = "p_value"
+    NONE = None
 
     def __init__(self, uncertainty_type: str) -> None:
         self.uncertainty_types = uncertainty_type

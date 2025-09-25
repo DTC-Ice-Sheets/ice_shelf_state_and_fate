@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import dash
 import dash_bootstrap_components as dbc
 import mapping
@@ -7,16 +9,19 @@ import process_data
 import query_data
 from dash import Dash, Input, Output, State, callback, html
 
-ice_shelf_inital = "Thwaites"
+ice_shelf_inital = "thwaites"
 
 # Import data ###
-ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
+# ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
+# ocean_polygons_epsg4326, ocean_polygons_proj = query_data.query_all_ocean_data()
+ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj = (
+    query_data.query_polygons()
+)
+ice_sheet_polygons_epsg4326, ice_sheet_polygons_proj = query_data.query_ice_sheet_data()
 summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
 
-# Create the initial map ###
-ice_shelf_map = mapping.create_ice_shelf_map(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital)
 
 # Build Dash app ###
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], use_pages=True)
@@ -30,7 +35,12 @@ app.layout = html.Div(
 
 @callback(Output("ice_shelf_map", "children"), Input("ice_shelf_selection", "value"))
 def update_graph(value):
-    ice_shelf_map = mapping.create_ice_shelf_map(ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=value)
+    ice_shelf_map = mapping.create_ice_shelf_map(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ocean_polygons=ocean_polygons_proj,
+        ice_sheet_polygons=ice_sheet_polygons_proj,
+        ice_shelf=value,
+    )
 
     return ice_shelf_map
 
@@ -448,11 +458,41 @@ def plot_gauge_indicator5(ice_shelf, variable):
 
 
 @callback(
-
+    Output("results-plot", "children"),
+    Input("run_analysis-button", "n_clicks"),
+    State("ice_shelf_selection", "value"),
+    State("summary_year_selector", "value"),
+    State("select-analysis-type", "value"),
+    State("thwaites-paper-moorings", "value"),
+    State("thwaites-paper-basal-melt-anoms-pi", "value"),
+    State("thwaites-paper-basal-melt-anoms-thwaites", "value"),
+    State("thwaites-paper-subglacial-lake-disch", "value"),
 )
-def conduct_covariate_analysis():
-    pass
+def conduct_covariate_analysis(
+    n,
+    ice_shelf,
+    year_range,
+    analysis_type,
+    thwaites_paper_moorings,
+    thwaites_paper_bm_anoms_pi,
+    thwaites_paper_bm_anoms_thw,
+    thwaites_paper_subglacial_lake_disch,
+):
+    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"]
+    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"]
+
+    timeseries = []
+    if thwaites_paper_moorings:
+        timeseries.append(
+            query_data.query_local_data(
+                dataset_id="MOORINGS_1D",
+                variable="",
+                extent_polygon_epsg4326=ice_shelf_extent.values[0],
+                start_time=datetime(year_range[0], 1, 1),
+                end_time=datetime(year_range[1], 1, 1),
+            )
+        )
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
