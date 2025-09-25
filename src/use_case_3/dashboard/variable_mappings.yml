@@ -48,43 +48,65 @@ elevation_change_anomolies_teis_1d:
     region: "ice_shelf"
 
 subglacial_lakes_volume_change_1d:
-  volume_change:
-    units: "km3"
-    timeseries_type: "derivative"
-    measurement_uncertainties: null
-    region: "ice_shelf"
+  description: "Processed time series from the Thwaites paper for testing."
+  label: "Thwaites Paper Subglacial Lake Volume Change:"
+  variables:
+    volume_change:
+      units: "km3"
+      timeseries_type: "derivative"
+      measurement_uncertainties: null
+      measurement_uncertainty_type: null
+      region: "ice_shelf"
+      label: "Subglacial Lake Volume Change"
+
 
 moorings_1d:
-  depth_PIG_N_and_S_combined:
-    units: "m"
-    timeseries_type: "derivative"
-    measurement_uncertainties: null
-    measurement_uncertainty_type: null
-    region: "ice_shelf"
+  description: "Processed time series from the Thwaites paper for testing."
+  label: "Thwaites Paper Moorings:"
+  variables:
+    depth_PIG_N_and_S_combined:
+      units: "m"
+      timeseries_type: "derivative"
+      measurement_uncertainties: null
+      measurement_uncertainty_type: null
+      region: "ice_shelf"
+      label: "0.8C isotherm depth"
 
 basal_melt_anomalies_pine_island_1d:
-  basal_melt_anomalies:
-    units: "m yr-1"
-    timeseries_type: "derivative"
-    measurement_uncertainties: "basal_melt_anomalies_uncertainties"
-    measurement_uncertainty_type: std
-    region: "ice_shelf"
+  description: "Processed time series from the Thwaites paper for testing."
+  label: "Thwaites Paper Basal Melt Anoms - Pine Island:"
+  variables:
+    basal_melt_anomalies:
+        units: "m yr-1"
+        timeseries_type: "derivative"
+        measurement_uncertainties: "basal_melt_anomalies_uncertainties"
+        measurement_uncertainty_type: std
+        region: "ice_shelf"
+        label: "Basal melt anomalies - Pine Island"
 
 subglacial_lake_discharge_1d:
-  lake_discharge:
-    units: "m3 s-1"
-    timeseries_type: "derivative"
-    measurement_uncertainties: null
-    measurement_uncertainty_type: null
-    region: "ice_shelf"
+  description: "Processed time series from the Thwaites paper for testing."
+  label: "Thwaites Paper Subglacial Lake Discharge::"
+  variables:
+    lake_discharge:
+      units: "m3 s-1"
+      timeseries_type: "derivative"
+      measurement_uncertainties: null
+      measurement_uncertainty_type: null
+      region: "ice_shelf"
+      label: "Subglacial lake discharge"
 
 basal_melt_anomalies_thwaites_1d:
-  basal_melt_anomalies:
-    units: "m yr-1"
-    timeseries_type: "derivative"
-    measurement_uncertainties: "basal_melt_anomalies_uncertainties"
-    measurement_uncertainty_type: std
-    region: "ice_shelf"
+  description: "Processed time series from the Thwaites paper for testing."
+  label: "Thwaites Paper Basal Melt Anoms - Thwaites:"
+  variables:
+    basal_melt_anomalies:
+      units: "m yr-1"
+      timeseries_type: "derivative"
+      measurement_uncertainties: "basal_melt_anomalies_uncertainties"
+      measurement_uncertainty_type: std
+      region: "ice_shelf"
+      label: "Basal melt anomalies - Thwaites"
 
 timeseries_summary:
   cumulative_discharge_change:

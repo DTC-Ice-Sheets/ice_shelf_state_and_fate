@@ -1,6 +1,11 @@
 """Layout functions for the dashboard"""
 
 import dash_bootstrap_components as dbc
+from dash import html
+import yaml
+
+with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashboard/variable_mappings.yml") as f:
+    config_dict = yaml.safe_load(f)
 
 
 def define_navbar_pages():
@@ -35,3 +40,40 @@ def layout_navbar(page_title):
         sticky="sticky",
         fixed="sticky",
     )
+
+
+def create_switch_button_group(dataset_id):
+    vars = list(config_dict[dataset_id.lower()]["variables"].keys())
+
+    elements = [
+        dbc.Switch(
+            id=f"ds_{dataset_id.lower()}",
+            label=config_dict[dataset_id.lower()]["label"],
+            value=False,
+        ),
+        html.Div(
+            [
+                html.P(
+                    config_dict[dataset_id.lower()]["description"],
+                    className="analysis-data-desc",
+                )
+            ]
+        ),
+    ]
+
+    elements_vars = []
+    for var in vars:
+        elements_vars.append(
+            dbc.Checkbox(
+                id=dataset_id.lower() + "-" + var,
+                label=config_dict[dataset_id.lower()]["variables"][var]["label"],
+                value=False,
+            ),
+        )
+
+    if len(elements_vars) > 0:
+        elements.append(
+            html.Div(elements_vars, className="analysis-vars-switches", id=f"switch-group-vars-{dataset_id.lower()}")
+        )
+
+    return html.Div(elements, id=f"switch-group-{dataset_id.lower()}")

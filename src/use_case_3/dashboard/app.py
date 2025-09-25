@@ -7,7 +7,22 @@ import numpy as np
 import plotting
 import process_data
 import query_data
+import yaml
 from dash import Dash, Input, Output, State, callback, html
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
+import base64
+from io import BytesIO
+from pathlib import Path
+
+from use_case_3.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+    JointPlotAnalysisType,
+)
+
+with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashboard/variable_mappings.yml") as f:
+    config_dict = yaml.safe_load(f)
 
 ice_shelf_inital = "thwaites"
 
@@ -31,6 +46,46 @@ app.layout = html.Div(
         dash.page_container,
     ]
 )
+
+
+@callback(
+    Output(f"switch-group-vars-{'moorings_1d'.lower()}", "style"),
+    Input(f"ds_{'moorings_1d'.lower()}", "value"),
+)
+def thwaites_moorings_1d_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'subglacial_lakes_volume_change_1d'.lower()}", "style"),
+    Input(f"ds_{'subglacial_lakes_volume_change_1d'.lower()}", "value"),
+)
+def thwaites_subglacial_lake_vol_change_1d_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'basal_melt_anomalies_pine_island_1d'.lower()}", "style"),
+    Input(f"ds_{'basal_melt_anomalies_pine_island_1d'.lower()}", "value"),
+)
+def thwaites_bm_anoms_pi_1d_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'basal_melt_anomalies_thwaites_1d'.lower()}", "style"),
+    Input(f"ds_{'basal_melt_anomalies_thwaites_1d'.lower()}", "value"),
+)
+def thwaites_bm_anoms_thw_1d_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
 
 
 @callback(Output("ice_shelf_map", "children"), Input("ice_shelf_selection", "value"))
@@ -72,14 +127,14 @@ def update_ice_shelf_summary(ice_shelf, year_range):
     return html.Div(
         [
             html.P(" "),
-            html.H5(f"{ice_shelf} Ice Shelf Summary:"),
+            html.H5(f"{" ".join(ice_shelf.split("_")).title()} Ice Shelf Summary:"),
             html.P(
-                f"Overall the {ice_shelf} Ice Shelf has lost a total mass of approximately {int(np.round(np.abs(total_mass_loss)))} Gt over the past {year_diff} years. There are a number of key contributing factors to this ice loss:",
+                f"Overall the {" ".join(ice_shelf.split("_")).title()} Ice Shelf has lost a total mass of approximately {int(np.round(np.abs(total_mass_loss)))} Gt over the specified {year_diff} year period. There are a number of key contributing factors to this ice loss:",
                 style={"padding-right": "100px", "padding-top": "10px"},
             ),
             html.Ul(neg_list),
             html.P(
-                f"Other important sources of ice loss from {ice_shelf} ice shelf in the {year_diff} year period are:",
+                f"Other important sources of ice loss from {" ".join(ice_shelf.split("_")).title()} ice shelf in the {year_diff} year period are:",
                 style={"padding-right": "100px", "padding-top": "0px"},
             ),
             html.Ul(
@@ -99,7 +154,7 @@ def update_ice_shelf_summary(ice_shelf, year_range):
                 "Timeseries Analysis:",
                 style={"padding-right": "100px", "padding-top": "10px"},
             ),
-            html.P("Use the toggle switches below to investigate temporal trends in key Ice shelf parameters."),
+            html.P("Use the toggle switches below to investigate temporal trends in key ice shelf parameters."),
         ]
     )
 
@@ -463,36 +518,71 @@ def plot_gauge_indicator5(ice_shelf, variable):
     State("ice_shelf_selection", "value"),
     State("summary_year_selector", "value"),
     State("select-analysis-type", "value"),
-    State("thwaites-paper-moorings", "value"),
-    State("thwaites-paper-basal-melt-anoms-pi", "value"),
-    State("thwaites-paper-basal-melt-anoms-thwaites", "value"),
-    State("thwaites-paper-subglacial-lake-disch", "value"),
+    State("moorings_1d-depth_PIG_N_and_S_combined", "value"),
+    State("basal_melt_anomalies_pine_island_1d-basal_melt_anomalies", "value"),
+    State("subglacial_lakes_volume_change_1d-volume_change", "value"),
+    State("basal_melt_anomalies_thwaites_1d-basal_melt_anomalies", "value"),
 )
 def conduct_covariate_analysis(
     n,
     ice_shelf,
     year_range,
     analysis_type,
-    thwaites_paper_moorings,
-    thwaites_paper_bm_anoms_pi,
-    thwaites_paper_bm_anoms_thw,
-    thwaites_paper_subglacial_lake_disch,
+    var_1,
+    var_2,
+    var_3,
+    var_4,
 ):
     ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"]
     ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"]
+    climate_extent = None
 
-    timeseries = []
-    if thwaites_paper_moorings:
-        timeseries.append(
-            query_data.query_local_data(
-                dataset_id="MOORINGS_1D",
-                variable="",
-                extent_polygon_epsg4326=ice_shelf_extent.values[0],
-                start_time=datetime(year_range[0], 1, 1),
-                end_time=datetime(year_range[1], 1, 1),
-            )
+    polygons = {"ice_shelf": ice_shelf_extent, "ocean": ocean_extent, "climate": climate_extent}
+
+    variables = [
+        "moorings_1d-depth_PIG_N_and_S_combined",
+        "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
+        "subglacial_lakes_volume_change_1d-volume_change",
+        "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
+    ]
+
+    timeseries = query_data.process_all_data(variables, [var_1, var_2, var_3, var_4], polygons, year_range)
+
+    axis_labels = [
+        "Thermocline Depth",
+        "Subglacial Lake Volume Change",
+        "Pine Island Basal Melt Anomolies",
+        "Thwaites Basal Melt Anomolies",
+    ]
+
+    if len(timeseries) > 0:
+        timeseries_container = TimeSeriesPreprocessor(
+            timeseries=timeseries,
+            time_period=AggregationPeriod.MONTH,
+            aggregation=AggregationStrategy.MEAN,
         )
+
+        if analysis_type == "1":
+            analysis_type_enum = JointPlotAnalysisType.CORR
+        elif analysis_type == "2":
+            analysis_type_enum = JointPlotAnalysisType.CROSS_CORR
+        elif analysis_type == "3":
+            analysis_type_enum = JointPlotAnalysisType.CAUSAL
+        covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+        fig, axes = covariate_analyser.covariate_analysis(
+            max_lag=3, axis_labels=axis_labels, analysis_type=analysis_type_enum
+        )
+        buffer = BytesIO()
+        fig.savefig(buffer, format="png")
+        buffer.seek(0)
+        image_string = base64.b64encode(buffer.getvalue()).decode()
+
+        results_plot = "data:image/png;base64," + image_string
+        results_plot = html.Img(src=results_plot, style={"max-width": "100%", "max-height": "100%"})
+
+        return results_plot
+    return None
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)

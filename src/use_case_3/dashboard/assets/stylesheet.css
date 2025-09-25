@@ -53,7 +53,7 @@
 
 .analysis-data-desc {
     padding-right: 30px;
-    padding-bottom: 5px;
+    /* padding-bottom: 5px; */
     text-align: justify;
     text-justify: inter-word;
 }
@@ -63,6 +63,11 @@
     margin-left: auto;
     margin-right: auto;
     width: 85%;
+}
+
+.analysis-vars-switches {
+    padding-left: 35px;
+    padding-bottom: 10px;
 }
 
 #analysis_parameters {
