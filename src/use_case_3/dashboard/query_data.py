@@ -13,23 +13,20 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-from use_case_3.timeseries_module.timeseries import Timeseries
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
-from use_case_3.timeseries_module.timeseries_enums import (
-    AggregationPeriod,
-    AggregationStrategy,
-    NormalisationType,
-    TimeseriesRegion,
-    TimeseriesType,
-    UncertaintyType,
-)
-
 import yaml
 from data_download_module.main import download_data
 from data_download_module.schemas import DataDownloadRequest
 
 import use_case_3.helper_functions as hf
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.timeseries_module.timeseries import Timeseries
+from use_case_3.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+    TimeseriesRegion,
+    TimeseriesType,
+    UncertaintyType,
+)
 
 OUTPUT_DIRECTORY = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
 
@@ -51,6 +48,62 @@ def query_ice_shelf_wide_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     return ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj
 
 
+def query_all_ocean_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    local_raw_request = DataDownloadRequest(dataset_id="OCEAN_MASKS", raw_download=True)
+
+    downloaded_parquet_data_path = download_data(
+        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
+    )
+
+    ocean_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
+    ocean_polygons_proj = ocean_polygons_proj.sort_values(["Name"])
+    ocean_polygons_epsg4326 = ocean_polygons_proj.to_crs("EPSG:4326")
+
+    return ocean_polygons_epsg4326, ocean_polygons_proj
+
+
+def query_polygons() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    local_raw_request = DataDownloadRequest(dataset_id="POLYGONS", raw_download=True)
+
+    downloaded_parquet_data_path = download_data(
+        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
+    )
+
+    polygons_epsg4326 = gpd.read_parquet(downloaded_parquet_data_path)
+    polygons_epsg4326 = polygons_epsg4326.sort_values(["Name"])
+    ice_shelf_polygons_epsg4326 = (
+        polygons_epsg4326.copy()
+        .drop(["geometry_ocean"], axis=1)
+        .rename({"geometry_ice_shelf": "geometry"}, axis=1)
+        .set_geometry("geometry")
+    )
+    ocean_polygons_epsg4326 = (
+        polygons_epsg4326.copy()
+        .drop(["geometry_ice_shelf"], axis=1)
+        .rename({"geometry_ocean": "geometry"}, axis=1)
+        .set_geometry("geometry")
+    )
+
+    ice_shelf_polygons_proj = ice_shelf_polygons_epsg4326.to_crs("EPSG:3031")
+    ocean_polygons_proj = ocean_polygons_epsg4326.to_crs("EPSG:3031")
+
+    return ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj
+
+
+def query_ice_sheet_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    local_raw_request = DataDownloadRequest(dataset_id="ICE_SHEET_MASKS", raw_download=True)
+
+    downloaded_parquet_data_path = download_data(
+        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
+    )
+
+    ice_sheet_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
+    ice_sheet_polygons_proj = ice_sheet_polygons_proj.sort_values(["Name"])
+    ice_sheet_polygons_epsg4326 = ice_sheet_polygons_proj.to_crs("EPSG:4326")
+
+    return ice_sheet_polygons_epsg4326, ice_sheet_polygons_proj
+
+
 def query_summary_data(
     ice_shelf_polygons: gpd.GeoDataFrame,
     ice_shelf: str = "Thwaites",
@@ -58,6 +111,7 @@ def query_summary_data(
 ) -> tuple[xr.Dataset, MultiPolygon, MultiPolygon]:
     if year_range is None:
         year_range = [None, None]
+
     ice_shelf_polygon_epsg4326, ice_shelf_polygon = hf.iceshelf_polygon(
         ice_shelf_polygons=ice_shelf_polygons,
         ice_shelf_name=ice_shelf,
@@ -120,3 +174,40 @@ def query_summary_data(
 
     return summary_data, timeseries_container, ice_shelf_polygon_epsg4326, ice_shelf_polygon
 
+
+def query_local_data(dataset_id, variable, extent_polygon_epsg4326, start_time, end_time):
+    local_request = DataDownloadRequest(
+        dataset_id=dataset_id,
+        start_time=start_time,
+        end_time=end_time,
+        epsg4326_polygon=extent_polygon_epsg4326,
+        raw_download=False,
+    )
+
+    download_path = download_data(data_download_request=local_request, output_parent_directory=OUTPUT_DIRECTORY)
+
+    data = xr.open_dataset(download_path, engine="zarr")
+
+    vars = list(config_dict[dataset_id.lower()].keys())
+
+    var = vars[0]
+
+    timeseries = Timeseries(
+        label=var,
+        timeseries_type=TimeseriesType(config_dict[dataset_id.lower()][var]["timeseries_type"]),
+        timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()][var]["region"]),
+    )
+    timeseries.process_timeseries(
+        data=data,
+        measurement_name=var,
+        measurement_uncertainty_name=config_dict[dataset_id.lower()][var]["measurement_uncertainties"],
+        mask_geometries={"ice_shelf": None, "ocean": None, "climate": None},
+        apply_mask=False,
+        aggregate=AggregationStrategy.MEAN,
+        period=AggregationPeriod.YEAR,
+        uncertainty=UncertaintyType(config_dict[dataset_id.lower()][var]["measurement_uncertainty_type"]),
+        independent=True,
+        t0_normalisation=None,
+    )
+
+    return timeseries
