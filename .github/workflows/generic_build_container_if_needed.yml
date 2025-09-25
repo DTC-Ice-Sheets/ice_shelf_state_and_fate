@@ -22,7 +22,7 @@ jobs:
         # are used to check whether to build the container or not.
         shell: sh -l {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: '2'
 
@@ -72,8 +72,10 @@ jobs:
       - name: Build and push this package's test image
         if:  ${{ steps.check_if_image_exists.outputs.image_exists == 'false'}}
         run: |
+          export GITHUB_TOKEN=${{ secrets.GH_ADMIN_PAT }}
           docker build \
             --cache-from ${{ steps.name_container.outputs.image_name }} \
+            --secret id=github_token,env=GITHUB_TOKEN \
             --tag "${{ steps.name_container.outputs.image_name }}:$CURRENT_HASH" \
             --tag "${{ steps.name_container.outputs.image_name }}:latest" -f .github/test_env_dockerfile .
           docker push "${{ steps.name_container.outputs.image_name }}:$CURRENT_HASH"

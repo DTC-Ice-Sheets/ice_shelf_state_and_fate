@@ -410,7 +410,7 @@ class CovariateAnalyser:
         timeseries_1 = deepcopy(self.timeseries_container.timeseries[timeseries_label_1])
         timeseries_2 = deepcopy(self.timeseries_container.timeseries[timeseries_label_2])
 
-        freq = self.timeseries_container.aggregation_period.time_period_shorthand
+        freq = self.timeseries_container.aggregation_period
 
         offset_map = {
             AggregationPeriod.MONTH: pd.offsets.MonthEnd,
@@ -680,13 +680,13 @@ class CovariateAnalyser:
                         timeseries_col = deepcopy(timeseries[col])
                         timeseries_row = deepcopy(timeseries[row])
                         lag = 0
-                        freq = self.timeseries_container.aggregation_period.time_period_shorthand
+                        freq = self.timeseries_container.aggregation_period
                         altered = False
                     elif analysis_type == JointPlotAnalysisType.CAUSAL:
                         timeseries_col = deepcopy(timeseries[col])
                         timeseries_row = deepcopy(timeseries[row])
                         lag = 0
-                        freq = self.timeseries_container.aggregation_period.time_period_shorthand
+                        freq = self.timeseries_container.aggregation_period
                         altered = False
                         _, p_value = self._granger_causality_test(
                             timeseries_label_1=timeseries_col.label,
@@ -749,7 +749,7 @@ class CovariateAnalyser:
 
             # Add the correct axis labels
             if axis_labels is None:
-                axis_label = f"{timeseries_row.measurement_name.replace('_', ' ').title()}"
+                axis_label = f"{timeseries_row.label} {timeseries_row.measurement_name}".replace("_", " ").title()
             else:
                 axis_label = axis_labels[row]
             label = textwrap.fill(
@@ -784,7 +784,9 @@ class CovariateAnalyser:
             1,
             figsize=(10, 4 * len(timeseries_labels)),
             sharex="col",
+            squeeze=False,
         )
+        axes = axes.flatten()
 
         for n, _ in enumerate(timeseries_labels):
             sns.lineplot(

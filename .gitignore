@@ -28,3 +28,7 @@ build/
 .pytest_cache/
 # ruff
 .ruff_cache/
+
+# Secrets
+/.env
+/.gh_token
