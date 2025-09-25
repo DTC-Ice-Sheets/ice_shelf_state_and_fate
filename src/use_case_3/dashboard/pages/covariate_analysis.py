@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from use_case_3.dashboard import query_data
-from use_case_3.dashboard.dashboard_layout import layout_navbar
+from use_case_3.dashboard.dashboard_layout import layout_navbar, create_switch_button_group
 
 dash.register_page(__name__)
 
@@ -15,6 +15,8 @@ summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data
 )
 
 navbar = layout_navbar(page_title="Covariate Analysis")
+
+# switch_group_thwaites_basal_melt_anoms = create_switch_button_group()
 
 layout = [
     navbar,
@@ -39,7 +41,7 @@ layout = [
                                         [
                                             dbc.Select(
                                                 id="select-analysis-type",
-                                                value="Correlation",
+                                                value="1",
                                                 options=[
                                                     {"label": "Correlation", "value": "1"},
                                                     {"label": "Cross-correlation", "value": "2"},
@@ -102,8 +104,14 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Ice Shelf Datasets: ", className="analysis_heading6"),
+                                            create_switch_button_group(dataset_id="moorings_1d"),
+                                            create_switch_button_group(dataset_id="subglacial_lakes_volume_change_1d"),
+                                            create_switch_button_group(
+                                                dataset_id="basal_melt_anomalies_pine_island_1d"
+                                            ),
+                                            create_switch_button_group(dataset_id="basal_melt_anomalies_thwaites_1d"),
                                             dbc.Switch(
-                                                id="switch-elevationchange-polarice",
+                                                id="ds-switch-elevationchange-polarice",
                                                 label="Polar Ice Gridded POCA Corrected Swath Elevation:",
                                                 value=False,
                                                 # className="analsysis_icedata_switch",
@@ -111,26 +119,26 @@ layout = [
                                             html.Div(
                                                 [
                                                     html.P(
-                                                        "This dataset contains the gridded POCA corrected swath DEMdiff data over the Amundsen Sector at a 1000m resolution.",
+                                                        "Placeholder description for elevation change polarice.",
                                                         className="analysis-data-desc",
                                                     )
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-elevationchange-cryotempo-eolis",
+                                                id="ds-switch-elevationchange-cryotempo-eolis",
                                                 label="CryoTempo-EOLIS Gridded Swath Elevation Product:",
                                                 value=False,
                                             ),
                                             html.Div(
                                                 [
                                                     html.P(
-                                                        "This dataset contains the gridded swath DEMdiff data over Antarctica at a 2000m resolution.",
+                                                        "Placeholder description for elevation change EOLIS",
                                                         className="analysis-data-desc",
                                                     )
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-rema",
+                                                id="ds-switch-rema",
                                                 label="REMA V2 Digital Elevation Map:",
                                                 value=False,
                                             ),
@@ -143,7 +151,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-bedmachine",
+                                                id="ds-switch-bedmachine",
                                                 label="BedMachine V3 Dataset:",
                                                 value=False,
                                             ),
@@ -156,7 +164,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-basal-melt-polar+",
+                                                id="ds-switch-basal-melt-polar+",
                                                 label="Polar+ Project Basal Melt Map:",
                                                 value=False,
                                             ),
@@ -169,7 +177,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-basal-melt-its-live",
+                                                id="ds-switch-basal-melt-its-live",
                                                 label="ITSLive Basal Melt:",
                                                 value=False,
                                             ),
@@ -182,7 +190,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-velocity-its-live",
+                                                id="ds-switch-velocity-its-live",
                                                 label="ITSLive Ice Velocity:",
                                                 value=False,
                                             ),
@@ -195,7 +203,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-velocity-enveo",
+                                                id="ds-switch-velocity-enveo",
                                                 label="Cumulative SBM anomolies:",
                                                 value=False,
                                             ),
@@ -208,7 +216,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-subglacial-lakes",
+                                                id="ds-switch-subglacial-lakes",
                                                 label="Subglacial Lakes Dataset:",
                                                 value=False,
                                             ),
@@ -221,7 +229,7 @@ layout = [
                                                 ]
                                             ),
                                             dbc.Switch(
-                                                id="switch-surface-melt-map",
+                                                id="ds-switch-surface-melt-map",
                                                 label="4D Antarctica Surface Melt Map:",
                                                 value=False,
                                             ),
@@ -233,58 +241,58 @@ layout = [
                                                     )
                                                 ]
                                             ),
-                                            dbc.Switch(
-                                                id="thwaites-paper-moorings",
-                                                label="Thwaites Paper Moorings:",
-                                                value=True,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Processed time series from the Thwaites paper for testing",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="thwaites-paper-basal-melt-anoms-pi",
-                                                label="Thwaites Paper Basala Melt Anoms - Pine Island:",
-                                                value=True,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Processed time series from the Thwaites paper for testing",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="thwaites-paper-basal-melt-anoms-thwaites",
-                                                label="Thwaites Paper Basala Melt Anoms - Thwaites:",
-                                                value=True,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Processed time series from the Thwaites paper for testing",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="thwaites-paper-subglacial-lake-disch",
-                                                label="Thwaites Paper Subglacial Lake Discharge:",
-                                                value=True,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Processed time series from the Thwaites paper for testing",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
+                                            # dbc.Switch(
+                                            #     id="ds-thwaites-paper-moorings",
+                                            #     label="Thwaites Paper Moorings:",
+                                            #     value=True,
+                                            # ),
+                                            # html.Div(
+                                            #     [
+                                            #         html.P(
+                                            #             "Processed time series from the Thwaites paper for testing",
+                                            #             className="analysis-data-desc",
+                                            #         )
+                                            #     ]
+                                            # ),
+                                            # dbc.Switch(
+                                            #     id="ds-thwaites-paper-basal-melt-anoms-pi",
+                                            #     label="Thwaites Paper Basala Melt Anoms - Pine Island:",
+                                            #     value=True,
+                                            # ),
+                                            # html.Div(
+                                            #     [
+                                            #         html.P(
+                                            #             "Processed time series from the Thwaites paper for testing",
+                                            #             className="analysis-data-desc",
+                                            #         )
+                                            #     ]
+                                            # ),
+                                            # dbc.Switch(
+                                            #     id="ds-thwaites-paper-basal-melt-anoms-thwaites",
+                                            #     label="Thwaites Paper Basala Melt Anoms - Thwaites:",
+                                            #     value=True,
+                                            # ),
+                                            # html.Div(
+                                            #     [
+                                            #         html.P(
+                                            #             "Processed time series from the Thwaites paper for testing",
+                                            #             className="analysis-data-desc",
+                                            #         )
+                                            #     ]
+                                            # ),
+                                            # dbc.Switch(
+                                            #     id="ds-thwaites-paper-subglacial-lake-disch",
+                                            #     label="Thwaites Paper Subglacial Lake Discharge:",
+                                            #     value=True,
+                                            # ),
+                                            # html.Div(
+                                            #     [
+                                            #         html.P(
+                                            #             "Processed time series from the Thwaites paper for testing",
+                                            #             className="analysis-data-desc",
+                                            #         )
+                                            #     ]
+                                            # ),
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -391,7 +399,7 @@ layout = [
                                 id="results-plot",
                                 style={"text-align": "center"},
                             ),
-                            html.Img(src="assets/analysis_output.png", className="analysis_output"),
+                            # html.Img(src="assets/analysis_output.png", className="analysis_output"),
                         ],
                         style={"padding-top": "25px"},
                     ),

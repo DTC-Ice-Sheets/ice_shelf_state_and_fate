@@ -10,6 +10,7 @@ sys.path.insert(0, module_path)
 
 from pathlib import Path
 
+from datetime import datetime
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -131,6 +132,7 @@ def query_summary_data(
                 label=var,
                 timeseries_type=TimeseriesType(config_dict["timeseries_summary"][var]["timeseries_type"]),
                 timeseries_region=TimeseriesRegion(config_dict["timeseries_summary"][var]["region"]),
+                unit=config_dict["timeseries_summary"][var]["units"],
             )
 
             timeseries.process_timeseries(
@@ -188,26 +190,47 @@ def query_local_data(dataset_id, variable, extent_polygon_epsg4326, start_time, 
 
     data = xr.open_dataset(download_path, engine="zarr")
 
-    vars = list(config_dict[dataset_id.lower()].keys())
-
-    var = vars[0]
-
     timeseries = Timeseries(
-        label=var,
-        timeseries_type=TimeseriesType(config_dict[dataset_id.lower()][var]["timeseries_type"]),
-        timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()][var]["region"]),
+        label=dataset_id,
+        timeseries_type=TimeseriesType(config_dict[dataset_id.lower()]["variables"][variable]["timeseries_type"]),
+        timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()]["variables"][variable]["region"]),
     )
     timeseries.process_timeseries(
         data=data,
-        measurement_name=var,
-        measurement_uncertainty_name=config_dict[dataset_id.lower()][var]["measurement_uncertainties"],
+        measurement_name=variable,
+        measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable][
+            "measurement_uncertainties"
+        ],
         mask_geometries={"ice_shelf": None, "ocean": None, "climate": None},
         apply_mask=False,
         aggregate=AggregationStrategy.MEAN,
-        period=AggregationPeriod.YEAR,
-        uncertainty=UncertaintyType(config_dict[dataset_id.lower()][var]["measurement_uncertainty_type"]),
+        period=AggregationPeriod.MONTH,
+        uncertainty=UncertaintyType(
+            config_dict[dataset_id.lower()]["variables"][variable]["measurement_uncertainty_type"]
+        ),
         independent=True,
         t0_normalisation=None,
     )
+
+    return timeseries
+
+
+def process_all_data(variables, variable_states, polygons, year_range):
+    timeseries = []
+    for i, var in enumerate(variables):
+        if variable_states[i]:
+            dataset_id = var.split("-")[0]
+            var_id = var.split("-")[-1]
+            region = config_dict[dataset_id]["variables"][var_id]["region"]
+            timeseries.append(
+                query_local_data(
+                    dataset_id=dataset_id.upper(),
+                    variable=var_id,
+                    extent_polygon_epsg4326=polygons[region].values[0],
+                    start_time=datetime(year_range[0], 1, 1),
+                    end_time=datetime(year_range[1], 1, 1),
+                )
+            )
+    # print(timeseries)
 
     return timeseries
