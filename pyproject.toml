@@ -62,7 +62,7 @@ commitizen = "^4.9.1"
 pydoclint = "^0.7.3"
 
 [tool.poetry.group.deployment.dependencies]
-dtc-wrapper = { git = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git", branch = "initial-wrapper" }
+dtc-wrapper = { git = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git", branch = "main" }
 
 [tool.ruff]
 line-length = 120
