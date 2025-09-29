@@ -3,7 +3,10 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from use_case_3.dashboard import query_data
-from use_case_3.dashboard.dashboard_layout import create_switch_button_group, layout_navbar
+from use_case_3.dashboard.dashboard_layout import (
+    create_switch_button_group,
+    layout_navbar,
+)
 
 dash.register_page(__name__)
 

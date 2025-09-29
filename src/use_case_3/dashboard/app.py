@@ -47,15 +47,61 @@ app.layout = html.Div(
 )
 
 
-# @callback(
-#     Output({"type": "switch-group-vars", "index": ALL}, "value"),
-#     # Input(f"ds_{'polarice_elevation_change'.lower()}", "value"),
-#     Input({"type": "data_switch", "index": ALL}, "value"),
-# )
-# def switch_visability(visability):
-#     if visability:
-#         return {"display": "block"}
-#     return {"display": "none"}
+@callback(
+    Output("insights_mass_balance_div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_massbalance(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+        process_data.calculate_mass_balance(timeseries_container=timeseries_container)
+    else:
+        return html.Div()
+
+
+@callback(
+    Output("insights_calving_summary_div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_calving(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+
+        total, total_unc, calving_events, calving_unc_events, time_events = process_data.detect_calving_events(
+            timeseries_container=timeseries_container
+        )
+        if len(calving_events) == 0:
+            return html.Div()
+        else:
+            title = html.H6("Calving Events Detected:", className="insights_h6")
+            if len(calving_events) == 1:
+                main = html.P(
+                    f"There was one significant calving event on {ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. This calving event occured in {time_events[0]}, and resulted an overall ice loss of {calving_events[0]: .0f}+/-{calving_unc_events[0]: .0f}Gt.",
+                    className="insights_calving_summary_text",
+                )
+            else:
+                main = html.P(
+                    f"There were {len(calving_events)} significant calving events on {ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. These calving events have resulted in an overal ice loss of approximately {total: .0f}+/-{total_unc: .0f}Gt. The largest calving event was {calving_events[0]: .0f}+/-{calving_unc_events[0]: .0f}Gt and occured in {time_events[0]}.",
+                    className="insights_calving_summary_text",
+                )
+
+            text = [
+                title,
+                main,
+            ]
+            return html.Div(text)
+    else:
+        return html.Div()
 
 
 # These need to be refactored to be a pattern matching callback so there is only one for all of the switches.
@@ -217,36 +263,6 @@ def souther_annular_mode_visable(visability):
     if visability:
         return {"display": "block"}
     return {"display": "none"}
-
-
-# @callback(
-#     Output(f"switch-group-vars-{'moorings_1d'.lower()}", "style"),
-#     Input(f"ds_{'moorings_1d'.lower()}", "value"),
-# )
-# def thwaites_moorings_1d_visable(visability):
-#     if visability:
-#         return {"display": "block"}
-#     return {"display": "none"}
-
-
-# @callback(
-#     Output(f"switch-group-vars-{'subglacial_lake_discharge_1d'.lower()}", "style"),
-#     Input(f"ds_{'subglacial_lake_discharge_1d'.lower()}", "value"),
-# )
-# def thwaites_subglacial_lake_disch_1d_visable(visability):
-#     if visability:
-#         return {"display": "block"}
-#     return {"display": "none"}
-
-
-# @callback(
-#     Output(f"switch-group-vars-{'subglacial_lakes_volume_change_1d'.lower()}", "style"),
-#     Input(f"ds_{'subglacial_lakes_volume_change_1d'.lower()}", "value"),
-# )
-# def thwaites_subglacial_lake_vol_change_1d_visable(visability):
-#     if visability:
-#         return {"display": "block"}
-#     return {"display": "none"}
 
 
 @callback(
@@ -739,23 +755,12 @@ def conduct_covariate_analysis(
 
     axis_labels = []
     for variable in variables:
-        print(variable)
+        # print(variable)
         axis_labels.append(
             config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
         )
 
     timeseries = query_data.process_all_data(variables, polygons, year_range)
-
-    # print(timeseries)
-
-    # axis_labels = [
-    #     "Thermocline Depth",
-    #     "Pine Island Basal Melt Anomolies",
-    #     "Subglacial Lake Volume Change",
-    #     "Thwaites Basal Melt Anomolies",
-    # ]
-
-    # axis_labels = None
 
     if len(timeseries) > 0:
         timeseries_container = TimeSeriesPreprocessor(
@@ -763,9 +768,6 @@ def conduct_covariate_analysis(
             time_period=AggregationPeriod.MONTH,
             aggregation=AggregationStrategy.MEAN,
         )
-
-        for label in timeseries_container.timeseries:
-            print(label, timeseries_container.timeseries[label])
 
         if analysis_type == "1":
             analysis_type_enum = JointPlotAnalysisType.CORR

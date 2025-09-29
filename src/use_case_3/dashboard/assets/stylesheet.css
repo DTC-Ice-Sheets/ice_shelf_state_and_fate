@@ -5,6 +5,42 @@
     width: 50%;
 }
 
+.insights_picture {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}
+
+.insights_h6 {
+    padding-top: 100px;
+    padding-left: 50px;
+    padding-right: 50px;
+    /* padding-bottom: -50px; */
+    font-size: 2em;
+    /* text-align: justify;
+    text-justify: inter-word; */
+}
+
+.insights_intro_text {
+    padding-top: 50px;
+    padding-left: 50px;
+    padding-right: 50px;
+    font-size: 1.5em;
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+
+.insights_calving_summary_text {
+    padding-top: 0px;
+    padding-left: 50px;
+    padding-right: 50px;
+    font-size: 1.5em;
+    text-align: justify;
+    text-justify: inter-word;
+}
+
 .website_text {
     display: block;
     margin-left: auto;
@@ -110,4 +146,16 @@
 #analysis_output_ul {
     padding-right: 45px;
     padding-left: 80px;
+}
+
+#ice_shelf_selection {
+    margin-left: 30%;
+    width: 40%;
+    font-size: 1.5em;
+}
+
+#summary_year_selector {
+    margin-left: 30%;
+    width: 40%;
+    margin-right: 30%;
 }

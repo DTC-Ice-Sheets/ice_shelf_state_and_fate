@@ -11,6 +11,7 @@ sys.path.insert(0, module_path)
 from datetime import datetime
 from pathlib import Path
 
+import os
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -182,61 +183,93 @@ def query_summary_data(
 
 def query_local_data(dataset_id, variable, polygons, start_time, end_time):
     region = config_dict[dataset_id.lower()]["variables"][variable]["region"]
-    local_request = DataDownloadRequest(
-        dataset_id=dataset_id,
-        start_time=start_time,
-        end_time=end_time,
-        epsg4326_polygon=polygons.loc[region, "geometry"],
-        raw_download=False,
-    )
+    if dataset_id != "OCEAN_MOORINGS":
+        dataset_download_ids = [dataset_id]
+    else:
+        dataset_download_ids = get_all_ocean_moorings()
 
-    download_path = download_data(data_download_request=local_request, output_parent_directory=OUTPUT_DIRECTORY)
+    print(dataset_download_ids)
 
-    data = xr.open_dataset(download_path, engine="zarr")
+    timeseries_list = []
+    for dataset_download_id in dataset_download_ids:
+        local_request = DataDownloadRequest(
+            dataset_id=dataset_download_id,
+            start_time=start_time,
+            end_time=end_time,
+            epsg4326_polygon=polygons.loc[region, "geometry"],
+            raw_download=False,
+        )
 
-    data = data.rio.write_crs(data.spatial_ref.spatial_ref)
+        # print(dataset_download_id)
 
-    timeseries = Timeseries(
-        label=variable,
-        timeseries_type=TimeseriesType(config_dict[dataset_id.lower()]["variables"][variable]["timeseries_type"]),
-        timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()]["variables"][variable]["region"]),
-        unit=config_dict[dataset_id.lower()]["variables"][variable]["units"],
-    )
-    timeseries.process_timeseries(
-        data=data,
-        measurement_name=variable,
-        measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable][
-            "measurement_uncertainties"
-        ],
-        mask_geometries=polygons,
-        apply_mask=False,
-        aggregate=AggregationStrategy.MEAN,
-        period=AggregationPeriod.MONTH,
-        uncertainty=UncertaintyType(
-            config_dict[dataset_id.lower()]["variables"][variable]["measurement_uncertainty_type"]
-        ),
-        independent=True,
-        t0_normalisation=None,
-    )
+        download_path = download_data(data_download_request=local_request, output_parent_directory=OUTPUT_DIRECTORY)
+        # print(download_path)
 
-    return timeseries
+        data = xr.open_dataset(download_path, engine="zarr")
+
+        data = data.rio.write_crs(data.spatial_ref.spatial_ref)
+
+        # print(dataset_download_id, xr.ufuncs.isnan(data).all())
+
+        include_data = True
+        for dataset_var in data:
+            if xr.ufuncs.isnan(data[dataset_var]).all():
+                include_data = False
+
+        if include_data:
+            timeseries = Timeseries(
+                label=dataset_download_id,
+                timeseries_type=TimeseriesType(
+                    config_dict[dataset_id.lower()]["variables"][variable]["timeseries_type"]
+                ),
+                timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()]["variables"][variable]["region"]),
+                unit=config_dict[dataset_id.lower()]["variables"][variable]["units"],
+            )
+            timeseries.process_timeseries(
+                data=data,
+                measurement_name=variable,
+                measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable][
+                    "measurement_uncertainties"
+                ],
+                mask_geometries=polygons,
+                apply_mask=False,
+                aggregate=AggregationStrategy.MEAN,
+                period=AggregationPeriod.MONTH,
+                uncertainty=UncertaintyType(
+                    config_dict[dataset_id.lower()]["variables"][variable]["measurement_uncertainty_type"]
+                ),
+                independent=True,
+                t0_normalisation=None,
+            )
+            timeseries_list.append(timeseries)
+
+    return timeseries_list
+
+
+def get_all_ocean_moorings():
+    return [
+        "OCEAN_MOORINGS_" + mooring.split(".")[0].upper()
+        for mooring in os.listdir("/data/yak1/working/dtc_ice_sheets/initial_datasets/ocean_moorings/")
+    ]
 
 
 def process_all_data(variables, polygons, year_range):
-    timeseries = []
+    timeseries_list = []
     for i, var in enumerate(variables):
         # if variable_states[i]:
+        print(var)
         dataset_id = var.split("-")[0]
         var_id = var.split("-")[-1]
-        timeseries.append(
-            query_local_data(
-                dataset_id=dataset_id.upper(),
-                variable=var_id,
-                polygons=polygons,
-                start_time=datetime(year_range[0], 1, 1),
-                end_time=datetime(year_range[1], 1, 1),
-            )
+
+        timeseries = query_local_data(
+            dataset_id=dataset_id.upper(),
+            variable=var_id,
+            polygons=polygons,
+            start_time=datetime(year_range[0], 1, 1),
+            end_time=datetime(year_range[1], 1, 1),
         )
+        for ts in timeseries:
+            timeseries_list.append(ts)
     # print(timeseries)
 
-    return timeseries
+    return timeseries_list
