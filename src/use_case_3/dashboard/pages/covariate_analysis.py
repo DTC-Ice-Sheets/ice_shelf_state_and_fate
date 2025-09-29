@@ -3,13 +3,16 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from use_case_3.dashboard import query_data
-from use_case_3.dashboard.dashboard_layout import layout_navbar, create_switch_button_group
+from use_case_3.dashboard.dashboard_layout import create_switch_button_group, layout_navbar
 
 dash.register_page(__name__)
 
 # Import data ###
 ice_shelf_inital = "thwaites"
-ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
+# ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
+ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj = (
+    query_data.query_polygons()
+)
 summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
@@ -103,196 +106,27 @@ layout = [
                                 [
                                     html.Div(
                                         [
+                                            dcc.Store(id="switch-values"),
                                             html.H6("Ice Shelf Datasets: ", className="analysis_heading6"),
+                                            create_switch_button_group(dataset_id="polarice_elevation_change"),
+                                            # create_switch_button_group(dataset_id="elevation_change_eolis"),
+                                            create_switch_button_group(dataset_id="rema_v2"),
+                                            create_switch_button_group(dataset_id="bedmachine_v3"),
+                                            create_switch_button_group(dataset_id="polar_plus_ice_shelves_basal_melt"),
+                                            create_switch_button_group(
+                                                dataset_id="polar_plus_ice_shelves_calving_front"
+                                            ),
+                                            create_switch_button_group(dataset_id="sub_glacial_lakes"),
+                                            create_switch_button_group(dataset_id="its_live_basal_melt"),
+                                            create_switch_button_group(dataset_id="its_live_velocity"),
+                                            create_switch_button_group(dataset_id="racmo"),
                                             create_switch_button_group(dataset_id="moorings_1d"),
+                                            create_switch_button_group(dataset_id="subglacial_lake_discharge_1d"),
                                             create_switch_button_group(dataset_id="subglacial_lakes_volume_change_1d"),
                                             create_switch_button_group(
                                                 dataset_id="basal_melt_anomalies_pine_island_1d"
                                             ),
                                             create_switch_button_group(dataset_id="basal_melt_anomalies_thwaites_1d"),
-                                            dbc.Switch(
-                                                id="ds-switch-elevationchange-polarice",
-                                                label="Polar Ice Gridded POCA Corrected Swath Elevation:",
-                                                value=False,
-                                                # className="analsysis_icedata_switch",
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for elevation change polarice.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-elevationchange-cryotempo-eolis",
-                                                label="CryoTempo-EOLIS Gridded Swath Elevation Product:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for elevation change EOLIS",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-rema",
-                                                label="REMA V2 Digital Elevation Map:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the REMA V2 product, available at 100 and 1000m resolutions.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-bedmachine",
-                                                label="BedMachine V3 Dataset:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the BedMachine V3 product.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-basal-melt-polar+",
-                                                label="Polar+ Project Basal Melt Map:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the Polar+ Project basal melt map.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-basal-melt-its-live",
-                                                label="ITSLive Basal Melt:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the ITSLive Basal Melt Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-velocity-its-live",
-                                                label="ITSLive Ice Velocity:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the ITSLive Ice Velocoity Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-velocity-enveo",
-                                                label="Cumulative SBM anomolies:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the ENVEO Ice Velocoity Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-subglacial-lakes",
-                                                label="Subglacial Lakes Dataset:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the Subglacial Lakes Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="ds-switch-surface-melt-map",
-                                                label="4D Antarctica Surface Melt Map:",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the 4D Antarctica Surface Melt Map.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            # dbc.Switch(
-                                            #     id="ds-thwaites-paper-moorings",
-                                            #     label="Thwaites Paper Moorings:",
-                                            #     value=True,
-                                            # ),
-                                            # html.Div(
-                                            #     [
-                                            #         html.P(
-                                            #             "Processed time series from the Thwaites paper for testing",
-                                            #             className="analysis-data-desc",
-                                            #         )
-                                            #     ]
-                                            # ),
-                                            # dbc.Switch(
-                                            #     id="ds-thwaites-paper-basal-melt-anoms-pi",
-                                            #     label="Thwaites Paper Basala Melt Anoms - Pine Island:",
-                                            #     value=True,
-                                            # ),
-                                            # html.Div(
-                                            #     [
-                                            #         html.P(
-                                            #             "Processed time series from the Thwaites paper for testing",
-                                            #             className="analysis-data-desc",
-                                            #         )
-                                            #     ]
-                                            # ),
-                                            # dbc.Switch(
-                                            #     id="ds-thwaites-paper-basal-melt-anoms-thwaites",
-                                            #     label="Thwaites Paper Basala Melt Anoms - Thwaites:",
-                                            #     value=True,
-                                            # ),
-                                            # html.Div(
-                                            #     [
-                                            #         html.P(
-                                            #             "Processed time series from the Thwaites paper for testing",
-                                            #             className="analysis-data-desc",
-                                            #         )
-                                            #     ]
-                                            # ),
-                                            # dbc.Switch(
-                                            #     id="ds-thwaites-paper-subglacial-lake-disch",
-                                            #     label="Thwaites Paper Subglacial Lake Discharge:",
-                                            #     value=True,
-                                            # ),
-                                            # html.Div(
-                                            #     [
-                                            #         html.P(
-                                            #             "Processed time series from the Thwaites paper for testing",
-                                            #             className="analysis-data-desc",
-                                            #         )
-                                            #     ]
-                                            # ),
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -305,33 +139,11 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Ocean Datasets: ", className="analysis_heading6"),
-                                            dbc.Switch(
-                                                id="switch-glory",
-                                                label="GLORY Ocean Reanalysis:",
-                                                value=False,
-                                                # className="analsysis_icedata_switch",
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the GLORY Ocean Reanalysis Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
-                                            dbc.Switch(
-                                                id="switch-Ocean Moorings",
-                                                label="Ocean Moorings (in situ):",
-                                                value=False,
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the in situ Ocean Moorings Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
+                                            create_switch_button_group(dataset_id="ocean_reanalysis"),
+                                            create_switch_button_group(dataset_id="sea_ice_concentration"),
+                                            create_switch_button_group(dataset_id="sea_ice_edge"),
+                                            create_switch_button_group(dataset_id="sea_ice_thickness"),
+                                            create_switch_button_group(dataset_id="ocean_moorings"),
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -344,20 +156,7 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Climate Datasets: ", className="analysis_heading6"),
-                                            dbc.Switch(
-                                                id="switch-sam",
-                                                label="Southern Annular Mode Index:",
-                                                value=False,
-                                                # className="analsysis_icedata_switch",
-                                            ),
-                                            html.Div(
-                                                [
-                                                    html.P(
-                                                        "Placeholder description for the Southern Annular Mode Dataset.",
-                                                        className="analysis-data-desc",
-                                                    )
-                                                ]
-                                            ),
+                                            create_switch_button_group(dataset_id="southern_annular_mode"),
                                         ],
                                         style={"padding-left": "30px"},
                                     )

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import geopandas as gpd
+import rioxarray as rio
 import seaborn as sns
 import xarray as xr
 from scipy.stats import bootstrap
@@ -49,7 +51,8 @@ class Timeseries:
         data: xr.Dataset,
         measurement_name: str,
         measurement_uncertainty_name: str | None,
-        mask_geometries: dict[str, Polygon | MultiPolygon | None],
+        mask_geometries: gpd.GeoDataFrame,
+        # mask_geometries: dict[str, Polygon | MultiPolygon | None],
         apply_mask: bool,
         aggregate: AggregationStrategy = AggregationStrategy.MEAN,
         period: AggregationPeriod | None = AggregationPeriod.MONTH,
@@ -106,14 +109,16 @@ class Timeseries:
         dimension_data = {key: data[key] for key in data.coords}
 
         dimension_names = list(data[measurement_name].dims)
+        if data.rio.crs is not None:
+            mask_geometries = mask_geometries.to_crs(data.rio.crs)
 
         # TODO: These will need to be better defined and formalised.
         if self.timeseries_region == TimeseriesRegion.ICE_SHELF:
-            mask_geometry = mask_geometries["ice_shelf"]
+            mask_geometry = mask_geometries.loc["ice_shelf", "geometry"]
         elif self.timeseries_region == TimeseriesRegion.OCEAN:
-            mask_geometry = mask_geometries["ocean"] - mask_geometries["ice_shelf"]
+            mask_geometry = mask_geometries.loc["ocean", "geometry"]
         elif self.timeseries_region == TimeseriesRegion.CLIMATE:
-            mask_geometry = mask_geometries["climate"]
+            mask_geometry = mask_geometries.loc["climate", "geometry"]
 
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
@@ -285,6 +290,8 @@ class Timeseries:
                 t0_normalisation=t0_normalisation,
                 modify=modify,
             )
+        else:
+            data_uncertainties_agg = None
 
         self._store_processed_data(
             data_agg=data_agg, data_uncertainties_agg=data_uncertainties_agg, data_coverage_agg=data_coverage_agg

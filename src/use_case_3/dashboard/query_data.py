@@ -8,9 +8,9 @@ sys.path.insert(0, module_path)
 module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_converter/src"
 sys.path.insert(0, module_path)
 
+from datetime import datetime
 from pathlib import Path
 
-from datetime import datetime
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -118,6 +118,9 @@ def query_summary_data(
         ice_shelf_name=ice_shelf,
     )
 
+    polygons = gpd.GeoDataFrame({"Name": ["ice_shelf", "ocean", "climate"], "geometry": [None, None, None]})
+    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
+
     local_raw_request = DataDownloadRequest(dataset_id=f"{ice_shelf}_SUMMARY".upper(), raw_download=False)
 
     summary_data_path = download_data(data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY)
@@ -139,7 +142,7 @@ def query_summary_data(
                 data=summary_data,
                 measurement_name=var,
                 measurement_uncertainty_name=config_dict["timeseries_summary"][var]["measurement_uncertainties"],
-                mask_geometries={"ice_shelf": None, "ocean": None, "climate": None},
+                mask_geometries=polygons,
                 apply_mask=False,
                 aggregate=AggregationStrategy.MEAN,
                 period=AggregationPeriod.YEAR,
@@ -177,12 +180,13 @@ def query_summary_data(
     return summary_data, timeseries_container, ice_shelf_polygon_epsg4326, ice_shelf_polygon
 
 
-def query_local_data(dataset_id, variable, extent_polygon_epsg4326, start_time, end_time):
+def query_local_data(dataset_id, variable, polygons, start_time, end_time):
+    region = config_dict[dataset_id.lower()]["variables"][variable]["region"]
     local_request = DataDownloadRequest(
         dataset_id=dataset_id,
         start_time=start_time,
         end_time=end_time,
-        epsg4326_polygon=extent_polygon_epsg4326,
+        epsg4326_polygon=polygons.loc[region, "geometry"],
         raw_download=False,
     )
 
@@ -190,10 +194,13 @@ def query_local_data(dataset_id, variable, extent_polygon_epsg4326, start_time, 
 
     data = xr.open_dataset(download_path, engine="zarr")
 
+    data = data.rio.write_crs(data.spatial_ref.spatial_ref)
+
     timeseries = Timeseries(
-        label=dataset_id,
+        label=variable,
         timeseries_type=TimeseriesType(config_dict[dataset_id.lower()]["variables"][variable]["timeseries_type"]),
         timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()]["variables"][variable]["region"]),
+        unit=config_dict[dataset_id.lower()]["variables"][variable]["units"],
     )
     timeseries.process_timeseries(
         data=data,
@@ -201,7 +208,7 @@ def query_local_data(dataset_id, variable, extent_polygon_epsg4326, start_time, 
         measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable][
             "measurement_uncertainties"
         ],
-        mask_geometries={"ice_shelf": None, "ocean": None, "climate": None},
+        mask_geometries=polygons,
         apply_mask=False,
         aggregate=AggregationStrategy.MEAN,
         period=AggregationPeriod.MONTH,
@@ -215,22 +222,21 @@ def query_local_data(dataset_id, variable, extent_polygon_epsg4326, start_time, 
     return timeseries
 
 
-def process_all_data(variables, variable_states, polygons, year_range):
+def process_all_data(variables, polygons, year_range):
     timeseries = []
     for i, var in enumerate(variables):
-        if variable_states[i]:
-            dataset_id = var.split("-")[0]
-            var_id = var.split("-")[-1]
-            region = config_dict[dataset_id]["variables"][var_id]["region"]
-            timeseries.append(
-                query_local_data(
-                    dataset_id=dataset_id.upper(),
-                    variable=var_id,
-                    extent_polygon_epsg4326=polygons[region].values[0],
-                    start_time=datetime(year_range[0], 1, 1),
-                    end_time=datetime(year_range[1], 1, 1),
-                )
+        # if variable_states[i]:
+        dataset_id = var.split("-")[0]
+        var_id = var.split("-")[-1]
+        timeseries.append(
+            query_local_data(
+                dataset_id=dataset_id.upper(),
+                variable=var_id,
+                polygons=polygons,
+                start_time=datetime(year_range[0], 1, 1),
+                end_time=datetime(year_range[1], 1, 1),
             )
+        )
     # print(timeseries)
 
     return timeseries

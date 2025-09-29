@@ -1,20 +1,19 @@
-from datetime import datetime
+import base64
+from io import BytesIO
 
 import dash
 import dash_bootstrap_components as dbc
 import mapping
 import numpy as np
+import geopandas as gpd
 import plotting
 import process_data
 import query_data
 import yaml
-from dash import Dash, Input, Output, State, callback, html
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
-from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
-import base64
-from io import BytesIO
-from pathlib import Path
+from dash import Dash, Input, Output, State, callback, html, ALL, MATCH
 
+from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
@@ -48,24 +47,206 @@ app.layout = html.Div(
 )
 
 
+# @callback(
+#     Output({"type": "switch-group-vars", "index": ALL}, "value"),
+#     # Input(f"ds_{'polarice_elevation_change'.lower()}", "value"),
+#     Input({"type": "data_switch", "index": ALL}, "value"),
+# )
+# def switch_visability(visability):
+#     if visability:
+#         return {"display": "block"}
+#     return {"display": "none"}
+
+
+# These need to be refactored to be a pattern matching callback so there is only one for all of the switches.
 @callback(
-    Output(f"switch-group-vars-{'moorings_1d'.lower()}", "style"),
-    Input(f"ds_{'moorings_1d'.lower()}", "value"),
+    Output(f"switch-group-vars-{'polarice_elevation_change'.lower()}", "style"),
+    Input(f"ds_{'polarice_elevation_change'.lower()}", "value"),
 )
-def thwaites_moorings_1d_visable(visability):
+def elev_polarice_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+# @callback(
+#     Output(f"switch-group-vars-{'elevation_change_eolis'.lower()}", "style"),
+#     Input(f"ds_{'elevation_change_eolis'.lower()}", "value"),
+# )
+# def elev_eolis_visable(visability):
+#     if visability:
+#         return {"display": "block"}
+#     return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'rema_v2'.lower()}", "style"),
+    Input(f"ds_{'rema_v2'.lower()}", "value"),
+)
+def rema_v2_visable(visability):
     if visability:
         return {"display": "block"}
     return {"display": "none"}
 
 
 @callback(
-    Output(f"switch-group-vars-{'subglacial_lakes_volume_change_1d'.lower()}", "style"),
-    Input(f"ds_{'subglacial_lakes_volume_change_1d'.lower()}", "value"),
+    Output(f"switch-group-vars-{'bedmachine_v3'.lower()}", "style"),
+    Input(f"ds_{'bedmachine_v3'.lower()}", "value"),
 )
-def thwaites_subglacial_lake_vol_change_1d_visable(visability):
+def bedmachine_v3_visable(visability):
     if visability:
         return {"display": "block"}
     return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'polar_plus_ice_shelves_basal_melt'.lower()}", "style"),
+    Input(f"ds_{'polar_plus_ice_shelves_basal_melt'.lower()}", "value"),
+)
+def polar_ice_plus_bm_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'polar_plus_ice_shelves_calving_front'.lower()}", "style"),
+    Input(f"ds_{'polar_plus_ice_shelves_calving_front'.lower()}", "value"),
+)
+def polar_ice_plus_cf_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'sub_glacial_lakes'.lower()}", "style"),
+    Input(f"ds_{'sub_glacial_lakes'.lower()}", "value"),
+)
+def subglacial_lakes_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'its_live_basal_melt'.lower()}", "style"),
+    Input(f"ds_{'its_live_basal_melt'.lower()}", "value"),
+)
+def its_live_bm_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'its_live_velocity'.lower()}", "style"),
+    Input(f"ds_{'its_live_velocity'.lower()}", "value"),
+)
+def its_live_vel_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'racmo'.lower()}", "style"),
+    Input(f"ds_{'racmo'.lower()}", "value"),
+)
+def racmo_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'ocean_reanalysis'.lower()}", "style"),
+    Input(f"ds_{'ocean_reanalysis'.lower()}", "value"),
+)
+def ocean_reanalysis_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'sea_ice_concentration'.lower()}", "style"),
+    Input(f"ds_{'sea_ice_concentration'.lower()}", "value"),
+)
+def sea_ice_concentration_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'sea_ice_edge'.lower()}", "style"),
+    Input(f"ds_{'sea_ice_edge'.lower()}", "value"),
+)
+def sea_ice_edge_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'sea_ice_thickness'.lower()}", "style"),
+    Input(f"ds_{'sea_ice_thickness'.lower()}", "value"),
+)
+def sea_ice_thickness_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'ocean_moorings'.lower()}", "style"),
+    Input(f"ds_{'ocean_moorings'.lower()}", "value"),
+)
+def ocean_moorings_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output(f"switch-group-vars-{'southern_annular_mode'.lower()}", "style"),
+    Input(f"ds_{'southern_annular_mode'.lower()}", "value"),
+)
+def souther_annular_mode_visable(visability):
+    if visability:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+# @callback(
+#     Output(f"switch-group-vars-{'moorings_1d'.lower()}", "style"),
+#     Input(f"ds_{'moorings_1d'.lower()}", "value"),
+# )
+# def thwaites_moorings_1d_visable(visability):
+#     if visability:
+#         return {"display": "block"}
+#     return {"display": "none"}
+
+
+# @callback(
+#     Output(f"switch-group-vars-{'subglacial_lake_discharge_1d'.lower()}", "style"),
+#     Input(f"ds_{'subglacial_lake_discharge_1d'.lower()}", "value"),
+# )
+# def thwaites_subglacial_lake_disch_1d_visable(visability):
+#     if visability:
+#         return {"display": "block"}
+#     return {"display": "none"}
+
+
+# @callback(
+#     Output(f"switch-group-vars-{'subglacial_lakes_volume_change_1d'.lower()}", "style"),
+#     Input(f"ds_{'subglacial_lakes_volume_change_1d'.lower()}", "value"),
+# )
+# def thwaites_subglacial_lake_vol_change_1d_visable(visability):
+#     if visability:
+#         return {"display": "block"}
+#     return {"display": "none"}
 
 
 @callback(
@@ -127,14 +308,14 @@ def update_ice_shelf_summary(ice_shelf, year_range):
     return html.Div(
         [
             html.P(" "),
-            html.H5(f"{" ".join(ice_shelf.split("_")).title()} Ice Shelf Summary:"),
+            html.H5(f"{' '.join(ice_shelf.split('_')).title()} Ice Shelf Summary:"),
             html.P(
-                f"Overall the {" ".join(ice_shelf.split("_")).title()} Ice Shelf has lost a total mass of approximately {int(np.round(np.abs(total_mass_loss)))} Gt over the specified {year_diff} year period. There are a number of key contributing factors to this ice loss:",
+                f"Overall the {' '.join(ice_shelf.split('_')).title()} Ice Shelf has lost a total mass of approximately {int(np.round(np.abs(total_mass_loss)))} Gt over the specified {year_diff} year period. There are a number of key contributing factors to this ice loss:",
                 style={"padding-right": "100px", "padding-top": "10px"},
             ),
             html.Ul(neg_list),
             html.P(
-                f"Other important sources of ice loss from {" ".join(ice_shelf.split("_")).title()} ice shelf in the {year_diff} year period are:",
+                f"Other important sources of ice loss from {' '.join(ice_shelf.split('_')).title()} ice shelf in the {year_diff} year period are:",
                 style={"padding-right": "100px", "padding-top": "0px"},
             ),
             html.Ul(
@@ -518,42 +699,63 @@ def plot_gauge_indicator5(ice_shelf, variable):
     State("ice_shelf_selection", "value"),
     State("summary_year_selector", "value"),
     State("select-analysis-type", "value"),
-    State("moorings_1d-depth_PIG_N_and_S_combined", "value"),
-    State("basal_melt_anomalies_pine_island_1d-basal_melt_anomalies", "value"),
-    State("subglacial_lakes_volume_change_1d-volume_change", "value"),
-    State("basal_melt_anomalies_thwaites_1d-basal_melt_anomalies", "value"),
+    State({"type": "data_selector", "index": ALL}, "id"),
+    State({"type": "data_selector", "index": ALL}, "value"),
+    # State("moorings_1d-depth_PIG_N_and_S_combined", "value"),
+    # State("basal_melt_anomalies_pine_island_1d-basal_melt_anomalies", "value"),
+    # State("subglacial_lake_discharge_1d-lake_discharge", "value"),
+    # # State("subglacial_lakes_volume_change_1d-volume_change", "value"),
+    # State("basal_melt_anomalies_thwaites_1d-basal_melt_anomalies", "value"),
 )
 def conduct_covariate_analysis(
     n,
     ice_shelf,
     year_range,
     analysis_type,
-    var_1,
-    var_2,
-    var_3,
-    var_4,
+    dataset_ids,
+    datasets,
 ):
-    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"]
-    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"]
+    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[
+        0
+    ]
+    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[0]
     climate_extent = None
 
-    polygons = {"ice_shelf": ice_shelf_extent, "ocean": ocean_extent, "climate": climate_extent}
+    # polygons = {"ice_shelf": ice_shelf_extent, "ocean": ocean_extent, "climate": climate_extent}
 
-    variables = [
-        "moorings_1d-depth_PIG_N_and_S_combined",
-        "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
-        "subglacial_lakes_volume_change_1d-volume_change",
-        "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
-    ]
+    polygons = gpd.GeoDataFrame(
+        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
+    )
+    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
 
-    timeseries = query_data.process_all_data(variables, [var_1, var_2, var_3, var_4], polygons, year_range)
+    variables = [dataset_ids[i]["index"] for i, dataset in enumerate(datasets) if dataset]
+    # variab = [dataset_ids[i]["index"] for i, dataset in enumerate(datasets) if dataset]
+    # variables = [
+    #     "moorings_1d-depth_PIG_N_and_S_combined",
+    #     "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
+    #     "subglacial_lakes_volume_change_1d-volume_change",
+    #     "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
+    # ]
 
-    axis_labels = [
-        "Thermocline Depth",
-        "Subglacial Lake Volume Change",
-        "Pine Island Basal Melt Anomolies",
-        "Thwaites Basal Melt Anomolies",
-    ]
+    axis_labels = []
+    for variable in variables:
+        print(variable)
+        axis_labels.append(
+            config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
+        )
+
+    timeseries = query_data.process_all_data(variables, polygons, year_range)
+
+    # print(timeseries)
+
+    # axis_labels = [
+    #     "Thermocline Depth",
+    #     "Pine Island Basal Melt Anomolies",
+    #     "Subglacial Lake Volume Change",
+    #     "Thwaites Basal Melt Anomolies",
+    # ]
+
+    # axis_labels = None
 
     if len(timeseries) > 0:
         timeseries_container = TimeSeriesPreprocessor(
@@ -561,6 +763,9 @@ def conduct_covariate_analysis(
             time_period=AggregationPeriod.MONTH,
             aggregation=AggregationStrategy.MEAN,
         )
+
+        for label in timeseries_container.timeseries:
+            print(label, timeseries_container.timeseries[label])
 
         if analysis_type == "1":
             analysis_type_enum = JointPlotAnalysisType.CORR
@@ -585,4 +790,4 @@ def conduct_covariate_analysis(
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)

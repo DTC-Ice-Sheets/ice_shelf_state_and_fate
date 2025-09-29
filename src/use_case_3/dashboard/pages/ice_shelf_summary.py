@@ -9,7 +9,10 @@ dash.register_page(__name__)
 
 # Import data ###
 ice_shelf_inital = "thwaites"
-ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
+# ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
+ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj = (
+    query_data.query_polygons()
+)
 summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
