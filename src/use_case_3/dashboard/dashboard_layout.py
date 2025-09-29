@@ -11,6 +11,7 @@ with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashbo
 def define_navbar_pages():
     return [
         dbc.DropdownMenuItem("More pages", header=True),
+        dbc.DropdownMenuItem("Insights", href="/insights"),
         dbc.DropdownMenuItem("Ice shelf summary", href="/ice-shelf-summary"),
         dbc.DropdownMenuItem("Ice shelf analysis", href="/covariate-analysis"),
     ]
@@ -83,3 +84,46 @@ def create_switch_button_group(dataset_id):
         )
 
     return html.Div(elements, id=f"switch-group-{dataset_id.lower()}")
+
+
+# def create_switch_button_group_moorings(dataset_id):
+#     vars = list(config_dict[dataset_id.lower()]["variables"].keys())
+
+#     elements = [
+#         dbc.Switch(
+#             id=f"ds_{dataset_id.lower()}",
+#             # id={"type": "data_switch", "index": f"ds_{dataset_id.lower()}"},
+#             label=config_dict[dataset_id.lower()]["label"],
+#             value=False,
+#         ),
+#         html.Div(
+#             [
+#                 html.P(
+#                     config_dict[dataset_id.lower()]["description"],
+#                     className="analysis-data-desc",
+#                 )
+#             ]
+#         ),
+#     ]
+
+#     elements_vars = []
+#     for var in vars:
+#         elements_vars.append(
+#             dbc.Checkbox(
+#                 id={"type": "data_selector", "index": dataset_id.lower() + "-" + var},
+#                 label=config_dict[dataset_id.lower()]["variables"][var]["label"],
+#                 value=False,
+#             ),
+#         )
+
+#     if len(elements_vars) > 0:
+#         elements.append(
+#             html.Div(elements_vars, className="analysis-vars-switches", id=f"switch-group-vars-{dataset_id.lower()}")
+#             # html.Div(
+#             #     elements_vars,
+#             #     className="analysis-vars-switches",
+#             #     id={"type": "switch-group-vars", "index": f"switch-group-vars-{dataset_id.lower()}"},
+#             # )
+#         )
+
+#     return html.Div(elements, id=f"switch-group-{dataset_id.lower()}")

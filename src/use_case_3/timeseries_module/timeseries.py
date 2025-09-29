@@ -111,6 +111,9 @@ class Timeseries:
         dimension_names = list(data[measurement_name].dims)
         if data.rio.crs is not None:
             mask_geometries = mask_geometries.to_crs(data.rio.crs)
+        else:
+            # currently only the SAM data has this issue, so this is a temporary fix
+            mask_geometries = mask_geometries.to_crs("epsg:3031")
 
         # TODO: These will need to be better defined and formalised.
         if self.timeseries_region == TimeseriesRegion.ICE_SHELF:
