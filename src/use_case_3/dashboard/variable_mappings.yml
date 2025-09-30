@@ -397,7 +397,7 @@ elevation_change_anomolies_gl_1d:
     measurement_uncertainty_type: "std"
     region: "ice_shelf"
     label: "Elevation Change Anoms. GL"
-    y_axis_label: ""
+    y_axis_label: "Elevation Change Anoms. GL"
 
 elevation_change_anomolies_teis_1d:
   elevation_change_anomalies:
@@ -407,7 +407,7 @@ elevation_change_anomolies_teis_1d:
     measurement_uncertainty_type: "std"
     region: "ice_shelf"
     label: "Elevation Change Anoms. TEIS"
-    y_axis_label: ""
+    y_axis_label: "Elevation Change Anoms. TEIS"
 
 subglacial_lakes_volume_change_1d:
   description: "Processed time series from the Thwaites paper for testing."
@@ -420,7 +420,7 @@ subglacial_lakes_volume_change_1d:
       measurement_uncertainty_type: null
       region: "ice_shelf"
       label: "Subglacial Lake Volume Change"
-      y_axis_label: ""
+      y_axis_label: "Subglacial Lake Volume Change"
 
 moorings_1d:
   description: "Processed time series from the Thwaites paper for testing."
@@ -433,7 +433,7 @@ moorings_1d:
       measurement_uncertainty_type: null
       region: "ice_shelf"
       label: "0.8C isotherm depth"
-      y_axis_label: ""
+      y_axis_label: "0.8C isotherm depth"
 
 basal_melt_anomalies_pine_island_1d:
   description: "Processed time series from the Thwaites paper for testing."
@@ -446,11 +446,11 @@ basal_melt_anomalies_pine_island_1d:
         measurement_uncertainty_type: std
         region: "ice_shelf"
         label: "Basal melt anomalies - Pine Island"
-        y_axis_label: ""
+        y_axis_label: "asal melt anomalies - Pine Island"
 
 subglacial_lake_discharge_1d:
   description: "Processed time series from the Thwaites paper for testing."
-  label: "Thwaites Paper Subglacial Lake Discharge::"
+  label: "Thwaites Paper Subglacial Lake Discharge:"
   variables:
     lake_discharge:
       units: "m3 s-1"
@@ -459,7 +459,7 @@ subglacial_lake_discharge_1d:
       measurement_uncertainty_type: null
       region: "ice_shelf"
       label: "Subglacial lake discharge"
-      y_axis_label: ""
+      y_axis_label: "Subglacial lake discharge"
 
 basal_melt_anomalies_thwaites_1d:
   description: "Processed time series from the Thwaites paper for testing."
@@ -472,7 +472,7 @@ basal_melt_anomalies_thwaites_1d:
       measurement_uncertainty_type: std
       region: "ice_shelf"
       label: "Basal melt anomalies - Thwaites"
-      y_axis_label: ""
+      y_axis_label: "Basal melt anomalies - Thwaites"
 
 timeseries_summary:
   cumulative_discharge_change:

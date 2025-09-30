@@ -105,7 +105,7 @@ def determine_large_events(dataset: TimeSeriesPreprocessor, variable: str, stati
 
 
 def dectect_changes(
-    dataset: TimeSeriesPreprocessor, variable: str, model: str = "l1", min_size: int = 3, jump: int = 1
+    dataset: TimeSeriesPreprocessor, variable: str, model: str = "l2", min_size: int = 3, jump: int = 1
 ):
     algo = rpt.Pelt(model=model, min_size=min_size, jump=jump).fit(
         dataset.timeseries[variable].measurements.to_numpy().ravel()
@@ -115,6 +115,19 @@ def dectect_changes(
     )
 
     return change_brackets
+
+
+def calculate_median_change_brackets(dataset: TimeSeriesPreprocessor, variable: str, change_brackets: list[int]):
+    change_bracket_prev = 0
+    data_var = dataset.timeseries[variable].measurements.to_numpy()
+    medians = []
+    if len(change_brackets) >= 2:
+        for change_bracket in change_brackets:
+            medians.append(np.nanmedian(data_var[change_bracket_prev:change_bracket]))
+    else:
+        medians.append(np.nanmedian(data_var[0:5]))
+        medians.append(np.nanmedian(data_var[-5:]))
+    return medians
 
 
 def detect_outlier_events(
@@ -180,7 +193,6 @@ def calculate_rate(
 
 def find_matching_events(events_1, events_2):
     matched_years = []
-    matched_values = []
     for year in events_1[4]:
         if year in events_2[4]:
             matched_years.append(year)

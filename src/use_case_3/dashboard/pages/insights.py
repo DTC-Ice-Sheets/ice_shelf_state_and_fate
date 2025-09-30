@@ -68,6 +68,7 @@ layout = html.Div(
                             ),
                             style={"border": "0px black solid", "padding-top": "10px"},
                         ),
+                        # Insights mass balance
                         dbc.Row(
                             [
                                 dbc.Col([html.Div(id="insights_headline_title_mass_balance_div")], width=3),
@@ -98,6 +99,7 @@ layout = html.Div(
                         html.Div(
                             dcc.Graph(id="mass_balance_graph"), id="mass_balance_graph_div", style={"display": "none"}
                         ),
+                        # Insights calving
                         dbc.Row(
                             [
                                 dbc.Col([html.Div(id="insights_headline_title_calving_div")], width=3),
@@ -128,6 +130,74 @@ layout = html.Div(
                             id="insights_calving_detail_div",
                         ),
                         html.Div(dcc.Graph(id="calving_graph"), style={"display": "none"}, id="calving_graph_div"),
+                        # Insights basal melting
+                        dbc.Row(
+                            [
+                                dbc.Col([html.Div(id="insights_headline_title_basal_div")], width=3),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            id="insights_headline_text_basal_div",
+                                        ),
+                                    ],
+                                    width=9,
+                                ),
+                            ]
+                        ),
+                        dbc.Row(
+                            html.Div(
+                                [
+                                    dbc.Button(
+                                        "Show / Hide Detailed Basal Melt Flux Analysis",
+                                        color="primary",
+                                        id="insights_btn_show_basal",
+                                    ),
+                                ],
+                                style={"display": "none"},
+                                id="insights_btn_show_basal_div",
+                            ),
+                        ),
+                        html.Div(
+                            id="insights_basal_detail_div",
+                        ),
+                        html.Div(dcc.Graph(id="basal_graph"), style={"display": "none"}, id="basal_graph_div"),
+                        # Insights Covariate Analysis
+                        dbc.Row(
+                            [
+                                dbc.Col([html.Div(id="insights_headline_title_cov_analysis_div")], width=3),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            id="insights_headline_text_cov_analysis_div",
+                                        ),
+                                    ],
+                                    width=9,
+                                ),
+                            ]
+                        ),
+                        dbc.Row(
+                            html.Div(
+                                [
+                                    dbc.Button(
+                                        "Show / Hide Detailed Analysis",
+                                        color="primary",
+                                        id="insights_btn_show_cov_analysis",
+                                    ),
+                                ],
+                                style={"display": "none"},
+                                id="insights_btn_show_cov_analysis_div",
+                            ),
+                        ),
+                        html.Div(
+                            id="insights_cov_analysis_detail_div",
+                        ),
+                        html.Div(
+                                id="cov_analysis_graph_div",
+                                style={"text-align": "center", "display": "none"},
+                            ),
+                        # html.Div(
+                        #     dcc.Graph(id="cov_analysis_graph"), style={"display": "none"}, id="cov_analysis_graph_div"
+                        # ),
                     ],
                     width=6,
                 ),
