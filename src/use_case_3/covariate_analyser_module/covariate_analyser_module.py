@@ -99,6 +99,133 @@ class CovariateAnalyser:
         """
         return self.jointplot_grid(axis_labels=axis_labels, max_lag=max_lag, analysis_type=analysis_type)
 
+    def find_correlated_vars(
+        self: CovariateAnalyser, corr_thresh: float = 0.5
+    ) -> dict[tuple[str, str], tuple[float, float]]:
+        """
+        Find timeseries which are correlated.
+
+        This method finds correlated variables where the correlation is greater than a user defined threshold and is
+        statistically significant. Note it returns statistcally significant correlations which are both positive and
+        negative.
+
+        Parameters
+        ----------
+        corr_thresh : float, optional
+            The correlation threshold, by default 0.5
+
+        Returns
+        -------
+        dict[tuple[str, str], tuple[float, float]]
+            A dictionary with the label pairs as the key with the associated correlation coefficent and p_value.
+        """
+        correlated_vars = {}
+        for timeseries_label_1 in self.timeseries_container.timeseries:
+            for timeseries_label_2 in self.timeseries_container.timeseries:
+                if (
+                    timeseries_label_1 != timeseries_label_2
+                    and (timeseries_label_1, timeseries_label_2) not in correlated_vars
+                    and (timeseries_label_2, timeseries_label_1) not in correlated_vars
+                ):
+                    corr_coef, p_value = self.correlation_coefficient(
+                        timeseries_label_1, timeseries_label_2, altered=False
+                    )
+                    # We only store a correlated variable if it is not already in the dict.
+                    if np.abs(corr_coef) >= corr_thresh and p_value <= self.alpha:
+                        correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value)
+
+        return correlated_vars
+
+    def find_crosscorrelated_vars(
+        self: CovariateAnalyser,
+        corr_thresh: float = 0.5,
+        max_lag: int | None = 3,
+    ) -> dict[tuple[str, str], tuple[float, float, np.int64 | int | float]]:
+        """
+        Find timeseries which are correlated with associated lag.
+
+        This method finds correlated variables where the correlation is greater than a user defined threshold and is
+        statistically significant. Note it returns statistcally significant correlations which are both positive and
+        negative. The cross correlation is computed and correlation with the largest magnitude is used.
+
+        Parameters
+        ----------
+        corr_thresh : float, optional
+            The correlation threshold, by default 0.5
+        max_lag : int | None, optional
+            The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+            directions, by default 3
+
+        Returns
+        -------
+        dict[tuple[str, str], tuple[float, float, np.int64 | int | float]]
+            A dictionary with the label pairs as the key with the associated correlation coefficent, p_value and lag.
+        """
+        correlated_vars = {}
+        for timeseries_label_1 in self.timeseries_container.timeseries:
+            for timeseries_label_2 in self.timeseries_container.timeseries:
+                if (
+                    timeseries_label_1 != timeseries_label_2
+                    and (timeseries_label_1, timeseries_label_2) not in correlated_vars
+                    and (timeseries_label_2, timeseries_label_1) not in correlated_vars
+                ):
+                    # First we allign the timeseries in time using the cross-correlation.
+                    _, lag = self._align_timeseries(
+                        timeseries_label_1,
+                        timeseries_label_2,
+                        max_lag=max_lag,
+                    )
+                    # We now calculate the corr_coef and p_value using the alligned time series
+                    corr_coef, p_value = self.correlation_coefficient(
+                        timeseries_label_1=timeseries_label_1,
+                        timeseries_label_2=timeseries_label_2,
+                        altered=True,
+                    )
+                    # We only store a correlated variable if it is not already in the dict.
+                    if np.abs(corr_coef) >= corr_thresh and p_value <= self.alpha:
+                        correlated_vars[timeseries_label_1, timeseries_label_2] = (corr_coef, p_value, lag)
+
+        return correlated_vars
+
+    def find_causal_vars(
+        self: CovariateAnalyser,
+        max_lags: int | None = 10,
+    ) -> dict[tuple[str, str], tuple[float, float]]:
+        """
+        Find variables which are causally related. This method finds causal variables using the p-value.
+
+        Parameters
+        ----------
+        max_lags : int | None, optional
+            The maximum number of lags, if to large will be adjusted to floor((n - 1) / 3) - 1 where n is the no. rows
+             in data. In this context the maximum lags refers to the number of lags used to forecast, by default 10
+
+        Returns
+        -------
+        dict[tuple[str, str], tuple[float, float]]
+            A dictionary with the label pairs as the key with the associated fscore, and p_value.
+        """
+        causal_vars = {}
+        for timeseries_label_1 in self.timeseries_container.timeseries:
+            for timeseries_label_2 in self.timeseries_container.timeseries:
+                if (
+                    timeseries_label_1 != timeseries_label_2
+                    and (timeseries_label_1, timeseries_label_2) not in causal_vars
+                ):
+                    # Calculate the f_score and p_value using the Granger Causality test
+                    f_score, p_value = self._granger_causality_test(
+                        timeseries_label_1=timeseries_label_1,
+                        timeseries_label_2=timeseries_label_2,
+                        max_lags=max_lags,
+                        metric=ModelEvaluationMetric.BIC,
+                    )
+                    # We only store a correlated variable if it is not already in the dict. Note causality is
+                    # directional!
+                    if p_value <= self.alpha:
+                        causal_vars[timeseries_label_1, timeseries_label_2] = (f_score, p_value)
+
+        return causal_vars
+
     def correlation_coefficient(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, altered: bool = False
     ) -> tuple[float, float]:
@@ -283,7 +410,7 @@ class CovariateAnalyser:
         timeseries_1 = deepcopy(self.timeseries_container.timeseries[timeseries_label_1])
         timeseries_2 = deepcopy(self.timeseries_container.timeseries[timeseries_label_2])
 
-        freq = self.timeseries_container.aggregation_period.time_period_shorthand
+        freq = self.timeseries_container.aggregation_period
 
         offset_map = {
             AggregationPeriod.MONTH: pd.offsets.MonthEnd,
@@ -553,13 +680,13 @@ class CovariateAnalyser:
                         timeseries_col = deepcopy(timeseries[col])
                         timeseries_row = deepcopy(timeseries[row])
                         lag = 0
-                        freq = self.timeseries_container.aggregation_period.time_period_shorthand
+                        freq = self.timeseries_container.aggregation_period
                         altered = False
                     elif analysis_type == JointPlotAnalysisType.CAUSAL:
                         timeseries_col = deepcopy(timeseries[col])
                         timeseries_row = deepcopy(timeseries[row])
                         lag = 0
-                        freq = self.timeseries_container.aggregation_period.time_period_shorthand
+                        freq = self.timeseries_container.aggregation_period
                         altered = False
                         _, p_value = self._granger_causality_test(
                             timeseries_label_1=timeseries_col.label,
@@ -622,7 +749,7 @@ class CovariateAnalyser:
 
             # Add the correct axis labels
             if axis_labels is None:
-                axis_label = f"{timeseries_row.measurement_name.replace('_', ' ').title()}"
+                axis_label = f"{timeseries_row.label} {timeseries_row.measurement_name}".replace("_", " ").title()
             else:
                 axis_label = axis_labels[row]
             label = textwrap.fill(
@@ -657,7 +784,9 @@ class CovariateAnalyser:
             1,
             figsize=(10, 4 * len(timeseries_labels)),
             sharex="col",
+            squeeze=False,
         )
+        axes = axes.flatten()
 
         for n, _ in enumerate(timeseries_labels):
             sns.lineplot(

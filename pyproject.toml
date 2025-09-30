@@ -35,7 +35,7 @@ contextily = "^1.6.2"
 statsmodels = "^0.14.5"
 folium = "^0.20.0"
 schema = "^0.7.7"
-botocore = "^1.40.18"
+botocore = "^1.40.40"
 aiohttp = "^3.12.15"
 pystac-client = "^0.9.0"
 specklia = "^1.9.66"
@@ -60,6 +60,9 @@ sphinx-rtd-theme = "^3.0.2"
 sphinx-copybutton = "^0.5.2"
 commitizen = "^4.9.1"
 pydoclint = "^0.7.3"
+
+[tool.poetry.group.deployment.dependencies]
+dtc-wrapper = { git = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git", branch = "initial-wrapper" }
 
 [tool.ruff]
 line-length = 120

@@ -241,6 +241,47 @@ def timeseries_7_lag_fixture():
     )
 
 
+@pytest.fixture
+def fixture_series_x():
+    return Timeseries(
+        measurements=pd.Series([-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0], name="x"),
+        measurement_name="x",
+        label="x",
+        unit="",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ocean"),
+    )
+
+
+@pytest.fixture
+def fixture_series_y():
+    return Timeseries(
+        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1], name="y"),
+        measurement_name="y",
+        label="y",
+        unit="",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ocean"),
+    )
+
+
+@pytest.fixture
+def fixture_series_y2():
+    return Timeseries(
+        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -1, -1], name="y"),
+        measurement_name="y",
+        label="y",
+        unit="",
+        timeseries_type=TimeseriesType("cumulative"),
+        timeseries_region=TimeseriesRegion("ocean"),
+    )
+
+
+@pytest.fixture
+def fixture_data(fixture_series_x, fixture_series_y):
+    return pd.concat([fixture_series_x.measurements, fixture_series_y.measurements], axis=1)
+
+
 def test_correlation_coefficient(timeseries_1_fixture, timeseries_2_fixture, timeseries_7_fixture):
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_2_fixture],
@@ -271,6 +312,53 @@ def test_correlation_coefficient(timeseries_1_fixture, timeseries_2_fixture, tim
 
     assert np.isclose(corr, 0)
     assert np.isclose(p_value, 1)
+
+
+def test_find_correlated_vars(timeseries_1_fixture, timeseries_2_fixture, timeseries_7_fixture):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[timeseries_1_fixture, timeseries_2_fixture, timeseries_7_fixture],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+    correlated_vars = covariate_analyser.find_correlated_vars(corr_thresh=0.5)
+
+    assert list(correlated_vars.keys()) == [(timeseries_1_fixture.label, timeseries_2_fixture.label)]
+    assert next(iter(correlated_vars.values())) == (1.0, 0.0)
+
+
+def test_find_crosscorrelated_vars(timeseries_7_fixture, timeseries_7_lag_fixture):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[timeseries_7_fixture, timeseries_7_lag_fixture],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+    correlated_vars = covariate_analyser.find_crosscorrelated_vars(corr_thresh=0.5, max_lag=1)
+
+    assert list(correlated_vars.keys()) == [(timeseries_7_fixture.label, timeseries_7_lag_fixture.label)]
+    assert np.isclose(next(iter(correlated_vars.values()))[0], 1.0)
+    assert np.isclose(next(iter(correlated_vars.values()))[1], 0)
+    assert np.isclose(next(iter(correlated_vars.values()))[2], -1.0)
+
+
+def test_find_causal_vars(fixture_series_x, fixture_series_y2):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[
+            fixture_series_x,
+            fixture_series_y2,
+        ],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+    causal_vars = covariate_analyser.find_causal_vars(max_lags=3)
+
+    assert next(iter(causal_vars.keys())) == ("y", "x")
 
 
 def test_covariance(timeseries_1_fixture, timeseries_1_inv_fixture, timeseries_2_fixture, timeseries_7_fixture):
@@ -415,7 +503,7 @@ def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
         covariate_analyser._timeseries_altered[timeseries_7_lag_fixture.label].measurements.values,
         timeseries_2_gt.values,
     )
-    assert freq == "M"
+    assert freq == AggregationPeriod.MONTH
     assert corr_lag == -1
 
 
@@ -511,35 +599,6 @@ def test_jointplotanalysistype__init():
     assert JointPlotAnalysisType("corr") == JointPlotAnalysisType.CORR
     assert JointPlotAnalysisType("cross_corr") == JointPlotAnalysisType.CROSS_CORR
     assert JointPlotAnalysisType("causal") == JointPlotAnalysisType.CAUSAL
-
-
-@pytest.fixture
-def fixture_series_x():
-    return Timeseries(
-        measurements=pd.Series([-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0], name="x"),
-        measurement_name="x",
-        label="x",
-        unit="",
-        timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
-    )
-
-
-@pytest.fixture
-def fixture_series_y():
-    return Timeseries(
-        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1], name="y"),
-        measurement_name="y",
-        label="y",
-        unit="",
-        timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
-    )
-
-
-@pytest.fixture
-def fixture_data(fixture_series_x, fixture_series_y):
-    return pd.concat([fixture_series_x.measurements, fixture_series_y.measurements], axis=1)
 
 
 def test__granger_causality_test_bestlag(fixture_data):
