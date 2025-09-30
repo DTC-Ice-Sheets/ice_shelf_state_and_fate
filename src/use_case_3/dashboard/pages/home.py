@@ -17,27 +17,26 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "Welcome to Digital Twin Ice Sheets. This dashboard allows to you to investigate the current and "
-                    "future state of the Antarctic ice shelves using earth observation data. It provides an up-to-date reconstruction of Antarctic Ice Shelves, their interactions with the ice sheet, atmosphere, and ocean, and enables the forecast of their evolution."
+                    "Welcome to Digital Twin of Antarctic Ice Shelves. The twin is based on Earth Observation, In-situ, re-analysis, and simulation data, to provide a reconstruction of the state of Antarctic Ice Shelves, and of their interactions with the ice sheet, atmosphere, and ocean. The twin makes use of these data to forecast ice shelves evolution."
                 ),
                 html.P(
-                    "The DTC Ice Sheets Project is part of the European Space Agency’s Digital Twin Earth (DTE) initiative, developed under the Lead Digital Twin Components (DTC) Development Actions for the Ice Sheets."
+                    "The DTC Ice Sheets Project is part of the European Space Agency's Digital Twin Earth (DTE) initiative, developed under the Lead Digital Twin Components (DTC) Development Actions for the Ice Sheets."
                 ),
                 html.Div(
                     [
                         dbc.Button(
-                            "Start analysis",
+                            "Enter the Digital Twin",
                             color="primary",
                             id="btn-homepage",
-                            href="/ice-shelf-summary",
+                            href="/insights",
                         ),
                     ],
                     className="d-grid gap-2 col-6 mx-auto",
                 ),
                 html.P(""),
-                html.P(
-                    "TODO: Add consortium member logos and a better description and remove unnecessary white space around logo."
-                ),
+                # html.P(
+                #     "TODO: Add consortium member logos and a better description and remove unnecessary white space around logo."
+                # ),
             ],
             className="website_text",
         ),

@@ -10,7 +10,7 @@ import plotting
 import process_data
 import query_data
 import yaml
-from dash import Dash, Input, Output, State, callback, html, ALL, MATCH
+from dash import Dash, Input, Output, State, callback, html, ALL, MATCH, dcc
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
@@ -26,8 +26,6 @@ with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashbo
 ice_shelf_inital = "thwaites"
 
 # Import data ###
-# ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
-# ocean_polygons_epsg4326, ocean_polygons_proj = query_data.query_all_ocean_data()
 ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj = (
     query_data.query_polygons()
 )
@@ -35,7 +33,6 @@ ice_sheet_polygons_epsg4326, ice_sheet_polygons_proj = query_data.query_ice_shee
 summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
-
 
 # Build Dash app ###
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], use_pages=True)
@@ -48,28 +45,178 @@ app.layout = html.Div(
 
 
 @callback(
-    Output("insights_mass_balance_div", "children"),
+    Output("insights_headline_title_mass_balance_div", "children"),
+    Output("insights_headline_text_mass_balance_div", "children"),
+    Output("insights_btn_show_mass_balance_div", "style"),
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_massbalance(ice_shelf, year_range):
+def insight_update_massbalance_headline(ice_shelf, year_range):
     if ice_shelf is not None:
         _, timeseries_container, _, _ = query_data.query_summary_data(
             ice_shelf_polygons=ice_shelf_polygons_proj,
             ice_shelf=ice_shelf,
             year_range=year_range,
         )
-        process_data.calculate_mass_balance(timeseries_container=timeseries_container)
+
+        mass_balance_events, mass_balance_rate, calving_matched_years = process_data.calculate_mass_balance(
+            timeseries_container=timeseries_container
+        )
+
+        if mass_balance_events[0] < 0:
+            gained_lost = "lost"
+        else:
+            gained_lost = "gained"
+        return (
+            html.Div(html.P(html.Strong("MASS BALANCE:"), className="insights_headline_text")),
+            html.Div(
+                html.P(
+                    f"In the past {year_range[1] - year_range[0]} years, {ice_shelf.replace('_', ' ').title()} Ice Shelf has {gained_lost} {np.abs(mass_balance_events[0]): .0f} Gts of ice.",
+                    className="insights_headline_text",
+                )
+            ),
+            {
+                "display": "flex",
+                "align-items": "center",
+                "justify-content": "center",
+            },
+        )
+    return html.Div(), html.Div(), {"display": "none"}
+
+
+@callback(
+    Output("insights_mass_balance_div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_massbalance_detail(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+        mass_balance_events, mass_balance_rate, calving_matched_years = process_data.calculate_mass_balance(
+            timeseries_container=timeseries_container
+        )
+
+        if mass_balance_events[0] < 0:
+            gained_lost = "lost"
+        else:
+            gained_lost = "gained"
+
+        if mass_balance_rate < 0:
+            increasing_decreasing = "increasing"
+        else:
+            increasing_decreasing = "decreasing"
+
+        if len(calving_matched_years) > 0:
+            calving_matched_text = (
+                f" It is likely that two {len(calving_matched_years)} of these events are due to calving."
+            )
+        else:
+            calving_matched_text = " Currently there are no obvious causes of these events"
+        # title = html.H6("Mass Balance:", className="insights_h6")
+        intro = html.P(
+            f"In the past {year_range[1] - year_range[0]} years, {ice_shelf.replace('_', ' ').title()} Ice Shelf has {gained_lost} {mass_balance_events[0]: .0f}+/-{mass_balance_events[1]: .0f}Gt of ice. This ice loss is currently {increasing_decreasing} at a rate of {np.abs(mass_balance_rate): .1f} Gt/year.",
+            className="insights_calving_summary_text",
+        )
+        main = html.P()
+        if len(mass_balance_events[2]) > 0:
+            if len(mass_balance_events[2]) == 1:
+                main = html.P(
+                    f"There was one significant event on {ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. This event occured in {mass_balance_events[4][-1]}, and resulted an overall ice loss of {mass_balance_events[2][-1]: .0f}+/-{mass_balance_events[3][-1]: .0f}Gt.",
+                    className="insights_calving_summary_text",
+                )
+            else:
+                main = html.P(
+                    f"There were {len(mass_balance_events[2])} significant events impacting {ice_shelf.replace('_', ' ').title()} Ice Shelf mass balance between {year_range[0]} and {year_range[1]}."
+                    + calving_matched_text,
+                    className="insights_calving_summary_text",
+                )
+
+        text = [
+            # title,
+            intro,
+            main,
+        ]
+        return html.Div(text)
     else:
         return html.Div()
 
 
 @callback(
-    Output("insights_calving_summary_div", "children"),
+    Output("mass_balance_graph", "figure"),
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_calving(ice_shelf, year_range):
+def plot_mass_balance(ice_shelf, year_range):
+    if ice_shelf is None:
+        ice_shelf = "thwaites"
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
+
+    mass_balance_events, _, _ = process_data.calculate_mass_balance(timeseries_container=timeseries_container)
+
+    fig = plotting.plot_summary_timeseries(
+        timeseries_container.timeseries["mass_balance"],
+        outliers=(mass_balance_events[4], mass_balance_events[2]),
+        margin={"t": 0, "l": 150, "b": 25, "r": 50},
+        y_label="Mass Balance (Gt/year)",
+    )
+    return fig
+
+
+@callback(
+    Output("insights_mass_balance_div", "style"),
+    Output("mass_balance_graph_div", "style"),
+    Input("insights_btn_show_mass_balance", "n_clicks"),
+)
+def button_detailed_mass_balance(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:
+        return {"display": "block"}, {"display": "block"}
+    return {"display": "none"}, {"display": "none"}
+
+
+@callback(
+    Output("calving_graph", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def plot_calving(ice_shelf, year_range):
+    if ice_shelf is None:
+        ice_shelf = "thwaites"
+
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
+
+    calving_events = process_data.detect_outlier_events(
+        timeseries_container=timeseries_container, variable="calving", stationary_check=False
+    )
+
+    fig = plotting.plot_summary_timeseries(
+        timeseries_container.timeseries["calving"],
+        outliers=(calving_events[4], calving_events[2]),
+        margin={"t": 0, "l": 150, "b": 25, "r": 50},
+        y_label="Calving (Gt/year)",
+    )
+    return fig
+
+
+@callback(
+    Output("insights_headline_title_calving_div", "children"),
+    Output("insights_headline_text_calving_div", "children"),
+    Output("insights_btn_show_calving_div", "style"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_calving_headline(ice_shelf, year_range):
     if ice_shelf is not None:
         _, timeseries_container, _, _ = query_data.query_summary_data(
             ice_shelf_polygons=ice_shelf_polygons_proj,
@@ -77,13 +224,69 @@ def insight_update_calving(ice_shelf, year_range):
             year_range=year_range,
         )
 
-        total, total_unc, calving_events, calving_unc_events, time_events = process_data.detect_calving_events(
+        total, total_unc, calving_events, calving_unc_events, time_events = process_data.detect_outlier_events(
+            timeseries_container=timeseries_container
+        )
+        if len(calving_events) > 0:
+            if len(calving_events) > 1:
+                has_have = "have"
+                event_s = "events"
+                year_s = "years"
+            else:
+                has_have = "has"
+                event_s = "event"
+                year_s = "year"
+
+            return (
+                html.Div(html.P(html.Strong("CALVING:"), className="insights_headline_text")),
+                html.Div(
+                    html.P(
+                        f"There {has_have} been {len(calving_events)} {year_s} with large calving {event_s} in the {year_range[1] - year_range[0]} year period chosen.",
+                        className="insights_headline_text",
+                    )
+                ),
+                # {"display": "block"},
+                {
+                    "display": "flex",
+                    "align-items": "center",
+                    "justify-content": "center",
+                    # "display": "block",
+                    # "width": "100%",
+                },
+            )
+    return html.Div(), html.Div(), {"display": "none"}
+
+
+@callback(
+    Output("insights_calving_detail_div", "style"),
+    Output("calving_graph_div", "style"),
+    Input("insights_btn_show_calving", "n_clicks"),
+)
+def button_detailed_calving(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:
+        return {"display": "block"}, {"display": "block"}
+    return {"display": "none"}, {"display": "none"}
+
+
+@callback(
+    Output("insights_calving_detail_div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_calving_detail(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+
+        total, total_unc, calving_events, calving_unc_events, time_events = process_data.detect_outlier_events(
             timeseries_container=timeseries_container
         )
         if len(calving_events) == 0:
             return html.Div()
         else:
-            title = html.H6("Calving Events Detected:", className="insights_h6")
             if len(calving_events) == 1:
                 main = html.P(
                     f"There was one significant calving event on {ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. This calving event occured in {time_events[0]}, and resulted an overall ice loss of {calving_events[0]: .0f}+/-{calving_unc_events[0]: .0f}Gt.",
@@ -91,12 +294,11 @@ def insight_update_calving(ice_shelf, year_range):
                 )
             else:
                 main = html.P(
-                    f"There were {len(calving_events)} significant calving events on {ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. These calving events have resulted in an overal ice loss of approximately {total: .0f}+/-{total_unc: .0f}Gt. The largest calving event was {calving_events[0]: .0f}+/-{calving_unc_events[0]: .0f}Gt and occured in {time_events[0]}.",
+                    f"There were {len(calving_events)} significant calving events on {ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. These calving events have resulted in an overal ice loss of approximately {total: .0f}+/-{total_unc: .0f}Gt. The largest calving event was {calving_events[-1]: .0f}+/-{calving_unc_events[-1]: .0f}Gt and occured in {time_events[-1]}.",
                     className="insights_calving_summary_text",
                 )
 
             text = [
-                title,
                 main,
             ]
             return html.Div(text)
@@ -639,74 +841,183 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):
     return fig
 
 
+# @callback(
+#     Output("gauge_1_figure", "figure"),
+#     Input("ice_shelf_selection", "value"),
+#     State("gauge_1_store", "data"),
+# )
+# def plot_gauge_indicator1(ice_shelf, variable):
+#     summary_data, timeseries_container, _, _ = query_data.query_summary_data(
+#         ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+#     )
+
+#     fig = plotting.plot_gauge_indicator(summary_data, variable)
+#     return fig
+
+
 @callback(
     Output("gauge_1_figure", "figure"),
     Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
     State("gauge_1_store", "data"),
 )
-def plot_gauge_indicator1(ice_shelf, variable):
-    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
-        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+def plot_gauge_indicator1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
     )
 
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
+    fig = plotting.plot_gauge_indicator_timeseries(timeseries_container, variable)
     return fig
+
+
+@callback(
+    Output("total_mass_change_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator1_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total mass change between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
 
 
 @callback(
     Output("gauge_2_figure", "figure"),
     Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
     State("gauge_2_store", "data"),
 )
-def plot_gauge_indicator2(ice_shelf, variable):
-    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
-        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+def plot_gauge_indicator2(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
     )
 
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
+    fig = plotting.plot_gauge_indicator_timeseries(timeseries_container, variable)
     return fig
+
+
+@callback(
+    Output("total_basal_melt_flux_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator2_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total basal melting between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
 
 
 @callback(
     Output("gauge_3_figure", "figure"),
     Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
     State("gauge_3_store", "data"),
 )
-def plot_gauge_indicator3(ice_shelf, variable):
-    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
-        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+def plot_gauge_indicator3(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
     )
 
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
+    fig = plotting.plot_gauge_indicator_timeseries(timeseries_container, variable)
     return fig
+
+
+@callback(
+    Output("total_calving_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator3_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total calving between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
 
 
 @callback(
     Output("gauge_4_figure", "figure"),
     Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
     State("gauge_4_store", "data"),
 )
-def plot_gauge_indicator4(ice_shelf, variable):
-    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
-        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+def plot_gauge_indicator4(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
     )
 
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
+    fig = plotting.plot_gauge_indicator_timeseries(timeseries_container, variable)
     return fig
+
+
+@callback(
+    Output("total_discharge_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator4_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total discharge between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
 
 
 @callback(
     Output("gauge_5_figure", "figure"),
     Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
     State("gauge_5_store", "data"),
 )
-def plot_gauge_indicator5(ice_shelf, variable):
-    summary_data, timeseries_container, _, _ = query_data.query_summary_data(
-        ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf
+def plot_gauge_indicator5(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
     )
 
-    fig = plotting.plot_gauge_indicator(summary_data, variable)
+    fig = plotting.plot_gauge_indicator_timeseries(timeseries_container, variable)
     return fig
+
+
+@callback(
+    Output("total_surface_mass_balance_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator5_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total surface mass balance between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
 
 
 @callback(
@@ -717,11 +1028,6 @@ def plot_gauge_indicator5(ice_shelf, variable):
     State("select-analysis-type", "value"),
     State({"type": "data_selector", "index": ALL}, "id"),
     State({"type": "data_selector", "index": ALL}, "value"),
-    # State("moorings_1d-depth_PIG_N_and_S_combined", "value"),
-    # State("basal_melt_anomalies_pine_island_1d-basal_melt_anomalies", "value"),
-    # State("subglacial_lake_discharge_1d-lake_discharge", "value"),
-    # # State("subglacial_lakes_volume_change_1d-volume_change", "value"),
-    # State("basal_melt_anomalies_thwaites_1d-basal_melt_anomalies", "value"),
 )
 def conduct_covariate_analysis(
     n,
