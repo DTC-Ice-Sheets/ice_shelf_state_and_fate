@@ -17,7 +17,7 @@ summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data
     ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
 )
 
-# ice_shelf_inital = None
+ice_shelf_inital = None
 
 navbar = layout_navbar(page_title="Insights")
 
@@ -68,12 +68,66 @@ layout = html.Div(
                             ),
                             style={"border": "0px black solid", "padding-top": "10px"},
                         ),
+                        dbc.Row(
+                            [
+                                dbc.Col([html.Div(id="insights_headline_title_mass_balance_div")], width=3),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            id="insights_headline_text_mass_balance_div",
+                                        ),
+                                    ],
+                                    width=9,
+                                ),
+                            ]
+                        ),
+                        dbc.Row(
+                            html.Div(
+                                [
+                                    dbc.Button(
+                                        "Show / Hide Detailed Mass Balance Analysis",
+                                        color="primary",
+                                        id="insights_btn_show_mass_balance",
+                                    ),
+                                ],
+                                style={"display": "none"},
+                                id="insights_btn_show_mass_balance_div",
+                            ),
+                        ),
+                        html.Div(id="insights_mass_balance_div", style={"display": "none"}),
                         html.Div(
-                            id="insights_mass_balance_div",
+                            dcc.Graph(id="mass_balance_graph"), id="mass_balance_graph_div", style={"display": "none"}
+                        ),
+                        dbc.Row(
+                            [
+                                dbc.Col([html.Div(id="insights_headline_title_calving_div")], width=3),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            id="insights_headline_text_calving_div",
+                                        ),
+                                    ],
+                                    width=9,
+                                ),
+                            ]
+                        ),
+                        dbc.Row(
+                            html.Div(
+                                [
+                                    dbc.Button(
+                                        "Show / Hide Detailed Calving Analysis",
+                                        color="primary",
+                                        id="insights_btn_show_calving",
+                                    ),
+                                ],
+                                style={"display": "none"},
+                                id="insights_btn_show_calving_div",
+                            ),
                         ),
                         html.Div(
-                            id="insights_calving_summary_div",
+                            id="insights_calving_detail_div",
                         ),
+                        html.Div(dcc.Graph(id="calving_graph"), style={"display": "none"}, id="calving_graph_div"),
                     ],
                     width=6,
                 ),

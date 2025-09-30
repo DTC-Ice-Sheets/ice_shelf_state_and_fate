@@ -37,7 +37,8 @@ layout = html.Div(
                                             html.Div(
                                                 [
                                                     dcc.Graph(id="gauge_1_figure"),
-                                                    dcc.Store(data="mass_trend", id="gauge_1_store"),
+                                                    dcc.Store(data="mass_balance", id="gauge_1_store"),
+                                                    # dcc.Store(data="mass_trend", id="gauge_1_store"),
                                                 ],
                                                 style={
                                                     "padding-top": "10px",
@@ -47,104 +48,71 @@ layout = html.Div(
                                             )
                                         ),
                                         dbc.Row(
-                                            html.Div(
-                                                html.P(
-                                                    [
-                                                        "Total mass change rate between",
-                                                        html.Br(),
-                                                        "1997 and 2021 (Gt yr-1)",
-                                                    ]
-                                                ),
-                                                # html.P( <br> ),
-                                                style={
-                                                    "padding": 0,
-                                                    "margin": 0,
-                                                    "border": "0px black solid",
-                                                    "font-size": "0.75rem",
-                                                    "text-align": "center",
-                                                    "font-weight": "bold",
-                                                },
-                                            )
+                                            html.Div([]),
+                                            style={
+                                                "padding": 0,
+                                                "margin": 0,
+                                                "border": "0px black solid",
+                                                "font-size": "0.75rem",
+                                                "text-align": "center",
+                                                "font-weight": "bold",
+                                            },
+                                            id="total_mass_change_gauge_text",
                                         ),
                                         dbc.Row(
                                             html.Div(
                                                 [
                                                     dcc.Graph(id="gauge_2_figure"),
-                                                    dcc.Store(data="steady_state_discharge", id="gauge_2_store"),
+                                                    dcc.Store(data="basal_melt_flux", id="gauge_2_store"),
                                                 ],
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
                                         dbc.Row(
-                                            html.Div(
-                                                html.P(
-                                                    [
-                                                        "Steady-state discharge rate between",
-                                                        html.Br(),
-                                                        "1997 and 2021 (Gt yr-1)",
-                                                    ]
-                                                ),
-                                                # html.P("Steady-state discharge rate between 1997 and 2021 (Gt yr-1)"),
-                                                style={
-                                                    "padding": 0,
-                                                    "margin": 0,
-                                                    "border": "0px black solid",
-                                                    "font-size": "0.75rem",
-                                                    "text-align": "center",
-                                                    "font-weight": "bold",
-                                                },
-                                            )
+                                            html.Div([]),
+                                            style={
+                                                "padding": 0,
+                                                "margin": 0,
+                                                "border": "0px black solid",
+                                                "font-size": "0.75rem",
+                                                "text-align": "center",
+                                                "font-weight": "bold",
+                                            },
+                                            id="total_basal_melt_flux_gauge_text",
                                         ),
                                         dbc.Row(
                                             html.Div(
                                                 [
                                                     dcc.Graph(id="gauge_3_figure"),
-                                                    dcc.Store(data="steady_state_calving", id="gauge_3_store"),
+                                                    dcc.Store(data="calving", id="gauge_3_store"),
                                                 ],
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
                                         dbc.Row(
-                                            html.Div(
-                                                html.P(
-                                                    [
-                                                        "Steady-state calving rate between",
-                                                        html.Br(),
-                                                        "1997 and 2021 (Gt yr-1)",
-                                                    ]
-                                                ),
-                                                # html.P("Steady-state calving rate between 1997 and 2021 (Gt yr-1)"),
-                                                style={
-                                                    "padding": 0,
-                                                    "margin": 0,
-                                                    "border": "0px black solid",
-                                                    "font-size": "0.75rem",
-                                                    "text-align": "center",
-                                                    "font-weight": "bold",
-                                                },
-                                            )
+                                            html.Div([]),
+                                            style={
+                                                "padding": 0,
+                                                "margin": 0,
+                                                "border": "0px black solid",
+                                                "font-size": "0.75rem",
+                                                "text-align": "center",
+                                                "font-weight": "bold",
+                                            },
+                                            id="total_calving_gauge_text",
                                         ),
                                         dbc.Row(
                                             html.Div(
                                                 [
                                                     dcc.Graph(id="gauge_4_figure"),
-                                                    dcc.Store(data="steady_state_basal_melt", id="gauge_4_store"),
+                                                    dcc.Store(data="discharge", id="gauge_4_store"),
                                                 ],
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
                                         dbc.Row(
                                             html.Div(
-                                                # html.P(
-                                                #     "Steady-state basal melting rate between 1997 and 2021 (Gt yr-1)"
-                                                # ),
-                                                html.P(
-                                                    [
-                                                        "Steady-state basal melting rate between",
-                                                        html.Br(),
-                                                        "1997 and 2021 (Gt yr-1)",
-                                                    ]
-                                                ),
+                                                html.Div([]),
                                                 style={
                                                     "padding": 0,
                                                     "margin": 0,
@@ -153,36 +121,29 @@ layout = html.Div(
                                                     "text-align": "center",
                                                     "font-weight": "bold",
                                                 },
-                                            )
+                                                id="total_discharge_gauge_text",
+                                            ),
                                         ),
                                         dbc.Row(
                                             html.Div(
                                                 [
                                                     dcc.Graph(id="gauge_5_figure"),
-                                                    dcc.Store(data="steady_state_smb", id="gauge_5_store"),
+                                                    dcc.Store(data="surface_mass_balance", id="gauge_5_store"),
                                                 ],
                                                 style={"padding": 0, "margin": 0, "border": "0px black solid"},
                                             )
                                         ),
                                         dbc.Row(
-                                            html.Div(
-                                                html.P(
-                                                    [
-                                                        "Steady-state SMB rate between",
-                                                        html.Br(),
-                                                        "1997 and 2021 (Gt yr-1)",
-                                                    ]
-                                                ),
-                                                # html.P("Steady-state SMB rate between 1997 and 2021 (Gt yr-1)"),
-                                                style={
-                                                    "padding": 0,
-                                                    "margin": 0,
-                                                    "border": "0px black solid",
-                                                    "font-size": "0.75rem",
-                                                    "text-align": "center",
-                                                    "font-weight": "bold",
-                                                },
-                                            )
+                                            html.Div([]),
+                                            style={
+                                                "padding": 0,
+                                                "margin": 0,
+                                                "border": "0px black solid",
+                                                "font-size": "0.75rem",
+                                                "text-align": "center",
+                                                "font-weight": "bold",
+                                            },
+                                            id="total_surface_mass_balance_gauge_text",
                                         ),
                                     ],
                                     width=4,

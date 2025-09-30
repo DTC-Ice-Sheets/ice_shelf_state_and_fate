@@ -13,13 +13,23 @@
 }
 
 .insights_h6 {
-    padding-top: 100px;
+    padding-top: 50px;
     padding-left: 50px;
     padding-right: 50px;
     /* padding-bottom: -50px; */
     font-size: 2em;
     /* text-align: justify;
     text-justify: inter-word; */
+}
+
+.insights_headline_text {
+    padding-top: 50px;
+    padding-left: 50px;
+    padding-right: 50px;
+    /* padding-bottom: -50px; */
+    font-size: 1.5em;
+    text-align: justify;
+    text-justify: inter-word;
 }
 
 .insights_intro_text {
@@ -34,7 +44,7 @@
 
 .insights_calving_summary_text {
     padding-top: 0px;
-    padding-left: 50px;
+    padding-left: 100px;
     padding-right: 50px;
     font-size: 1.5em;
     text-align: justify;
@@ -158,4 +168,8 @@
     margin-left: 30%;
     width: 40%;
     margin-right: 30%;
+}
+
+#mass_balance_graph {
+    height: 300px;
 }

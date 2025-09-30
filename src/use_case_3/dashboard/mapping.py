@@ -52,7 +52,7 @@ def create_ice_shelf_map(
     else:
         ice_shelf_polygons.plot(
             ax=axes,
-            color="salmon",
+            color="lightblue",
             alpha=1,
             linewidth=1,
             edgecolor="black",
