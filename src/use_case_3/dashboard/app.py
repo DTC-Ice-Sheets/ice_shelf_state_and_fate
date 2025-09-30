@@ -182,34 +182,6 @@ def button_detailed_mass_balance(n_clicks):
 
 
 @callback(
-    Output("calving_graph", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-)
-def plot_calving(ice_shelf, year_range):
-    if ice_shelf is None:
-        ice_shelf = "thwaites"
-
-    _, timeseries_container, _, _ = query_data.query_summary_data(
-        ice_shelf_polygons=ice_shelf_polygons_proj,
-        ice_shelf=ice_shelf,
-        year_range=year_range,
-    )
-
-    calving_events = process_data.detect_outlier_events(
-        timeseries_container=timeseries_container, variable="calving", stationary_check=False
-    )
-
-    fig = plotting.plot_summary_timeseries(
-        timeseries_container.timeseries["calving"],
-        outliers=(calving_events[4], calving_events[2]),
-        margin={"t": 0, "l": 150, "b": 25, "r": 50},
-        y_label="Calving (Gt/year)",
-    )
-    return fig
-
-
-@callback(
     Output("insights_headline_title_calving_div", "children"),
     Output("insights_headline_text_calving_div", "children"),
     Output("insights_btn_show_calving_div", "style"),
@@ -224,9 +196,7 @@ def insight_update_calving_headline(ice_shelf, year_range):
             year_range=year_range,
         )
 
-        total, total_unc, calving_events, calving_unc_events, time_events = process_data.detect_outlier_events(
-            timeseries_container=timeseries_container
-        )
+        _, _, calving_events, _, _ = process_data.detect_outlier_events(timeseries_container=timeseries_container)
         if len(calving_events) > 0:
             if len(calving_events) > 1:
                 has_have = "have"
@@ -255,17 +225,6 @@ def insight_update_calving_headline(ice_shelf, year_range):
                 },
             )
     return html.Div(), html.Div(), {"display": "none"}
-
-
-@callback(
-    Output("insights_calving_detail_div", "style"),
-    Output("calving_graph_div", "style"),
-    Input("insights_btn_show_calving", "n_clicks"),
-)
-def button_detailed_calving(n_clicks):
-    if n_clicks and n_clicks % 2 == 1:
-        return {"display": "block"}, {"display": "block"}
-    return {"display": "none"}, {"display": "none"}
 
 
 @callback(
@@ -304,6 +263,284 @@ def insight_update_calving_detail(ice_shelf, year_range):
             return html.Div(text)
     else:
         return html.Div()
+
+
+@callback(
+    Output("calving_graph", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def plot_calving(ice_shelf, year_range):
+    if ice_shelf is None:
+        ice_shelf = "thwaites"
+
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
+
+    calving_events = process_data.detect_outlier_events(
+        timeseries_container=timeseries_container, variable="calving", stationary_check=False
+    )
+
+    fig = plotting.plot_summary_timeseries(
+        timeseries_container.timeseries["calving"],
+        outliers=(calving_events[4], calving_events[2]),
+        margin={"t": 0, "l": 150, "b": 25, "r": 50},
+        y_label="Calving (Gt/year)",
+    )
+    return fig
+
+
+@callback(
+    Output("insights_calving_detail_div", "style"),
+    Output("calving_graph_div", "style"),
+    Input("insights_btn_show_calving", "n_clicks"),
+)
+def button_detailed_calving(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:
+        return {"display": "block"}, {"display": "block"}
+    return {"display": "none"}, {"display": "none"}
+
+
+@callback(
+    Output("insights_headline_title_basal_div", "children"),
+    Output("insights_headline_text_basal_div", "children"),
+    Output("insights_btn_show_basal_div", "style"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_basal_headline(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+
+        bm_change_brackets = process_data.dectect_changes(dataset=timeseries_container, variable="basal_melt_flux")
+
+        if len(bm_change_brackets) > 0:
+            medians = process_data.calculate_median_change_brackets(
+                dataset=timeseries_container,
+                variable="basal_melt_flux",
+                change_brackets=bm_change_brackets,
+            )
+
+            median_change = (medians[0] - medians[-1]) / medians[0] * 100
+
+            mag = "decrease" if median_change >= 0 else "increase"
+
+            return (
+                html.Div(html.P(html.Strong("BASAL MELT FLUX:"), className="insights_headline_text")),
+                html.Div(
+                    html.P(
+                        f"There has been a {np.abs(median_change): .1f}% {mag} in basal melt flux in the selected {year_range[1] - year_range[0]} year period.",
+                        className="insights_headline_text",
+                    )
+                ),
+                {
+                    "display": "flex",
+                    "align-items": "center",
+                    "justify-content": "center",
+                },
+            )
+    return html.Div(), html.Div(), {"display": "none"}
+
+
+@callback(
+    Output("insights_basal_detail_div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_basal_melt_flux_detail(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+
+        bm_change_brackets = process_data.dectect_changes(dataset=timeseries_container, variable="basal_melt_flux")
+
+        if len(bm_change_brackets) == 1:
+            main = html.P(
+                f"There have been no significant changes in basal melt flux detected in the selcted period.",
+                className="insights_calving_summary_text",
+            )
+        else:
+            last_change = timeseries_container.timeseries["basal_melt_flux"].measurements.index[bm_change_brackets[-2]]
+            main = html.P(
+                f"There have been {len(bm_change_brackets) - 1} periods where the basal melt flux has changed in the selected time span over {ice_shelf} Ice Shelf. The most recent was in {last_change}.",
+                className="insights_calving_summary_text",
+            )
+
+        text = [
+            main,
+        ]
+        return html.Div(text)
+    else:
+        return html.Div()
+
+
+@callback(
+    Output("basal_graph", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def plot_basal_melt_flux(ice_shelf, year_range):
+    if ice_shelf is None:
+        ice_shelf = "thwaites"
+
+    _, timeseries_container, _, _ = query_data.query_summary_data(
+        ice_shelf_polygons=ice_shelf_polygons_proj,
+        ice_shelf=ice_shelf,
+        year_range=year_range,
+    )
+
+    basal_events = process_data.detect_outlier_events(
+        timeseries_container=timeseries_container, variable="basal_melt_flux", stationary_check=False
+    )
+
+    bm_change_brackets = process_data.dectect_changes(dataset=timeseries_container, variable="basal_melt_flux")
+
+    fig = plotting.plot_summary_timeseries(
+        timeseries_container.timeseries["basal_melt_flux"],
+        outliers=(basal_events[4], basal_events[2]),
+        brackets=bm_change_brackets,
+        margin={"t": 0, "l": 150, "b": 25, "r": 50},
+        y_label="Basal Melt Flux (Gt/year)",
+    )
+    return fig
+
+
+@callback(
+    Output("insights_basal_detail_div", "style"),
+    Output("basal_graph_div", "style"),
+    Input("insights_btn_show_basal", "n_clicks"),
+)
+def button_detailed_basal_melt_flux(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:
+        return {"display": "block"}, {"display": "block"}
+    return {"display": "none"}, {"display": "none"}
+
+
+@callback(
+    Output("insights_headline_title_cov_analysis_div", "children"),
+    Output("insights_headline_text_cov_analysis_div", "children"),
+    Output("insights_btn_show_cov_analysis_div", "style"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def insight_update_cov_analysis_headline(ice_shelf, year_range):
+    if ice_shelf is not None:
+        _, timeseries_container, _, _ = query_data.query_summary_data(
+            ice_shelf_polygons=ice_shelf_polygons_proj,
+            ice_shelf=ice_shelf,
+            year_range=year_range,
+        )
+
+        bm_change_brackets = process_data.dectect_changes(dataset=timeseries_container, variable="basal_melt_flux")
+
+        if len(bm_change_brackets) > 0:
+            medians = process_data.calculate_median_change_brackets(
+                dataset=timeseries_container,
+                variable="basal_melt_flux",
+                change_brackets=bm_change_brackets,
+            )
+
+            median_change = (medians[0] - medians[-1]) / medians[0] * 100
+
+            mag = "decrease" if median_change >= 0 else "increase"
+
+            return (
+                html.Div(html.P(html.Strong("Covariate Analysis:"), className="insights_headline_text")),
+                html.Div(
+                    html.P(
+                        f"There have been X related variables detected.",
+                        className="insights_headline_text",
+                    )
+                ),
+                {
+                    "display": "flex",
+                    "align-items": "center",
+                    "justify-content": "center",
+                },
+            )
+    return html.Div(), html.Div(), {"display": "none"}
+
+
+@callback(
+    Output("cov_analysis_graph_div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def plot_basal_melt_flux(ice_shelf, year_range):
+    ice_shelf = "thwaites"
+    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[
+        0
+    ]
+    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[0]
+    climate_extent = None
+
+    # polygons = {"ice_shelf": ice_shelf_extent, "ocean": ocean_extent, "climate": climate_extent}
+
+    polygons = gpd.GeoDataFrame(
+        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
+    )
+    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
+
+    # variables = [dataset_ids[i]["index"] for i, dataset in enumerate(datasets) if dataset]
+    # # variab = [dataset_ids[i]["index"] for i, dataset in enumerate(datasets) if dataset]
+    variables = [
+        "moorings_1d-depth_PIG_N_and_S_combined",
+        "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
+        "subglacial_lake_discharge_1d-lake_discharge",
+        # "subglacial_lakes_volume_change_1d-volume_change",
+        "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
+    ]
+
+    axis_labels = []
+    for variable in variables:
+        # print(variable)
+        axis_labels.append(
+            config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
+        )
+
+    timeseries = query_data.process_all_data(variables, polygons, year_range)
+
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=timeseries,
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+    )
+
+    analysis_type_enum = JointPlotAnalysisType.CORR
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+    fig, axes = covariate_analyser.covariate_analysis(
+        max_lag=3, axis_labels=axis_labels, analysis_type=analysis_type_enum
+    )
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png")
+    buffer.seek(0)
+    image_string = base64.b64encode(buffer.getvalue()).decode()
+
+    results_plot = "data:image/png;base64," + image_string
+    results_plot = html.Img(src=results_plot, style={"max-width": "100%", "max-height": "100%"})
+
+    return results_plot
+
+
+@callback(
+    Output("insights_cov_analysis_detail_div", "style"),
+    Output("cov_analysis_graph_div", "style"),
+    Input("insights_btn_show_cov_analysis", "n_clicks"),
+)
+def button_detailed_cov_analysis(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:
+        return {"display": "block"}, {"text-align": "center", "display": "block"}
+    return {"display": "none"}, {"text-align": "center", "display": "none"}
 
 
 # These need to be refactored to be a pattern matching callback so there is only one for all of the switches.

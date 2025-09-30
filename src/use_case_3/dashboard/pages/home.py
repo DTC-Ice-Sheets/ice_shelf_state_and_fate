@@ -34,9 +34,6 @@ layout = html.Div(
                     className="d-grid gap-2 col-6 mx-auto",
                 ),
                 html.P(""),
-                # html.P(
-                #     "TODO: Add consortium member logos and a better description and remove unnecessary white space around logo."
-                # ),
             ],
             className="website_text",
         ),

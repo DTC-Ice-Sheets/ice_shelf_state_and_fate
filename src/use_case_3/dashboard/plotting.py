@@ -171,7 +171,9 @@ def plot_gauge_indicator(summary_data, variable):
     return fig
 
 
-def plot_summary_timeseries(timeseries, outliers=(), y_label=None, margin={"t": 0, "l": 50, "b": 25, "r": 200}):
+def plot_summary_timeseries(
+    timeseries, outliers=(), brackets=[], y_label=None, margin={"t": 0, "l": 50, "b": 25, "r": 200}
+):
     time = timeseries.measurements.index
     measurements = timeseries.measurements.values
 
@@ -184,12 +186,26 @@ def plot_summary_timeseries(timeseries, outliers=(), y_label=None, margin={"t": 
         go.Scatter(x=time, y=measurements, mode="lines", fill=None, line_color="black"),
     )
 
+    bracket_prev = time[0]
+    for i, bracket in enumerate(brackets):
+        fillcolor = "grey" if i % 2 == 0 else "white"
+        if bracket == time.shape[0]:
+            bracket -= 1
+        fig.add_vrect(
+            x0=bracket_prev,
+            x1=time[bracket],
+            fillcolor=fillcolor,
+            opacity=0.2,
+            line_width=0,
+        )
+        bracket_prev = time[bracket]
+
     fig.add_trace(
         go.Scatter(
             x=time,
             y=measurements + uncertainty,
             mode="lines",
-            line_color="rgba(0,0,0,0.5)",
+            line_color="rgba(0,0,0,1)",
         ),
     )
 
@@ -199,8 +215,17 @@ def plot_summary_timeseries(timeseries, outliers=(), y_label=None, margin={"t": 
             y=measurements - uncertainty,
             mode="lines",
             fill="tonexty",
-            fillcolor="rgba(0,0,0,0.2)",
-            line_color="rgba(0,0,0,0.5)",
+            fillcolor="rgba(211,211,211,1)",
+            line_color="rgba(0,0,0,1)",
+        ),
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=time,
+            y=measurements,
+            mode="lines",
+            line_color="rgba(0,0,0,1)",
         ),
     )
 
@@ -213,6 +238,7 @@ def plot_summary_timeseries(timeseries, outliers=(), y_label=None, margin={"t": 
                 marker=dict(color="red", size=10, line=dict(color="black", width=2)),
             ),
         )
+
     fig.update_layout(showlegend=False)
     fig.update_layout(height=250)
     fig.update_layout(margin=margin)
