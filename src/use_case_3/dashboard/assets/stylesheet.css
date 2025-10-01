@@ -51,6 +51,20 @@
     text-justify: inter-word;
 }
 
+.insights_calving_summary_text_no_just {
+    padding-top: 0px;
+    padding-left: 100px;
+    padding-right: 50px;
+    font-size: 1.5em;
+}
+
+.insights_calving_summary_text_no_just_indent {
+    padding-top: 0px;
+    padding-left: 200px;
+    padding-right: 50px;
+    font-size: 1.5em;
+}
+
 .website_text {
     display: block;
     margin-left: auto;
