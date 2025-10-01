@@ -247,3 +247,71 @@ def plot_summary_timeseries(
         fig.update_layout(yaxis_title=y_label)
 
     return fig
+
+
+def plot_summary_timeseries_multiple(
+    timeseries_container, variables, outliers=(), y_label=None, margin={"t": 0, "l": 50, "b": 25, "r": 200}
+):
+    colours = ["rgba(0,0,0,1)", "rgba(0,0,255,1)", "rgba(255,0,0,1)", "rgba(0,255,0,1)", "rgba(0,0,0,1)"]
+    colours_fill = ["rgba(0,0,0,0.1)", "rgba(0,0,255,0.1)", "rgba(255,0,0,0.1)", "rgba(0,255,0,0.1)", "rgba(0,0,0,0.1)"]
+    for i, variable in enumerate(variables):
+        time = timeseries_container.timeseries[variable].measurements.index
+        measurements = timeseries_container.timeseries[variable].measurements.values
+
+        if timeseries_container.timeseries[variable].measurement_uncertainties is not None:
+            uncertainty = timeseries_container.timeseries[variable].measurement_uncertainties.values
+        else:
+            uncertainty = measurements
+
+        lake = variable.split("-")[0].split("_")[-1]
+
+        if i == 0:
+            fig = go.Figure(
+                go.Scatter(x=time, y=measurements, mode="lines", fill=None, line_color=colours[i], name=lake),
+            )
+        else:
+            fig.add_trace(
+                go.Scatter(x=time, y=measurements, mode="lines", line_color=colours[i], name=lake),
+            )
+
+        fig.add_trace(
+            go.Scatter(
+                x=time,
+                y=measurements + uncertainty,
+                mode="lines",
+                line_color="rgba(0,0,0,0.25)",
+                showlegend=False,
+            ),
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=time,
+                y=measurements - uncertainty,
+                mode="lines",
+                fill="tonexty",
+                fillcolor=colours_fill[i],
+                line_color="rgba(0,0,0,0.25)",
+                showlegend=False,
+            ),
+        )
+
+        if len(outliers) > 0:
+            fig.add_trace(
+                go.Scatter(
+                    x=outliers[0],
+                    y=outliers[1],
+                    mode="markers",
+                    marker=dict(color="red", size=10, line=dict(color="black", width=2)),
+                    showlegend=False,
+                ),
+            )
+
+    fig.update_layout(showlegend=True)
+    fig.update_layout(height=250)
+    fig.update_layout(margin=margin)
+
+    if y_label is not None:
+        fig.update_layout(yaxis_title=y_label)
+
+    return fig

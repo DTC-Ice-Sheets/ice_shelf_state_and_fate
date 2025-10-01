@@ -1,6 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, dcc
+from dash import dcc, html
 
 from use_case_3.dashboard import query_data
 from use_case_3.dashboard.dashboard_layout import layout_navbar
@@ -161,6 +161,46 @@ layout = html.Div(
                             id="insights_basal_detail_div",
                         ),
                         html.Div(dcc.Graph(id="basal_graph"), style={"display": "none"}, id="basal_graph_div"),
+                        # Insights subglacial lakes
+                        dbc.Row(
+                            [
+                                dbc.Col([html.Div(id="insights_headline_title_sg_lakes_div")], width=3),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            id="insights_headline_text_sg_lakes_div",
+                                        ),
+                                    ],
+                                    width=9,
+                                ),
+                            ]
+                        ),
+                        dbc.Row(
+                            html.Div(
+                                [
+                                    dbc.Button(
+                                        "Show / Hide Detailed Subglacial Lake Analysis",
+                                        color="primary",
+                                        id="insights_btn_show_sg_lakes",
+                                    ),
+                                ],
+                                style={"display": "none"},
+                                id="insights_btn_show_sg_lakes_div",
+                            ),
+                        ),
+                        html.Div(
+                            id="insights_sg_lakes_detail_div",
+                        ),
+                        html.Div(
+                            dcc.Graph(id="sg_lakes_graph_vol_change"),
+                            style={"display": "none"},
+                            id="sg_lakes_graph_vol_change_div",
+                        ),
+                        html.Div(
+                            dcc.Graph(id="sg_lakes_graph_rate_vol_change"),
+                            style={"display": "none"},
+                            id="sg_lakes_graph_rate_vol_change_div",
+                        ),
                         # Insights Covariate Analysis
                         dbc.Row(
                             [
@@ -192,9 +232,9 @@ layout = html.Div(
                             id="insights_cov_analysis_detail_div",
                         ),
                         html.Div(
-                                id="cov_analysis_graph_div",
-                                style={"text-align": "center", "display": "none"},
-                            ),
+                            id="cov_analysis_graph_div",
+                            style={"text-align": "center", "display": "none"},
+                        ),
                         # html.Div(
                         #     dcc.Graph(id="cov_analysis_graph"), style={"display": "none"}, id="cov_analysis_graph_div"
                         # ),

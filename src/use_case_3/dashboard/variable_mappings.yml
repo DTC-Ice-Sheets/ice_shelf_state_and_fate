@@ -446,7 +446,7 @@ basal_melt_anomalies_pine_island_1d:
         measurement_uncertainty_type: std
         region: "ice_shelf"
         label: "Basal melt anomalies - Pine Island"
-        y_axis_label: "asal melt anomalies - Pine Island"
+        y_axis_label: "Basal melt anomalies - Pine Island"
 
 subglacial_lake_discharge_1d:
   description: "Processed time series from the Thwaites paper for testing."

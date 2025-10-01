@@ -8,10 +8,10 @@ sys.path.insert(0, module_path)
 module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_converter/src"
 sys.path.insert(0, module_path)
 
+import os
 from datetime import datetime
 from pathlib import Path
 
-import os
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -183,10 +183,13 @@ def query_summary_data(
 
 def query_local_data(dataset_id, variable, polygons, start_time, end_time):
     region = config_dict[dataset_id.lower()]["variables"][variable]["region"]
-    if dataset_id != "OCEAN_MOORINGS":
-        dataset_download_ids = [dataset_id]
-    else:
+    if dataset_id == "OCEAN_MOORINGS":
         dataset_download_ids = get_all_ocean_moorings()
+
+    elif dataset_id == "SUB_GLACIAL_LAKES":
+        dataset_download_ids = get_all_sg_lakes()
+    else:
+        dataset_download_ids = [dataset_id]
 
     print(dataset_download_ids)
 
@@ -200,16 +203,11 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
             raw_download=False,
         )
 
-        # print(dataset_download_id)
-
         download_path = download_data(data_download_request=local_request, output_parent_directory=OUTPUT_DIRECTORY)
-        # print(download_path)
 
         data = xr.open_dataset(download_path, engine="zarr")
 
         data = data.rio.write_crs(data.spatial_ref.spatial_ref)
-
-        # print(dataset_download_id, xr.ufuncs.isnan(data).all())
 
         include_data = True
         for dataset_var in data:
@@ -218,7 +216,7 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
 
         if include_data:
             timeseries = Timeseries(
-                label=dataset_download_id,
+                label=dataset_download_id + "-" + variable,
                 timeseries_type=TimeseriesType(
                     config_dict[dataset_id.lower()]["variables"][variable]["timeseries_type"]
                 ),
@@ -253,11 +251,17 @@ def get_all_ocean_moorings():
     ]
 
 
+def get_all_sg_lakes():
+    return [
+        "SUGLACIAL_LAKE_" + sg_lake.split(".")[0].upper()
+        for sg_lake in os.listdir("/data/yak1/working/dtc_ice_sheets/initial_datasets/subglacial_lakes/")
+    ]
+
+
 def process_all_data(variables, polygons, year_range):
     timeseries_list = []
     for i, var in enumerate(variables):
         # if variable_states[i]:
-        print(var)
         dataset_id = var.split("-")[0]
         var_id = var.split("-")[-1]
 
@@ -270,6 +274,5 @@ def process_all_data(variables, polygons, year_range):
         )
         for ts in timeseries:
             timeseries_list.append(ts)
-    # print(timeseries)
 
     return timeseries_list

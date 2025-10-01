@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import geopandas as gpd
-import rioxarray as rio
 import seaborn as sns
 import xarray as xr
 from scipy.stats import bootstrap
@@ -125,7 +124,8 @@ class Timeseries:
 
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
-        if data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
+        # print(self.label, data_observations.shape)
+        if len(data_observations.shape) > 1 and data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
             self._process_timeseries_nd(
                 data_observations=data_observations,
                 data_uncertainties=data_uncertainties,

@@ -1,22 +1,40 @@
+from copy import deepcopy
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import query_data
+import ruptures as rpt
+from sklearn.linear_model import LinearRegression
+from statsmodels.tsa.stattools import adfuller
+
+from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
+from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    NormalisationType,
-    TimeseriesRegion,
     TimeseriesType,
-    UncertaintyType,
 )
 
-import numpy as np
-import pandas as pd
-import xarray as xr
-import ruptures as rpt
-from statsmodels.tsa.stattools import adfuller
-from sklearn.linear_model import LinearRegression
-from copy import deepcopy
 
-from use_case_3.timeseries_module.timeseries import Timeseries
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+def generate_statistic(timeseries_container, variable):
+
+    variable_data = timeseries_container.timeseries[variable].measurements.to_numpy().ravel()
+    if timeseries_container.timeseries[variable].measurement_uncertainties is not None:
+        variable_unc = timeseries_container.timeseries[variable].measurement_uncertainties.to_numpy().ravel()
+    else:
+        variable_unc = np.zeros(variable_data.shape)
+
+    total = np.sum(variable_data)
+
+    if variable_unc.shape[0] > 0:
+        total_unc = 0
+        for i in range(variable_unc.shape[0]):
+            total_unc = np.sqrt(total_unc**2 + variable_unc[i] ** 2)
+    else:
+        total_unc = 0
+
+    return total, total_unc
 
 
 def generate_statistics(timeseries_container, year_range):
@@ -139,7 +157,10 @@ def detect_outlier_events(
         dataset=timeseries_container, variable=variable, stationary_check=stationary_check
     )
     variable_data = timeseries_container.timeseries[variable].measurements.to_numpy().ravel()
-    variable_unc = timeseries_container.timeseries[variable].measurement_uncertainties.to_numpy().ravel()
+    if timeseries_container.timeseries[variable].measurement_uncertainties is not None:
+        variable_unc = timeseries_container.timeseries[variable].measurement_uncertainties.to_numpy().ravel()
+    else:
+        variable_unc = np.zeros(variable_data.shape)
     time = timeseries_container.timeseries[variable].measurements.index.ravel()
     variable_events = variable_data[events_mask]
     variable_unc_events = variable_unc[events_mask]
@@ -235,3 +256,120 @@ def calculate_mass_balance(
     )
 
     return mass_balance_events, mass_balance_rate, calving_matched_years
+
+
+def example_Covariate_analysis_thwaites(ice_shelf_polygons_epsg4326, ocean_polygons_epsg4326, config_dict, year_range):
+    ice_shelf = "thwaites"
+    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[
+        0
+    ]
+    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[0]
+    climate_extent = None
+
+    polygons = gpd.GeoDataFrame(
+        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
+    )
+    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
+
+    variables = [
+        "moorings_1d-depth_PIG_N_and_S_combined",
+        "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
+        "subglacial_lake_discharge_1d-lake_discharge",
+        # "subglacial_lakes_volume_change_1d-volume_change",
+        "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
+    ]
+
+    axis_labels = []
+    for variable in variables:
+        # print(variable)
+        axis_labels.append(
+            config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
+        )
+
+    timeseries = query_data.process_all_data(variables, polygons, year_range)
+
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=timeseries,
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+    )
+
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    strong_correlation = covariate_analyser.find_correlated_vars(corr_thresh=0.8)
+    medium_correlation = covariate_analyser.find_correlated_vars(corr_thresh=0.5)
+    weak_correlation = covariate_analyser.find_correlated_vars(corr_thresh=0.25)
+
+    for key in strong_correlation:
+        del medium_correlation[key]
+        del weak_correlation[key]
+
+    for key in medium_correlation:
+        del weak_correlation[key]
+
+    return strong_correlation, medium_correlation, weak_correlation
+
+
+def example_subglacial_lake_analysis(ice_shelf, ice_shelf_polygons_epsg4326, ocean_polygons_epsg4326, year_range):
+    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[
+        0
+    ]
+    ice_shelf_extent = ice_shelf_extent.buffer(10)
+    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[0]
+    climate_extent = None
+
+    polygons = gpd.GeoDataFrame(
+        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
+    )
+    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
+
+    variables = [
+        "sub_glacial_lakes-height_above_wgs84_ellipsoid",
+        "sub_glacial_lakes-rate_of_volume_change",
+        "sub_glacial_lakes-volume_change",
+    ]
+
+    lakes = [
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW70",
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW124",
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW142",
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170",
+    ]
+
+    timeseries = query_data.process_all_data(variables, polygons, year_range)
+
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=timeseries,
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+    )
+
+    results = {}
+
+    for lake in lakes:
+        results[lake] = {}
+        _, _, sg_lake_height_events, _, _ = detect_outlier_events(
+            timeseries_container=timeseries_container,
+            variable=lake + "-height_above_wgs84_ellipsoid",
+        )
+        if len(sg_lake_height_events) > 0:
+            results[lake]["height_above_wgs84_ellipsoid"] = sg_lake_height_events
+        _, _, sg_lake_rate_vol_change_events, _, _ = detect_outlier_events(
+            timeseries_container=timeseries_container,
+            variable=lake + "-rate_of_volume_change",
+        )
+        if len(sg_lake_rate_vol_change_events) > 0:
+            results[lake]["rate_of_volume_change"] = sg_lake_rate_vol_change_events
+        _, _, sg_lake_vol_change_events, _, _ = detect_outlier_events(
+            timeseries_container=timeseries_container,
+            variable=lake + "-volume_change",
+        )
+        if len(sg_lake_vol_change_events) > 0:
+            results[lake]["volume_change"] = sg_lake_vol_change_events
+
+    lakes_events = []
+    for lake in results:
+        if len(results[lake]) > 0:
+            lakes_events.append(lake.split("_")[-1])
+
+    return lakes_events, results, timeseries_container
