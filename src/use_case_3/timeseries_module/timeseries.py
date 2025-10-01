@@ -286,6 +286,8 @@ class Timeseries:
                 t0_normalisation=t0_normalisation,
                 modify=modify,
             )
+        else:
+            data_uncertainties_agg = None
 
         self._store_processed_data(
             data_agg=data_agg, data_uncertainties_agg=data_uncertainties_agg, data_coverage_agg=data_coverage_agg
