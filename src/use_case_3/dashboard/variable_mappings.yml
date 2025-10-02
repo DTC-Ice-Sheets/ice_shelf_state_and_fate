@@ -193,7 +193,7 @@ its_live_basal_melt:
       label: "Surface Mass Balance"
       y_axis_label: ""
 
-its_live_velocity:
+its_live_ice_velocity:
   description: "ITSLive annual velocity data."
   label: "ITSLive Velocity:"
   variables:
@@ -203,7 +203,7 @@ its_live_velocity:
       measurement_uncertainties: "land_ice_velocity_magnitude_uncertainties"
       region: "ice_shelf"
       measurement_uncertainty_type: "std"
-      label: "Firn Air Content"
+      label: "Ice velocity - magnitude"
       y_axis_label: ""
     land_ice_x_velocity:
       units: "#"
@@ -211,7 +211,7 @@ its_live_velocity:
       measurement_uncertainties: "land_ice_x_velocity_uncertainties"
       region: "ice_shelf"
       measurement_uncertainty_type: "std"
-      label: "Elevation Change"
+      label: "Ice velocity - x"
       y_axis_label: ""
     land_ice_y_velocity:
       units: "#"
@@ -219,10 +219,11 @@ its_live_velocity:
       measurement_uncertainties: "land_ice_y_velocity_uncertainties"
       region: "ice_shelf"
       measurement_uncertainty_type: "std"
-      label: "Basal Melt Rate"
+      label: "Ice velocity - y"
       y_axis_label: ""
 
-ocean_reanalysis:
+GLORYS12V1:
+# glorys12v1:
   description: "The GLORY ocean reanalysis dataset"
   label: "GLORY Ocean Re-analysis:"
   variables:
@@ -410,7 +411,7 @@ elevation_change_anomolies_teis_1d:
     y_axis_label: "Elevation Change Anoms. TEIS"
 
 subglacial_lakes_volume_change_1d:
-  description: "Processed time series from the Thwaites paper for testing."
+  description: "Processed time series from the Thwaites paper."
   label: "Thwaites Paper Subglacial Lake Volume Change:"
   variables:
     volume_change:
@@ -423,7 +424,7 @@ subglacial_lakes_volume_change_1d:
       y_axis_label: "Subglacial Lake Volume Change"
 
 moorings_1d:
-  description: "Processed time series from the Thwaites paper for testing."
+  description: "Processed time series from the Thwaites paper."
   label: "Thwaites Paper Moorings:"
   variables:
     depth_PIG_N_and_S_combined:
@@ -436,7 +437,7 @@ moorings_1d:
       y_axis_label: "0.8C isotherm depth"
 
 basal_melt_anomalies_pine_island_1d:
-  description: "Processed time series from the Thwaites paper for testing."
+  description: "Processed time series from the Thwaites paper."
   label: "Thwaites Paper Basal Melt Anoms - Pine Island:"
   variables:
     basal_melt_anomalies:
@@ -449,7 +450,7 @@ basal_melt_anomalies_pine_island_1d:
         y_axis_label: "Basal melt anomalies - Pine Island"
 
 subglacial_lake_discharge_1d:
-  description: "Processed time series from the Thwaites paper for testing."
+  description: "Processed time series from the Thwaites paper."
   label: "Thwaites Paper Subglacial Lake Discharge:"
   variables:
     lake_discharge:
@@ -462,7 +463,7 @@ subglacial_lake_discharge_1d:
       y_axis_label: "Subglacial lake discharge"
 
 basal_melt_anomalies_thwaites_1d:
-  description: "Processed time series from the Thwaites paper for testing."
+  description: "Processed time series from the Thwaites paper."
   label: "Thwaites Paper Basal Melt Anoms - Thwaites:"
   variables:
     basal_melt_anomalies:
@@ -535,64 +536,66 @@ timeseries_summary:
     measurement_uncertainties: "surface_mass_balance_uncertainties"
     measurement_uncertainty_type: "std"
     region: "ice_shelf"
-  # mass_trend:
-  #   units: "Gt yr-1"
-  #   timeseries_type: "derivative"
-  #   measurement_uncertainties: "mass_trend_p_val"
-  #   measurement_uncertainty_type: "p_value"
-  #   region: "ice_shelf"
-  # steady_state_basal_melt:
-  #   units: "Gt yr-1"
-  #   timeseries_type: "derivative"
-  #   measurement_uncertainties: "steady_state_basal_melt_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # steady_state_discharge:
-  #   units: "Gt yr-1"
-  #   timeseries_type: "derivative"
-  #   measurement_uncertainties: "steady_state_discharge_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # steady_state_calving:
-  #   units: "Gt yr-1"
-  #   timeseries_type: "derivative"
-  #   measurement_uncertainties: "steady_state_calving_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # steady_state_smb:
-  #   units: "Gt yr-1"
-  #   timeseries_type: "derivative"
-  #   measurement_uncertainties: "steady_state_smb_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # mass_change_total:
-  #   units: "Gt"
-  #   timeseries_type: "cumulative"
-  #   measurement_uncertainties: "mass_change_total_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # total_discharge_anomaly:
-  #   units: "Gt"
-  #   timeseries_type: "cumulative"
-  #   measurement_uncertainties: "total_discharge_anomaly_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # total_retreat:
-  #   units: "Gt"
-  #   timeseries_type: "cumulative"
-  #   measurement_uncertainties: "total_retreat_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # total_smb_anomaly:
-  #   units: "Gt"
-  #   timeseries_type: "cumulative"
-  #   measurement_uncertainties: "total_smb_anomaly_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
-  # total_thinning:
-  #   units: "Gt"
-  #   timeseries_type: "cumulative"
-  #   measurement_uncertainties: "total_thinning_uncertainty"
-  #   measurement_uncertainty_type: "std"
-  #   region: "ice_shelf"
+
+timeseries_summary_aggregation:
+  mass_trend:
+    units: "Gt yr-1"
+    timeseries_type: "derivative"
+    measurement_uncertainties: "mass_trend_p_val"
+    measurement_uncertainty_type: "p_value"
+    region: "ice_shelf"
+  steady_state_basal_melt:
+    units: "Gt yr-1"
+    timeseries_type: "derivative"
+    measurement_uncertainties: "steady_state_basal_melt_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  steady_state_discharge:
+    units: "Gt yr-1"
+    timeseries_type: "derivative"
+    measurement_uncertainties: "steady_state_discharge_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  steady_state_calving:
+    units: "Gt yr-1"
+    timeseries_type: "derivative"
+    measurement_uncertainties: "steady_state_calving_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  steady_state_smb:
+    units: "Gt yr-1"
+    timeseries_type: "derivative"
+    measurement_uncertainties: "steady_state_smb_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  mass_change_total:
+    units: "Gt"
+    timeseries_type: "cumulative"
+    measurement_uncertainties: "mass_change_total_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  total_discharge_anomaly:
+    units: "Gt"
+    timeseries_type: "cumulative"
+    measurement_uncertainties: "total_discharge_anomaly_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  total_retreat:
+    units: "Gt"
+    timeseries_type: "cumulative"
+    measurement_uncertainties: "total_retreat_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  total_smb_anomaly:
+    units: "Gt"
+    timeseries_type: "cumulative"
+    measurement_uncertainties: "total_smb_anomaly_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
+  total_thinning:
+    units: "Gt"
+    timeseries_type: "cumulative"
+    measurement_uncertainties: "total_thinning_uncertainty"
+    measurement_uncertainty_type: "std"
+    region: "ice_shelf"
 

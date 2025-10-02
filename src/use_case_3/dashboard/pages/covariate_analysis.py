@@ -102,6 +102,48 @@ layout = [
             # Column for the datasets
             dbc.Col(
                 [
+                    dbc.Modal(
+                        dbc.Card(
+                            [
+                                dbc.CardBody(
+                                    [
+                                        dcc.Store(id="job-id", data=""),
+                                        html.H3("Running Workflow", style={"alignSelf": "center"}),
+                                        html.H4("Setting up...", id="status"),
+                                        dbc.Progress(
+                                            id="progress",
+                                            value=5,
+                                            striped=True,
+                                            animated=True,
+                                            style={"height": "4em"},
+                                        ),
+                                        dbc.Button(
+                                            "Cancel",
+                                            id="cancel-button",
+                                            color="danger",
+                                            size="lg",
+                                        ),
+                                    ],
+                                    style={
+                                        "display": "flex",
+                                        "padding": "1em",
+                                        "gap": "0.5em",
+                                        "flexDirection": "column",
+                                        "alignItems": "stretch",
+                                    },
+                                ),
+                            ],
+                        ),
+                        id="job-status",
+                        is_open=False,
+                    ),
+                    dbc.Alert(
+                        "Error",
+                        id="error-message",
+                        color="danger",
+                        is_open=False,
+                        dismissable=True,
+                    ),
                     html.Div(
                         [
                             # Container for the ice related variables
@@ -121,7 +163,7 @@ layout = [
                                             ),
                                             create_switch_button_group(dataset_id="sub_glacial_lakes"),
                                             create_switch_button_group(dataset_id="its_live_basal_melt"),
-                                            create_switch_button_group(dataset_id="its_live_velocity"),
+                                            create_switch_button_group(dataset_id="its_live_ice_velocity"),
                                             create_switch_button_group(dataset_id="racmo"),
                                             create_switch_button_group(dataset_id="moorings_1d"),
                                             create_switch_button_group(dataset_id="subglacial_lake_discharge_1d"),
@@ -142,7 +184,7 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Ocean Datasets: ", className="analysis_heading6"),
-                                            create_switch_button_group(dataset_id="ocean_reanalysis"),
+                                            create_switch_button_group(dataset_id="GLORYS12V1"),
                                             create_switch_button_group(dataset_id="sea_ice_concentration"),
                                             create_switch_button_group(dataset_id="sea_ice_edge"),
                                             create_switch_button_group(dataset_id="sea_ice_thickness"),
@@ -180,31 +222,18 @@ layout = [
             dbc.Col(
                 [
                     html.Div(
-                        [
-                            html.H5("Analysis Results:", className="analysis_heading5"),
-                            html.P(
-                                "Based on the correlation analysis conducted over Thwaites Ice Shelf, the Digital Twin has determined that the following variables have shown a significant correlation over the anlysis period, and are worthy of further investigation:",
-                                className="analysis_results",
-                            ),
-                            html.Ul(
-                                [
-                                    html.Li("Total subglacial lake volume change with a correlation coefficient of X."),
-                                    html.Li("Thwaites Basal Melting Anomalies with a correlation coefficient of Y."),
-                                ],
-                                id="analysis_output_ul",
-                            ),
-                            html.P(
-                                "A joint plot of the main variables included in the analyis can be seen below to explore these relationshipts further:",
-                                className="analysis_results",
-                            ),
-                            html.Div(
-                                id="results-plot",
-                                style={"text-align": "center"},
-                            ),
-                            # html.Img(src="assets/analysis_output.png", className="analysis_output"),
-                        ],
                         style={"padding-top": "25px"},
+                        id="analysis_results_div",
                     ),
+                    dcc.Loading(
+                        [html.Img(id="results-plot")],
+                        id="loading",
+                        type="default",
+                    ),
+                    # html.Div(
+                    #     id="results-plot",
+                    #     style={"text-align": "center"},
+                    # ),
                 ],
                 width=5,
             ),
