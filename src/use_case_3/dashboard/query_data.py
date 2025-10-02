@@ -1,6 +1,8 @@
+import os
 import sys
 
 import geopandas as gpd
+import requests
 from shapely import MultiPolygon
 
 module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_download_module/src/"
@@ -8,7 +10,6 @@ sys.path.insert(0, module_path)
 module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_converter/src"
 sys.path.insert(0, module_path)
 
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -64,14 +65,16 @@ def query_all_ocean_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     return ocean_polygons_epsg4326, ocean_polygons_proj
 
 
+def polygon_path():
+    return Path.cwd() / "src" / "use_case_3" / "dashboard" / "assets" / "polygons.parquet"
+
+
+def icesheet_polygon_path():
+    return Path.cwd() / "src" / "use_case_3" / "dashboard" / "assets" / "icesheet_polygon.parquet"
+
+
 def query_polygons() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    local_raw_request = DataDownloadRequest(dataset_id="POLYGONS", raw_download=True)
-
-    downloaded_parquet_data_path = download_data(
-        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
-    )
-
-    polygons_epsg4326 = gpd.read_parquet(downloaded_parquet_data_path)
+    polygons_epsg4326 = gpd.read_parquet(polygon_path())
     polygons_epsg4326 = polygons_epsg4326.sort_values(["Name"])
     ice_shelf_polygons_epsg4326 = (
         polygons_epsg4326.copy()
@@ -93,13 +96,7 @@ def query_polygons() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
 
 
 def query_ice_sheet_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    local_raw_request = DataDownloadRequest(dataset_id="ICE_SHEET_MASKS", raw_download=True)
-
-    downloaded_parquet_data_path = download_data(
-        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
-    )
-
-    ice_sheet_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
+    ice_sheet_polygons_proj = gpd.read_parquet(icesheet_polygon_path())
     ice_sheet_polygons_proj = ice_sheet_polygons_proj.sort_values(["Name"])
     ice_sheet_polygons_epsg4326 = ice_sheet_polygons_proj.to_crs("EPSG:4326")
 
@@ -108,12 +105,9 @@ def query_ice_sheet_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
 
 def query_summary_data(
     ice_shelf_polygons: gpd.GeoDataFrame,
-    ice_shelf: str = "Thwaites",
+    ice_shelf: str = "thwaites",
     year_range: list[pd.Timestamp | np.datetime64 | None, pd.Timestamp | np.datetime64 | None] | None = None,
-) -> tuple[xr.Dataset, MultiPolygon, MultiPolygon]:
-    if year_range is None:
-        year_range = [None, None]
-
+) -> tuple[xr.Dataset, TimeSeriesPreprocessor, MultiPolygon, MultiPolygon]:
     ice_shelf_polygon_epsg4326, ice_shelf_polygon = hf.iceshelf_polygon(
         ice_shelf_polygons=ice_shelf_polygons,
         ice_shelf_name=ice_shelf,
@@ -122,11 +116,28 @@ def query_summary_data(
     polygons = gpd.GeoDataFrame({"Name": ["ice_shelf", "ocean", "climate"], "geometry": [None, None, None]})
     polygons = polygons.set_crs("epsg: 4326").set_index("Name")
 
-    local_raw_request = DataDownloadRequest(dataset_id=f"{ice_shelf}_SUMMARY".upper(), raw_download=False)
+    api_url = "https://query.dtc-ice-sheets.org/"
 
-    summary_data_path = download_data(data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY)
+    response = requests.get(f"{api_url}/ice-shelves")
 
-    summary_data = xr.open_zarr(store=summary_data_path, zarr_format=2)
+    # We should use this to check if the ice shelf is actually available!
+    ice_shelves_list = response.json()
+
+    response = requests.get(f"{api_url}/ice-shelves/{ice_shelf}/summary-url")
+    summary_zarr_url = response.json()["url"]
+
+    summary_data = xr.open_dataset(
+        summary_zarr_url,
+        engine="zarr",
+        backend_kwargs={
+            "storage_options": {
+                "key": os.environ["AWS_ACCESS_KEY_ID"],
+                "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
+                "client_kwargs": {"endpoint_url": os.environ["AWS_S3_ENDPOINT"]},
+            }
+        },
+        chunks={},
+    )
 
     timeseries_list = []
 
@@ -190,8 +201,6 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
         dataset_download_ids = get_all_sg_lakes()
     else:
         dataset_download_ids = [dataset_id]
-
-    print(dataset_download_ids)
 
     timeseries_list = []
     for dataset_download_id in dataset_download_ids:

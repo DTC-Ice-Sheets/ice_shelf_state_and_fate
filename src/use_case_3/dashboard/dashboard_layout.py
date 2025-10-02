@@ -44,19 +44,23 @@ def layout_navbar(page_title):
 
 
 def create_switch_button_group(dataset_id):
-    vars = list(config_dict[dataset_id.lower()]["variables"].keys())
+    # vars = list(config_dict[dataset_id.lower()]["variables"].keys())
+    vars = list(config_dict[dataset_id]["variables"].keys())
 
     elements = [
         dbc.Switch(
-            id=f"ds_{dataset_id.lower()}",
+            # id=f"ds_{dataset_id.lower()}",
+            id=f"ds_{dataset_id}",
+            label=config_dict[dataset_id]["label"],
             # id={"type": "data_switch", "index": f"ds_{dataset_id.lower()}"},
-            label=config_dict[dataset_id.lower()]["label"],
+            # label=config_dict[dataset_id.lower()]["label"],
             value=False,
         ),
         html.Div(
             [
                 html.P(
-                    config_dict[dataset_id.lower()]["description"],
+                    # config_dict[dataset_id.lower()]["description"],
+                    config_dict[dataset_id]["description"],
                     className="analysis-data-desc",
                 )
             ]
@@ -67,15 +71,18 @@ def create_switch_button_group(dataset_id):
     for var in vars:
         elements_vars.append(
             dbc.Checkbox(
-                id={"type": "data_selector", "index": dataset_id.lower() + "-" + var},
-                label=config_dict[dataset_id.lower()]["variables"][var]["label"],
+                # id={"type": "data_selector", "index": dataset_id.lower() + "-" + var},
+                id={"type": "data_selector", "index": dataset_id + "-" + var},
+                label=config_dict[dataset_id]["variables"][var]["label"],
+                # label=config_dict[dataset_id.lower()]["variables"][var]["label"],
                 value=False,
             ),
         )
 
     if len(elements_vars) > 0:
         elements.append(
-            html.Div(elements_vars, className="analysis-vars-switches", id=f"switch-group-vars-{dataset_id.lower()}")
+            html.Div(elements_vars, className="analysis-vars-switches", id=f"switch-group-vars-{dataset_id}")
+            # html.Div(elements_vars, className="analysis-vars-switches", id=f"switch-group-vars-{dataset_id.lower()}")
             # html.Div(
             #     elements_vars,
             #     className="analysis-vars-switches",
@@ -83,7 +90,8 @@ def create_switch_button_group(dataset_id):
             # )
         )
 
-    return html.Div(elements, id=f"switch-group-{dataset_id.lower()}")
+    # return html.Div(elements, id=f"switch-group-{dataset_id.lower()}")
+    return html.Div(elements, id=f"switch-group-{dataset_id}")
 
 
 # def create_switch_button_group_moorings(dataset_id):

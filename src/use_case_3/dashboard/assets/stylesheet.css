@@ -96,8 +96,16 @@
     padding-top: 0px;
     padding-left: 30px;
     padding-right: 60px;
-    text-align: justify;
-    text-justify: inter-word;
+    /* text-align: justify;
+    text-justify: inter-word; */
+}
+
+.analysis_results_indent {
+    padding-top: 0px;
+    padding-left: 130px;
+    padding-right: 60px;
+    /* text-align: justify;
+    text-justify: inter-word; */
 }
 
 .analysis_heading5 {

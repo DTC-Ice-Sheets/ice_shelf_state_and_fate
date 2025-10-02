@@ -17,8 +17,7 @@ from use_case_3.timeseries_module.timeseries_enums import (
 )
 
 
-def generate_statistic(timeseries_container, variable):
-
+def generate_statistic(timeseries_container, variable, steady_state_val=None):
     variable_data = timeseries_container.timeseries[variable].measurements.to_numpy().ravel()
     if timeseries_container.timeseries[variable].measurement_uncertainties is not None:
         variable_unc = timeseries_container.timeseries[variable].measurement_uncertainties.to_numpy().ravel()
@@ -26,6 +25,9 @@ def generate_statistic(timeseries_container, variable):
         variable_unc = np.zeros(variable_data.shape)
 
     total = np.sum(variable_data)
+
+    if steady_state_val is not None:
+        total -= steady_state_val * variable_data.shape[0]
 
     if variable_unc.shape[0] > 0:
         total_unc = 0
@@ -35,6 +37,31 @@ def generate_statistic(timeseries_container, variable):
         total_unc = 0
 
     return total, total_unc
+
+
+def generate_statistic_cummulative_difference(timeseries_container, variable, year_range):
+    variable_data = timeseries_container.timeseries[variable].measurements
+    variable_data = variable_data[(variable_data.index >= year_range[0]) & (variable_data.index <= year_range[1])]
+    # variable_data = variable_data[
+    #     (variable_data.index >= pd.Timestamp(year=year_range[0], month=1, day=1))
+    #     & (variable_data.index <= pd.Timestamp(year=year_range[1], month=1, day=1))
+    # ]
+    if timeseries_container.timeseries[variable].measurement_uncertainties is not None:
+        variable_unc = timeseries_container.timeseries[variable].measurement_uncertainties
+        variable_unc = variable_unc[(variable_unc.index >= year_range[0]) & (variable_unc.index <= year_range[1])]
+        # variable_unc = variable_unc[
+        #     (variable_unc.index)
+        #     >= pd.Timestamp(year=year_range[0], month=1, day=1) & (variable_unc.index)
+        #     <= pd.Timestamp(year=year_range[1], month=1, day=1)
+        # ]
+    else:
+        variable_unc = np.zeros(variable_data.shape)
+
+    difference = variable_data.iloc[-1] - variable_data.iloc[0]
+
+    difference_unc = np.sqrt(variable_unc.iloc[0] ** 2 + variable_unc.iloc[-1] ** 2) if variable_unc.shape[0] > 0 else 0
+
+    return difference, difference_unc
 
 
 def generate_statistics(timeseries_container, year_range):
