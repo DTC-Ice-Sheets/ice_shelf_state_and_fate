@@ -5649,14 +5649,14 @@ files = [
 
 [[package]]
 name = "specklia"
-version = "1.9.71"
+version = "1.9.75"
 description = "Python client for Specklia, a geospatial point cloud database by Earthwave."
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "specklia-1.9.71-py3-none-any.whl", hash = "sha256:454f14c779a9eea99008c5ad5bb6b1edf888f65417ef92b59a66add3d58452f8"},
-    {file = "specklia-1.9.71.tar.gz", hash = "sha256:3471fa871db7996827d2ee40a29779aabfc13afe774c98f6b7d622ac14f329fd"},
+    {file = "specklia-1.9.75-py3-none-any.whl", hash = "sha256:479ce109f3344135953268b4213a307a17d4614729d87f6344e90ec69f9519f5"},
+    {file = "specklia-1.9.75.tar.gz", hash = "sha256:0af6cb92a7ae639e8dd0a1f13ea0f742236feedafa64d58cf67d64bfeb813d25"},
 ]
 
 [package.dependencies]
@@ -6595,4 +6595,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "785c5cce6a5291c7fd9e2be59b9c6a53a3d8d65593ea479a5222745d795a291a"
+content-hash = "715a6b5ec986425d39bf8527277286572f2c9c35232557ea0e488d28c3a5e748"
