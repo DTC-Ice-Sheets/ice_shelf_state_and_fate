@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 import yaml
 from dash import html
 
-with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashboard/variable_mappings.yml") as f:
+with open("src/use_case_3/dashboard/variable_mappings.yml") as f:
     config_dict = yaml.safe_load(f)
 
 

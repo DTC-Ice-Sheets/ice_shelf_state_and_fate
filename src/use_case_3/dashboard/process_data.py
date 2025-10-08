@@ -3,7 +3,6 @@ from copy import deepcopy
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import query_data
 import ruptures as rpt
 from sklearn.linear_model import LinearRegression
 from statsmodels.tsa.stattools import adfuller
@@ -15,6 +14,7 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationStrategy,
     TimeseriesType,
 )
+from use_case_3.dashboard.query_api import process_all_data
 
 
 def generate_statistic(timeseries_container, variable, steady_state_val=None):
@@ -313,7 +313,7 @@ def example_Covariate_analysis_thwaites(ice_shelf_polygons_epsg4326, ocean_polyg
             config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
         )
 
-    timeseries = query_data.process_all_data(variables, polygons, year_range)
+    timeseries = process_all_data(variables, polygons, year_range)
 
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=timeseries,
@@ -363,7 +363,7 @@ def example_subglacial_lake_analysis(ice_shelf, ice_shelf_polygons_epsg4326, oce
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170",
     ]
 
-    timeseries = query_data.process_all_data(variables, polygons, year_range)
+    timeseries = process_all_data(variables, polygons, year_range)
 
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=timeseries,

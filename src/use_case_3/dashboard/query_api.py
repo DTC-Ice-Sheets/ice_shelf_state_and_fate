@@ -1,27 +1,21 @@
+import functools
 import os
 import sys
-
-import geopandas as gpd
-import requests
-from shapely import MultiPolygon
-
-module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_download_module/src/"
-sys.path.insert(0, module_path)
-module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_converter/src"
-sys.path.insert(0, module_path)
-
 from datetime import datetime
 from pathlib import Path
 
+import boto3
+import geopandas as gpd
 import numpy as np
 import pandas as pd
+import requests
 import xarray as xr
 import yaml
-from data_download_module.main import download_data
-from data_download_module.schemas import DataDownloadRequest
+from pyproj import CRS
+from shapely import MultiPolygon
 
-import use_case_3.helper_functions as hf
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.helper_functions import iceshelf_polygon
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
@@ -31,50 +25,91 @@ from use_case_3.timeseries_module.timeseries_enums import (
     UncertaintyType,
 )
 
-OUTPUT_DIRECTORY = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
+module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_download_module/src/"
+sys.path.insert(0, module_path)
+module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_converter/src"
+sys.path.insert(0, module_path)
 
-with open("/home/palmerjohn/code/dtc_ice_sheets/use_case_3/src/use_case_3/dashboard/variable_mappings.yml") as f:
+from data_download_module.main import download_data
+from data_download_module.schemas import DataDownloadRequest
+
+url = "http://localhost:8000"
+
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+    endpoint_url=os.environ["AWS_S3_ENDPOINT"],
+    region_name=os.environ["AWS_DEFAULT_REGION"],
+    use_ssl=True,
+)
+
+output_path = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
+polygon_path = Path("src/use_case_3/dashboard/assets/polygons.parquet")
+icesheet_polygon_path = Path("src/use_case_3/dashboard/assets/icesheet_polygon.parquet")
+initial_datasets_path = Path("/data/yak1/working/dtc_ice_sheets/initial_datasets")
+config_dict_path = Path("src/use_case_3/dashboard/variable_mappings.yml")
+
+
+with config_dict_path.open() as f:
     config_dict = yaml.safe_load(f)
 
 
-def query_ice_shelf_wide_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    local_raw_request = DataDownloadRequest(dataset_id="ICE_SHELF_MASKS", raw_download=True)
+class ProjectedGeoDataFrame:
+    def __init__(
+        self,
+        epsg4326: gpd.GeoDataFrame | None = None,
+        proj: gpd.GeoDataFrame | None = None,
+        crs: str | CRS | None = None,
+    ):
+        assert (epsg4326 is not None) or (proj is not None), "At least one of epsg4326 or proj must be provided"
+        assert (proj is not None) or (crs is not None), "If proj is not provided, a CRS must be specified"
+        self._epsg4326 = epsg4326
+        self._proj = proj
+        self.crs = CRS(crs or proj.crs)
 
-    downloaded_parquet_data_path = download_data(
-        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
+    @property
+    def epsg4326(self) -> gpd.GeoDataFrame:
+        if self._epsg4326 is None:
+            self._epsg4326 = self._proj.to_crs("EPSG:4326")
+        return self._epsg4326
+
+    @property
+    def proj(self) -> gpd.GeoDataFrame:
+        if self._proj is None:
+            self._proj = self._epsg4326.to_crs("EPSG:3031")
+        return self._proj
+
+
+@functools.cache
+def query_ice_shelf_wide_data() -> ProjectedGeoDataFrame:
+    local_raw_request = DataDownloadRequest(
+        dataset_id="ICE_SHELF_MASKS", raw_download=True, output_parent_path=output_path
     )
+
+    downloaded_parquet_data_path = download_data(data_download_request=local_raw_request)
 
     ice_shelf_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
     ice_shelf_polygons_proj = ice_shelf_polygons_proj.sort_values(["Name"])
-    ice_shelf_polygons_epsg4326 = ice_shelf_polygons_proj.to_crs("EPSG:4326")
 
-    return ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj
+    return ProjectedGeoDataFrame(proj=ice_shelf_polygons_proj)
 
 
-def query_all_ocean_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    local_raw_request = DataDownloadRequest(dataset_id="OCEAN_MASKS", raw_download=True)
+@functools.cache
+def query_all_ocean_data() -> ProjectedGeoDataFrame:
+    local_raw_request = DataDownloadRequest(dataset_id="OCEAN_MASKS", raw_download=True, output_parent_path=output_path)
 
-    downloaded_parquet_data_path = download_data(
-        data_download_request=local_raw_request, output_parent_directory=OUTPUT_DIRECTORY
-    )
+    downloaded_parquet_data_path = download_data(data_download_request=local_raw_request)
 
     ocean_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
     ocean_polygons_proj = ocean_polygons_proj.sort_values(["Name"])
-    ocean_polygons_epsg4326 = ocean_polygons_proj.to_crs("EPSG:4326")
 
-    return ocean_polygons_epsg4326, ocean_polygons_proj
-
-
-def polygon_path():
-    return Path.cwd() / "src" / "use_case_3" / "dashboard" / "assets" / "polygons.parquet"
+    return ProjectedGeoDataFrame(proj=ocean_polygons_proj)
 
 
-def icesheet_polygon_path():
-    return Path.cwd() / "src" / "use_case_3" / "dashboard" / "assets" / "icesheet_polygon.parquet"
-
-
-def query_polygons() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    polygons_epsg4326 = gpd.read_parquet(polygon_path())
+@functools.cache
+def query_polygons() -> tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]:
+    polygons_epsg4326 = gpd.read_parquet(polygon_path)
     polygons_epsg4326 = polygons_epsg4326.sort_values(["Name"])
     ice_shelf_polygons_epsg4326 = (
         polygons_epsg4326.copy()
@@ -89,41 +124,34 @@ def query_polygons() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
         .set_geometry("geometry")
     )
 
-    ice_shelf_polygons_proj = ice_shelf_polygons_epsg4326.to_crs("EPSG:3031")
-    ocean_polygons_proj = ocean_polygons_epsg4326.to_crs("EPSG:3031")
+    return (
+        ProjectedGeoDataFrame(epsg4326=ice_shelf_polygons_epsg4326, crs="EPSG:3031"),
+        ProjectedGeoDataFrame(epsg4326=ocean_polygons_epsg4326, crs="EPSG:3031"),
+    )
 
-    return ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj
 
-
-def query_ice_sheet_data() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    ice_sheet_polygons_proj = gpd.read_parquet(icesheet_polygon_path())
+@functools.cache
+def query_ice_sheet_data() -> ProjectedGeoDataFrame:
+    ice_sheet_polygons_proj = gpd.read_parquet(icesheet_polygon_path)
     ice_sheet_polygons_proj = ice_sheet_polygons_proj.sort_values(["Name"])
-    ice_sheet_polygons_epsg4326 = ice_sheet_polygons_proj.to_crs("EPSG:4326")
-
-    return ice_sheet_polygons_epsg4326, ice_sheet_polygons_proj
+    return ProjectedGeoDataFrame(proj=ice_sheet_polygons_proj)
 
 
+@functools.cache
 def query_summary_data(
-    ice_shelf_polygons: gpd.GeoDataFrame,
     ice_shelf: str = "thwaites",
-    year_range: list[pd.Timestamp | np.datetime64 | None, pd.Timestamp | np.datetime64 | None] | None = None,
+    start_date: pd.Timestamp | np.datetime64 | None = None,
+    end_date: pd.Timestamp | np.datetime64 | None = None,
 ) -> tuple[xr.Dataset, TimeSeriesPreprocessor, MultiPolygon, MultiPolygon]:
-    ice_shelf_polygon_epsg4326, ice_shelf_polygon = hf.iceshelf_polygon(
-        ice_shelf_polygons=ice_shelf_polygons,
+    ice_shelf_polygon_epsg4326, ice_shelf_polygon = iceshelf_polygon(
+        ice_shelf_polygons=query_polygons()[0].proj,
         ice_shelf_name=ice_shelf,
     )
 
     polygons = gpd.GeoDataFrame({"Name": ["ice_shelf", "ocean", "climate"], "geometry": [None, None, None]})
     polygons = polygons.set_crs("epsg: 4326").set_index("Name")
 
-    api_url = "https://query.dtc-ice-sheets.org/"
-
-    response = requests.get(f"{api_url}/ice-shelves")
-
-    # We should use this to check if the ice shelf is actually available!
-    ice_shelves_list = response.json()
-
-    response = requests.get(f"{api_url}/ice-shelves/{ice_shelf}/summary-url")
+    response = requests.get(f"{url}/ice-shelves/{ice_shelf}/summary-url")
     summary_zarr_url = response.json()["url"]
 
     summary_data = xr.open_dataset(
@@ -172,20 +200,10 @@ def query_summary_data(
         process_timeseries=False,
     )
 
-    if year_range is None:
-        start_date, end_date = timeseries_container._find_start_end_dates()
-    else:
-        if year_range[0] is None and year_range[1] is None:
-            start_date, end_date = timeseries_container._find_start_end_dates()
-        elif year_range[0] is None and year_range[1] is not None:
-            start_date, _ = timeseries_container._find_start_end_dates()
-            end_date = year_range[1]
-        elif year_range[0] is None and year_range[1] is not None:
-            _, end_date = timeseries_container._find_start_end_dates()
-            start_date = year_range[0]
-        else:
-            start_date = year_range[0]
-            end_date = year_range[1]
+    if start_date is None or end_date is None:
+        min_date, max_date = timeseries_container._find_start_end_dates()
+        start_date = start_date or min_date
+        end_date = end_date or max_date
 
     timeseries_container._trim_timeseries_date(start_date=start_date, end_date=end_date)
 
@@ -196,7 +214,6 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
     region = config_dict[dataset_id.lower()]["variables"][variable]["region"]
     if dataset_id == "OCEAN_MOORINGS":
         dataset_download_ids = get_all_ocean_moorings()
-
     elif dataset_id == "SUB_GLACIAL_LAKES":
         dataset_download_ids = get_all_sg_lakes()
     else:
@@ -210,9 +227,10 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
             end_time=end_time,
             epsg4326_polygon=polygons.loc[region, "geometry"],
             raw_download=False,
+            output_parent_path=output_path,
         )
 
-        download_path = download_data(data_download_request=local_request, output_parent_directory=OUTPUT_DIRECTORY)
+        download_path = download_data(data_download_request=local_request)
 
         data = xr.open_dataset(download_path, engine="zarr")
 
@@ -248,22 +266,20 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
                 independent=True,
                 t0_normalisation=None,
             )
-            timeseries_list.append(timeseries)
-
     return timeseries_list
 
 
 def get_all_ocean_moorings():
     return [
-        "OCEAN_MOORINGS_" + mooring.split(".")[0].upper()
-        for mooring in os.listdir("/data/yak1/working/dtc_ice_sheets/initial_datasets/ocean_moorings/")
+        "OCEAN_MOORINGS_" + mooring.with_suffix("").name.upper()
+        for mooring in (initial_datasets_path / "ocean_moorings").iterdir()
     ]
 
 
 def get_all_sg_lakes():
     return [
-        "SUGLACIAL_LAKE_" + sg_lake.split(".")[0].upper()
-        for sg_lake in os.listdir("/data/yak1/working/dtc_ice_sheets/initial_datasets/subglacial_lakes/")
+        "SUGLACIAL_LAKE_" + sg_lake.with_suffix("").name.upper()
+        for sg_lake in (initial_datasets_path / "subglacial_lakes").iterdir()
     ]
 
 
