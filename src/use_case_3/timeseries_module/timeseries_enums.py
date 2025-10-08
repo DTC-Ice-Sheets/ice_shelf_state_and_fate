@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class AggregationStrategy(Enum):
+class AggregationStrategy(StrEnum):
     """The available aggregation types."""
 
     MEAN = "mean"
@@ -20,20 +20,36 @@ class AggregationStrategy(Enum):
         self.aggregation = aggregation
 
 
-class AggregationPeriod(Enum):
+class AggregationPeriod(StrEnum):
     """The available aggregation periods."""
 
-    YEAR = ("YS", "Y")
-    QUARTER = ("QS", "Q")
-    MONTH = ("MS", "M")
-    DAY = ("d", "d")
+    YEAR = "year"
+    QUARTER = "quarter"
+    MONTH = "month"
+    DAY = "day"
 
-    def __init__(self, period: str, time_period_shorthand: str) -> None:
-        self.period = period
-        self.time_period_shorthand = time_period_shorthand
+    @staticmethod
+    def pd_period_freq(period: AggregationPeriod) -> str:
+        """Appropriate value for `pd.PeriodIndex()` `freq` parameter."""
+        return {
+            AggregationPeriod.YEAR: "Y",
+            AggregationPeriod.QUARTER: "Q",
+            AggregationPeriod.MONTH: "M",
+            AggregationPeriod.DAY: "D",
+        }[period]
+
+    @staticmethod
+    def pd_date_range_freq(period: AggregationPeriod) -> str:
+        """Appropriate value for `pd.date_range()` `freq` parameter."""
+        return {
+            AggregationPeriod.YEAR: "YS",
+            AggregationPeriod.QUARTER: "QS",
+            AggregationPeriod.MONTH: "MS",
+            AggregationPeriod.DAY: "D",
+        }[period]
 
 
-class UncertaintyType(Enum):
+class UncertaintyType(StrEnum):
     """The available uncertainty types."""
 
     STD = "std"
@@ -47,7 +63,7 @@ class UncertaintyType(Enum):
         self.uncertainty_types = uncertainty_type
 
 
-class NormalisationType(Enum):
+class NormalisationType(StrEnum):
     """The available normalisation types."""
 
     FIRST = "first"
@@ -57,14 +73,14 @@ class NormalisationType(Enum):
         self.normalisation_type = normalisation_type
 
 
-class TimeseriesType(Enum):
+class TimeseriesType(StrEnum):
     """Define the type of timeseries. This can be cumulative or derivative."""
 
     CUMULATIVE = "cumulative"
     DERIVATIVE = "derivative"
 
 
-class TimeseriesRegion(Enum):
+class TimeseriesRegion(StrEnum):
     """
     Define the region type of the timeseries.
 
@@ -77,7 +93,7 @@ class TimeseriesRegion(Enum):
     CLIMATE = "climate"
 
 
-class ModelEvaluationMetric(Enum):
+class ModelEvaluationMetric(StrEnum):
     """The available model evaluation metrics."""
 
     AIC = "aic"
@@ -87,7 +103,7 @@ class ModelEvaluationMetric(Enum):
         self.evaluation_metric = evaluation_metric
 
 
-class JointPlotAnalysisType(Enum):
+class JointPlotAnalysisType(StrEnum):
     """The available analysis types used to evaluate correlation or causality between variables."""
 
     CORR = "corr"

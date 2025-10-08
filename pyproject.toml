@@ -16,7 +16,7 @@ packages = [{ include = "use_case_3", from = "src" }]
 python = ">=3.12,<3.14"
 numpy = "^2.2"
 pydantic = "^2.11.9"
-pandas = "^2.3.2"
+pandas = "^2.3.3"
 matplotlib = "^3.10.6"
 affine = "^2.4.0"
 rasterio = "^1.4.3"
@@ -35,12 +35,12 @@ contextily = "^1.6.2"
 statsmodels = "^0.14.5"
 folium = "^0.20.0"
 schema = "^0.7.7"
-botocore = "^1.40.18"
+botocore = "^1.40.45"
 aiohttp = "^3.12.15"
 pystac-client = "^0.9.0"
-specklia = "^1.9.66"
+specklia = "^1.9.75"
 dask = "^2025.7.0"
-plotly = "^6.3.0"
+plotly = "^6.3.1"
 nbformat = "^5.10.4"
 dash = {extras = ["diskcache"], version = "^3.2.0"}
 dash-bootstrap-components = "^2.0.4"
@@ -48,16 +48,15 @@ dotenv = "^0.9.9"
 ipywidgets = "^8.1.7"
 jupyter = "^1.1.1"
 ruptures = "^1.1.10"
-s3fs = "2025.9.0"
+s3fs = "^2025.9.0"
 num2words = "^0.5.14"
-boto3 = "1.40.18"
 diskcache = "^5.6.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
 typeguard = "^4.4.4"
 pre-commit = "^4.3"
-ruff = "^0.13.0"
+ruff = "^0.13.2"
 bandit = "^1.8.6"
 pytest-cov = "^7.0.0"
 sphinx = "^8.2.3"
@@ -65,6 +64,9 @@ sphinx-rtd-theme = "^3.0.2"
 sphinx-copybutton = "^0.5.2"
 commitizen = "^4.9.1"
 pydoclint = "^0.7.3"
+
+[tool.poetry.group.deployment.dependencies]
+dtc-wrapper = { git = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git", branch = "main" }
 
 [tool.ruff]
 line-length = 120

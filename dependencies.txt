@@ -1,4 +1,0 @@
-Using version ^1.40.43 for boto3
-
-Updating dependencies
-Resolving dependencies...

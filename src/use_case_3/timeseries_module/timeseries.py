@@ -246,6 +246,7 @@ class Timeseries:
                 y_affine_negative=y_affine_negative,
             )
         else:
+            data_mask = None
             apply_mask = False
 
         if apply_mask:
@@ -1051,7 +1052,7 @@ class Timeseries:
         )
 
     def _determine_coverage(
-        self, data_observations: np.ndarray, time_index: dict | None, mask_raster: np.ndarray
+        self, data_observations: np.ndarray, time_index: dict | None, mask_raster: np.ndarray | None
     ) -> tuple[np.ndarray, list]:
         """
         Calculate the spatial coverage for each time slice.
@@ -1066,7 +1067,7 @@ class Timeseries:
             The data observations.
         time_index : dict | None
             The time indexes for each time slice to be processed.
-        mask_raster : np.ndarray
+        mask_raster : np.ndarray | None
             The binary mask used on the dataset.
 
         Returns
@@ -1091,7 +1092,9 @@ class Timeseries:
             )
         return np.array(data_coverage), time_coords_agg
 
-    def _determine_coverage_point(self: Timeseries, data_observations: np.ndarray, mask_raster: np.ndarray) -> float:
+    def _determine_coverage_point(
+        self: Timeseries, data_observations: np.ndarray, mask_raster: np.ndarray | None
+    ) -> float:
         """
         Calculate the coverage for a specific data cube.
 
@@ -1101,7 +1104,7 @@ class Timeseries:
         ----------
         data_observations : np.ndarray
             The data observations.
-        mask_raster : np.ndarray
+        mask_raster : np.ndarray | None
             The rasterised mask.
 
         Returns
@@ -1111,8 +1114,10 @@ class Timeseries:
         """
         n_observations = self._count_pixels(data=data_observations)
         # Multiply by the number of time points.
-        n_raster = self._count_pixels(data=mask_raster) * data_observations.shape[0]
-
+        if mask_raster is not None:
+            n_raster = self._count_pixels(data=mask_raster) * data_observations.shape[0]
+        else:
+            n_raster = data_observations.size
         return n_observations / n_raster
 
     @staticmethod

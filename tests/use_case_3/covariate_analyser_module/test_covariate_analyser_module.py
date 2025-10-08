@@ -503,7 +503,7 @@ def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
         covariate_analyser._timeseries_altered[timeseries_7_lag_fixture.label].measurements.values,
         timeseries_2_gt.values,
     )
-    assert freq == "M"
+    assert freq == AggregationPeriod.MONTH
     assert corr_lag == -1
 
 
