@@ -1812,7 +1812,7 @@ def conduct_covariate_analysis_integrated(
             "name": f"{dataset_ids[i]['index'].split('-')[0]}: {dataset_ids[i]['index'].split('-')[1]}",
             "dataset": dataset_ids[i]["index"].split("-")[0],
             "variable": dataset_ids[i]["index"].split("-")[1],
-            "extents": config_dict[dataset_ids[i]["index"].split("-")[0]]["variables"][
+            "extent": config_dict[dataset_ids[i]["index"].split("-")[0]]["variables"][
                 dataset_ids[i]["index"].split("-")[1]
             ]["region"],
         }
@@ -1838,7 +1838,7 @@ def conduct_covariate_analysis_integrated(
 
         while True:
             sleep(1)
-            res = requests.get(f"{url}/job-status/{job_id}")
+            res = requests.get(f"{url}/jobs/{job_id}")
             res.raise_for_status()
             data = res.json()
 
@@ -1891,7 +1891,7 @@ def cancel_job(n_clicks, job_id):
     if not n_clicks:
         return False, False, ""
     try:
-        res = requests.post(f"{url}/cancel-job/{job_id}")
+        res = requests.delete(f"{url}/jobs/{job_id}")
         res.raise_for_status()
     except Exception as e:
         logger.error(e)
