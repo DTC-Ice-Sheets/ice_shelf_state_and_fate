@@ -1,21 +1,22 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+import numpy as np
+from dash import Input, Output, State, callback, dcc, html
 
-from use_case_3.dashboard import query_data
 from use_case_3.dashboard.dashboard_layout import layout_navbar
+from use_case_3.dashboard.mapping import create_ice_shelf_map
+from use_case_3.dashboard.plotting import plot_gauge_indicator_timeseries, plot_summary_timeseries
+from use_case_3.dashboard.process_data import generate_statistic, generate_statistic_cummulative_difference
+from use_case_3.dashboard.query_api import (
+    query_ice_sheet_data,
+    query_polygons,
+    query_summary_data,
+)
 
 dash.register_page(__name__)
 
-# Import data ###
 ice_shelf_inital = "thwaites"
-# ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj = query_data.query_ice_shelf_wide_data()
-ice_shelf_polygons_epsg4326, ice_shelf_polygons_proj, ocean_polygons_epsg4326, ocean_polygons_proj = (
-    query_data.query_polygons()
-)
-summary_data_initial, timeseries_container, _, _ = query_data.query_summary_data(
-    ice_shelf_polygons=ice_shelf_polygons_proj, ice_shelf=ice_shelf_inital
-)
+summary_data_initial, timeseries_container, _, _ = query_summary_data(ice_shelf=ice_shelf_inital)
 
 navbar = layout_navbar(page_title="Ice Shelf Summary")
 
@@ -153,7 +154,7 @@ layout = html.Div(
                                     [
                                         html.Div(
                                             dcc.Dropdown(
-                                                ice_shelf_polygons_proj["Name"].unique(),
+                                                query_polygons()[0].proj["Name"].unique(),
                                                 ice_shelf_inital,
                                                 id="ice_shelf_selection",
                                                 style={},
@@ -572,3 +573,525 @@ layout = html.Div(
         ),
     ]
 )
+
+
+@callback(Output("ice_shelf_map", "children"), Input("ice_shelf_selection", "value"))
+def update_graph(value):
+    ice_shelf_polygons, ocean_polygons = query_polygons()
+    ice_sheet_polygons = query_ice_sheet_data()
+    ice_shelf_map = create_ice_shelf_map(
+        ice_shelf_polygons=ice_shelf_polygons.proj,
+        ocean_polygons=ocean_polygons.proj,
+        ice_sheet_polygons=ice_sheet_polygons.proj,
+        ice_shelf=value,
+    )
+
+    return ice_shelf_map
+
+
+@callback(
+    Output("iceshelf-summary-text-div", "children"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+)
+def update_ice_shelf_summary(ice_shelf, year_range):
+    summary_data, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    total_mass_loss, total_balanace_unc = generate_statistic(
+        timeseries_container=timeseries_container, variable="mass_balance"
+    )
+
+    cummulative_retreat, cummulative_retreat_unc = generate_statistic_cummulative_difference(
+        timeseries_container=timeseries_container,
+        variable="cumulative_retreat",
+        year_range=year_range,
+    )
+
+    total_basal_melt_flux, total_basal_melt_flux_unc = generate_statistic(
+        timeseries_container=timeseries_container, variable="basal_melt_flux"
+    )
+    total_calving, total_calving_unc = generate_statistic(timeseries_container=timeseries_container, variable="calving")
+
+    total_basal_melt_contribution, total_basal_melt_contribution_unc = generate_statistic(
+        timeseries_container=timeseries_container,
+        variable="basal_melt_flux",
+        steady_state_val=summary_data["steady_state_basal_melt"].values[0][0],
+    )
+
+    lost_gained = "lost" if total_mass_loss < 0 else "gained"
+    loss_gain = "loss" if total_mass_loss < 0 else "gain"
+
+    return html.Div(
+        [
+            html.P(" "),
+            html.H5(f"{' '.join(ice_shelf.split('_')).title()} Ice Shelf Summary:"),
+            html.P(
+                f"Overall the {' '.join(ice_shelf.split('_')).title()} Ice Shelf has {lost_gained} {int(np.round(np.abs(total_mass_loss))): .0f} Gt of ice between {year_range[0]} and {year_range[1]}.",
+                style={"padding-right": "100px", "padding-top": "10px"},
+            ),
+            html.Ul(
+                [
+                    html.Li(
+                        f"Basal melting has contributed approximately {np.abs(total_basal_melt_contribution / (year_range[1] - year_range[0])): .0f} Gt/yr to this total {loss_gain} over this period."
+                    ),
+                    html.Li(
+                        f"Calving front retreat has contributed approximately {np.abs(cummulative_retreat / (year_range[1] - year_range[0])):.0f} Gt/yr to this total {loss_gain} over this period."
+                    ),
+                ]
+            ),
+            html.P(
+                "Fresh water flux to the ocean is partitioned as:",
+                style={"padding-right": "100px", "padding-top": "0px"},
+            ),
+            html.Ul(
+                [
+                    html.Li(f"{np.abs(total_calving):.0f} Gt from iceberg calving."),
+                    html.Li(f"{np.abs(total_basal_melt_flux):.0f} Gt from basal melting."),
+                ]
+            ),
+            html.H5(
+                "Timeseries Analysis:",
+                style={"padding-right": "100px", "padding-top": "10px"},
+            ),
+            html.P("Use the toggle switches below to investigate temporal trends in key ice shelf parameters."),
+        ]
+    )
+
+
+@callback(
+    Output("figure_1_div", "style"),
+    Input("switch-cumulative-mass-change", "value"),
+)
+def plot_summary_indicator1_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_4_div", "style"),
+    Input("switch-cumulative-thinning", "value"),
+)
+def plot_summary_indicator2_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_2_div", "style"),
+    Input("switch-cumulative-discharge-change", "value"),
+)
+def plot_summary_indicator3_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_5_div", "style"),
+    Input("switch-cumulative-SBM-anomolies", "value"),
+)
+def plot_summary_indicator4_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_3_div", "style"),
+    Input("switch-cumulative-retreat", "value"),
+)
+def plot_summary_indicator5_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_6_div", "style"),
+    Input("switch-mass-balance", "value"),
+)
+def plot_summary_indicator6_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_7_div", "style"),
+    Input("switch-calving-rate", "value"),
+)
+def plot_summary_indicator7_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_9_div", "style"),
+    Input("switch-basal-melt-flux", "value"),
+)
+def plot_summary_indicator8_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_8_div", "style"),
+    Input("switch-smb", "value"),
+)
+def plot_summary_indicator9_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("figure_10_div", "style"),
+    Input("switch-discharge-rate", "value"),
+)
+def plot_summary_indicator10_visible(visibility):
+    if visibility:
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("indicator_1_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_1_store", "data"),
+)
+def plot_summary_indicator1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_2_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_2_store", "data"),
+)
+def plot_summary_indicator2(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_3_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_3_store", "data"),
+)
+def plot_summary_indicator3(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_4_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_4_store", "data"),
+)
+def plot_summary_indicator4(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_5_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_5_store", "data"),
+)
+def plot_summary_indicator5(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_1_figure_deriv", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_1_store_deriv", "data"),
+)
+def plot_summary_timeseries1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_2_figure_deriv", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_2_store_deriv", "data"),
+)
+def plot_summary_timeseries1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_3_figure_deriv", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_3_store_deriv", "data"),
+)
+def plot_summary_timeseries1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_4_figure_deriv", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_4_store_deriv", "data"),
+)
+def plot_summary_timeseries1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("indicator_5_figure_deriv", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("indicator_5_store_deriv", "data"),
+)
+def plot_summary_timeseries1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_summary_timeseries(timeseries_container.timeseries[variable])
+    return fig
+
+
+@callback(
+    Output("gauge_1_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("gauge_1_store", "data"),
+)
+def plot_gauge_indicator1(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_gauge_indicator_timeseries(timeseries_container, variable)
+    return fig
+
+
+@callback(
+    Output("total_mass_change_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator1_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total mass change between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
+
+
+@callback(
+    Output("gauge_2_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("gauge_2_store", "data"),
+)
+def plot_gauge_indicator2(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_gauge_indicator_timeseries(timeseries_container, variable)
+    return fig
+
+
+@callback(
+    Output("total_basal_melt_flux_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator2_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total basal melting between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
+
+
+@callback(
+    Output("gauge_3_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("gauge_3_store", "data"),
+)
+def plot_gauge_indicator3(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_gauge_indicator_timeseries(timeseries_container, variable)
+    return fig
+
+
+@callback(
+    Output("total_calving_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator3_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total calving between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
+
+
+@callback(
+    Output("gauge_4_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("gauge_4_store", "data"),
+)
+def plot_gauge_indicator4(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_gauge_indicator_timeseries(timeseries_container, variable)
+    return fig
+
+
+@callback(
+    Output("total_discharge_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator4_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total discharge between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
+
+
+@callback(
+    Output("gauge_5_figure", "figure"),
+    Input("ice_shelf_selection", "value"),
+    Input("summary_year_selector", "value"),
+    State("gauge_5_store", "data"),
+)
+def plot_gauge_indicator5(ice_shelf, year_range, variable):
+    _, timeseries_container, _, _ = query_summary_data(
+        ice_shelf=ice_shelf,
+        start_date=year_range[0],
+        end_date=year_range[1],
+    )
+
+    fig = plot_gauge_indicator_timeseries(timeseries_container, variable)
+    return fig
+
+
+@callback(
+    Output("total_surface_mass_balance_gauge_text", "children"),
+    Input("summary_year_selector", "value"),
+)
+def plot_gauge_indicator5_text(year_range):
+    return html.Div(
+        html.P(
+            [
+                "Total surface mass balance between",
+                html.Br(),
+                f"{year_range[0]} and {year_range[1]} (Gt)",
+            ]
+        ),
+    )
