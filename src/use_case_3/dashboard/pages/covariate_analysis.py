@@ -1,3 +1,5 @@
+"""Perform covariate analysis on selected variables."""
+
 import base64
 import logging
 from io import BytesIO
@@ -5,31 +7,22 @@ from time import sleep
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import ALL, Input, Output, State, callback, dcc, html, set_props
-import pandas as pd
 import geopandas as gpd
+import pandas as pd
 import requests
+from dash import ALL, Input, Output, State, callback, dcc, html, set_props
 
-from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
-from use_case_3.timeseries_module.timeseries_enums import (
-    AggregationPeriod,
-    AggregationStrategy,
-    JointPlotAnalysisType,
-)
 from use_case_3.dashboard.dashboard_layout import (
-    create_switch_button_group,
+    create_collapsible_group,
     layout_navbar,
 )
 from use_case_3.dashboard.query_api import (
-    url,
     config_dict,
-    s3_client,
-    query_summary_data,
     query_polygons,
-    process_all_data,
+    query_summary_data,
+    s3_client,
+    url,
 )
-
 
 dash.register_page(__name__)
 
@@ -39,6 +32,26 @@ navbar = layout_navbar(page_title="Covariate Analysis")
 
 initial_ice_shelf = "thwaites"
 initial_summary_data, _, _, _ = query_summary_data(initial_ice_shelf)
+
+
+def create_dataset_selector(dataset_id: str) -> html.Div:
+    return create_collapsible_group(
+        group_id=dataset_id,
+        group_label=config_dict[dataset_id]["label"],
+        group_description=config_dict[dataset_id]["description"],
+        content=[
+            dbc.Checkbox(
+                id={
+                    "type": "data-selector",
+                    "index": f"{dataset_id}.{var_id}",
+                },
+                label=var["label"],
+                value=False,
+            )
+            for var_id, var in config_dict[dataset_id]["variables"].items()
+        ],
+    )
+
 
 layout = [
     navbar,
@@ -168,25 +181,26 @@ layout = [
                                         [
                                             dcc.Store(id="switch-values"),
                                             html.H6("Ice Shelf Datasets: ", className="analysis_heading6"),
-                                            create_switch_button_group(dataset_id="polarice_elevation_change"),
-                                            create_switch_button_group(dataset_id="elevation_change_eolis"),
-                                            create_switch_button_group(dataset_id="rema_v2"),
-                                            create_switch_button_group(dataset_id="bedmachine_v3"),
-                                            create_switch_button_group(dataset_id="polar_plus_ice_shelves_basal_melt"),
-                                            create_switch_button_group(
-                                                dataset_id="polar_plus_ice_shelves_calving_front"
-                                            ),
-                                            create_switch_button_group(dataset_id="sub_glacial_lakes"),
-                                            create_switch_button_group(dataset_id="its_live_basal_melt"),
-                                            create_switch_button_group(dataset_id="its_live_ice_velocity"),
-                                            create_switch_button_group(dataset_id="racmo"),
-                                            create_switch_button_group(dataset_id="moorings_1d"),
-                                            create_switch_button_group(dataset_id="subglacial_lake_discharge_1d"),
-                                            create_switch_button_group(dataset_id="subglacial_lakes_volume_change_1d"),
-                                            create_switch_button_group(
-                                                dataset_id="basal_melt_anomalies_pine_island_1d"
-                                            ),
-                                            create_switch_button_group(dataset_id="basal_melt_anomalies_thwaites_1d"),
+                                            *[
+                                                create_dataset_selector(dataset_id)
+                                                for dataset_id in [
+                                                    "polarice_elevation_change",
+                                                    "elevation_change_eolis",
+                                                    "rema_v2",
+                                                    "bedmachine_v3",
+                                                    "polar_plus_ice_shelves_basal_melt",
+                                                    "polar_plus_ice_shelves_calving_front",
+                                                    "sub_glacial_lakes",
+                                                    "its_live_basal_melt",
+                                                    "its_live_ice_velocity",
+                                                    "racmo",
+                                                    "moorings_1d",
+                                                    "subglacial_lake_discharge_1d",
+                                                    "subglacial_lakes_volume_change_1d",
+                                                    "basal_melt_anomalies_pine_island_1d",
+                                                    "basal_melt_anomalies_thwaites_1d",
+                                                ]
+                                            ],
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -199,11 +213,16 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Ocean Datasets: ", className="analysis_heading6"),
-                                            create_switch_button_group(dataset_id="GLORYS12V1"),
-                                            create_switch_button_group(dataset_id="sea_ice_concentration"),
-                                            create_switch_button_group(dataset_id="sea_ice_edge"),
-                                            create_switch_button_group(dataset_id="sea_ice_thickness"),
-                                            create_switch_button_group(dataset_id="ocean_moorings"),
+                                            *[
+                                                create_dataset_selector(dataset_id)
+                                                for dataset_id in [
+                                                    "GLORYS12V1",
+                                                    "sea_ice_concentration",
+                                                    "sea_ice_edge",
+                                                    "sea_ice_thickness",
+                                                    "ocean_moorings",
+                                                ]
+                                            ],
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -216,7 +235,7 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Climate Datasets: ", className="analysis_heading6"),
-                                            create_switch_button_group(dataset_id="southern_annular_mode"),
+                                            create_dataset_selector("southern_annular_mode"),
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -245,295 +264,12 @@ layout = [
                         id="loading",
                         type="default",
                     ),
-                    # html.Div(
-                    #     id="results-plot",
-                    #     style={"text-align": "center"},
-                    # ),
                 ],
                 width=5,
             ),
         ]
     ),
 ]
-
-
-@callback(
-    Output("cov_analysis_graph_div", "children"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
-)
-def plot_cov_analysis(ice_shelf, year_range):
-    ice_shelf = "thwaites"
-    ice_shelf_polygons, ocean_polygons = query_polygons()
-    ice_shelf_extent = ice_shelf_polygons.epsg4326[ice_shelf_polygons.epsg4326["Name"] == ice_shelf]["geometry"].values[
-        0
-    ]
-    ocean_extent = ocean_polygons.epsg4326[ocean_polygons.epsg4326["Name"] == ice_shelf]["geometry"].values[0]
-    climate_extent = None
-
-    # polygons = {"ice_shelf": ice_shelf_extent, "ocean": ocean_extent, "climate": climate_extent}
-
-    polygons = gpd.GeoDataFrame(
-        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
-    )
-    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
-
-    variables = [
-        "moorings_1d-depth_PIG_N_and_S_combined",
-        "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
-        "subglacial_lake_discharge_1d-lake_discharge",
-        # "subglacial_lakes_volume_change_1d-volume_change",
-        "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
-    ]
-
-    axis_labels = []
-    for variable in variables:
-        axis_labels.append(
-            config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
-        )
-
-    timeseries = process_all_data(variables, polygons, year_range)
-
-    timeseries_container = TimeSeriesPreprocessor(
-        timeseries=timeseries,
-        time_period=AggregationPeriod.MONTH,
-        aggregation=AggregationStrategy.MEAN,
-    )
-
-    analysis_type_enum = JointPlotAnalysisType.CORR
-    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
-    fig, _ = covariate_analyser.covariate_analysis(max_lag=3, axis_labels=axis_labels, analysis_type=analysis_type_enum)
-    buffer = BytesIO()
-    fig.savefig(buffer, format="png")
-    buffer.seek(0)
-    image_string = base64.b64encode(buffer.getvalue()).decode()
-
-    results_plot = "data:image/png;base64," + image_string
-    results_plot = html.Img(src=results_plot, style={"max-width": "100%", "max-height": "100%"})
-
-    return results_plot
-
-
-@callback(
-    Output("insights_cov_analysis_detail_div", "style"),
-    Output("cov_analysis_graph_div", "style"),
-    Input("insights_btn_show_cov_analysis", "n_clicks"),
-)
-def button_detailed_cov_analysis(n_clicks):
-    if n_clicks and n_clicks % 2 == 1:
-        return {"display": "block"}, {"text-align": "center", "display": "block"}
-    return {"display": "none"}, {"text-align": "center", "display": "none"}
-
-
-# These need to be refactored to be a pattern matching callback so there is only one for all of the switches.
-@callback(
-    Output(f"switch-group-vars-{'polarice_elevation_change'.lower()}", "style"),
-    Input(f"ds_{'polarice_elevation_change'.lower()}", "value"),
-)
-def elev_polarice_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'elevation_change_eolis'.lower()}", "style"),
-    Input(f"ds_{'elevation_change_eolis'.lower()}", "value"),
-)
-def elev_eolis_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'rema_v2'.lower()}", "style"),
-    Input(f"ds_{'rema_v2'.lower()}", "value"),
-)
-def rema_v2_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'bedmachine_v3'.lower()}", "style"),
-    Input(f"ds_{'bedmachine_v3'.lower()}", "value"),
-)
-def bedmachine_v3_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'polar_plus_ice_shelves_basal_melt'.lower()}", "style"),
-    Input(f"ds_{'polar_plus_ice_shelves_basal_melt'.lower()}", "value"),
-)
-def polar_ice_plus_bm_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'polar_plus_ice_shelves_calving_front'.lower()}", "style"),
-    Input(f"ds_{'polar_plus_ice_shelves_calving_front'.lower()}", "value"),
-)
-def polar_ice_plus_cf_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'sub_glacial_lakes'.lower()}", "style"),
-    Input(f"ds_{'sub_glacial_lakes'.lower()}", "value"),
-)
-def subglacial_lakes_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'its_live_basal_melt'.lower()}", "style"),
-    Input(f"ds_{'its_live_basal_melt'.lower()}", "value"),
-)
-def its_live_bm_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'its_live_ice_velocity'.lower()}", "style"),
-    Input(f"ds_{'its_live_ice_velocity'.lower()}", "value"),
-)
-def its_live_vel_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'racmo'.lower()}", "style"),
-    Input(f"ds_{'racmo'.lower()}", "value"),
-)
-def racmo_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'GLORYS12V1'}", "style"),
-    Input(f"ds_{'GLORYS12V1'}", "value"),
-)
-def glorys12v1_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'sea_ice_concentration'.lower()}", "style"),
-    Input(f"ds_{'sea_ice_concentration'.lower()}", "value"),
-)
-def sea_ice_concentration_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'sea_ice_edge'.lower()}", "style"),
-    Input(f"ds_{'sea_ice_edge'.lower()}", "value"),
-)
-def sea_ice_edge_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'sea_ice_thickness'.lower()}", "style"),
-    Input(f"ds_{'sea_ice_thickness'.lower()}", "value"),
-)
-def sea_ice_thickness_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'ocean_moorings'.lower()}", "style"),
-    Input(f"ds_{'ocean_moorings'.lower()}", "value"),
-)
-def ocean_moorings_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'southern_annular_mode'.lower()}", "style"),
-    Input(f"ds_{'southern_annular_mode'.lower()}", "value"),
-)
-def souther_annular_mode_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'moorings_1d'.lower()}", "style"),
-    Input(f"ds_{'moorings_1d'.lower()}", "value"),
-)
-def thwaites_moorings_1d_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'subglacial_lake_discharge_1d'.lower()}", "style"),
-    Input(f"ds_{'subglacial_lake_discharge_1d'.lower()}", "value"),
-)
-def thwaites_subglacial_lake_discharge_1d_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'subglacial_lakes_volume_change_1d'.lower()}", "style"),
-    Input(f"ds_{'subglacial_lakes_volume_change_1d'.lower()}", "value"),
-)
-def thwaites_subglacial_lakes_volume_change_1d_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'basal_melt_anomalies_pine_island_1d'.lower()}", "style"),
-    Input(f"ds_{'basal_melt_anomalies_pine_island_1d'.lower()}", "value"),
-)
-def thwaites_bm_anoms_pi_1d_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
-
-
-@callback(
-    Output(f"switch-group-vars-{'basal_melt_anomalies_thwaites_1d'.lower()}", "style"),
-    Input(f"ds_{'basal_melt_anomalies_thwaites_1d'.lower()}", "value"),
-)
-def thwaites_bm_anoms_thw_1d_visable(visability):
-    if visability:
-        return {"display": "block"}
-    return {"display": "none"}
 
 
 @callback(
@@ -544,8 +280,8 @@ def thwaites_bm_anoms_thw_1d_visable(visability):
     State("ice_shelf_selection", "value"),
     State("summary_year_selector", "value"),
     State("select-analysis-type", "value"),
-    State({"type": "data_selector", "index": ALL}, "id"),
-    State({"type": "data_selector", "index": ALL}, "value"),
+    State({"type": "data-selector", "index": ALL}, "id"),
+    State({"type": "data-selector", "index": ALL}, "value"),
     running=[
         (Output("run_analysis-button", "disabled"), True, False),
         (Output("status", "children"), "Setting up...", "Done!"),
@@ -560,7 +296,7 @@ def thwaites_bm_anoms_thw_1d_visable(visability):
     prevent_initial_call=True,
 )
 def conduct_covariate_analysis_integrated(
-    set_progress, n_clicks, ice_shelf, year_range, analysis_type, dataset_ids, datasets
+    set_progress, n_clicks, ice_shelf, year_range, analysis_type, selector_ids, selector_values
 ):
     ice_shelf_polygons, ocean_polygons = query_polygons()
     ice_shelf_extent = ice_shelf_polygons.epsg4326[ice_shelf_polygons.epsg4326["Name"] == ice_shelf]["geometry"].values[
@@ -574,17 +310,19 @@ def conduct_covariate_analysis_integrated(
     )
     polygons = polygons.set_crs("epsg: 4326").set_index("Name")
 
+    # Extract tuple of (dataset_id, variable_id) from the html ID of each selected variable
+    ids: list[tuple[str, str]] = [
+        id_["index"].split(".") for id_, value in zip(selector_ids, selector_values, strict=True) if value
+    ]
+
     variables = [
         {
-            "name": f"{dataset_ids[i]['index'].split('-')[0]}: {dataset_ids[i]['index'].split('-')[1]}",
-            "dataset": dataset_ids[i]["index"].split("-")[0],
-            "variable": dataset_ids[i]["index"].split("-")[1],
-            "extent": config_dict[dataset_ids[i]["index"].split("-")[0]]["variables"][
-                dataset_ids[i]["index"].split("-")[1]
-            ]["region"],
+            "name": f"{config_dict[dataset_id]['label']} {config_dict[dataset_id]['variables'][variable_id]['label']}",
+            "dataset": dataset_id,
+            "variable": variable_id,
+            "extent": config_dict[dataset_id]["variables"][variable_id]["region"],
         }
-        for i, dataset in enumerate(datasets)
-        if dataset
+        for dataset_id, variable_id in ids
     ]
 
     try:
