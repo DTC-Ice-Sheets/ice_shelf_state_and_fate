@@ -12,7 +12,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,
-    TimeseriesRegion,
     TimeseriesType,
     UncertaintyType,
 )
@@ -36,7 +35,7 @@ class TimeseriesModuleEntryPointSchema(BaseModel):
     measurement_uncertainty_name: str | None = Field(
         None, description="Name of the uncertainty to extract from the dataset."
     )
-    masks_json_path: Path | None = Field(None, description="Path to the masks JSON file.")
+    mask_json_path: Path | None = Field(None, description="Path to the mask geometry GeoJSON file.")
     apply_mask: bool = Field(
         True,
         description=(
@@ -46,10 +45,6 @@ class TimeseriesModuleEntryPointSchema(BaseModel):
     timeseries_type: TimeseriesType = Field(
         TimeseriesType.CUMULATIVE,
         description="Type of timeseries to compute (cumulative or derivative).",
-    )
-    timeseries_region: TimeseriesRegion = Field(
-        TimeseriesRegion.ICE_SHELF,
-        description="Region type for the timeseries (iceshelf, ocean, or climate).",
     )
     aggregate: AggregationStrategy = Field(
         AggregationStrategy.MEAN,

@@ -5,7 +5,8 @@ from dash import MATCH, Input, Output, callback, html
 from dash.development.base_component import Component
 
 
-def define_navbar_pages():
+def get_navbar_pages() -> list[dbc.DropdownMenuItem]:
+    """Get the list of menu items for the navigation bar."""
     return [
         dbc.DropdownMenuItem("More pages", header=True),
         dbc.DropdownMenuItem("Insights", href="/insights"),
@@ -14,12 +15,24 @@ def define_navbar_pages():
     ]
 
 
-def layout_navbar(page_title):
+def layout_navbar(page_title: str) -> dbc.NavbarSimple:
+    """Create a navigation bar for the dashboard.
+
+    Parameters
+    ----------
+    page_title : str
+        Title of the current page to display in the navbar.
+
+    Returns
+    -------
+    dbc.NavbarSimple
+        The navigation bar component.
+    """
     return dbc.NavbarSimple(
         children=[
             dbc.NavItem(dbc.NavLink(page_title, href="#")),
             dbc.DropdownMenu(
-                children=define_navbar_pages(),
+                children=get_navbar_pages(),
                 nav=True,
                 in_navbar=True,
                 label="More",
@@ -45,7 +58,25 @@ def create_collapsible_group(
     group_label: str,
     group_description: str,
     content: list[Component],
-):
+) -> html.Div:
+    """Create a div with content that can be shown or hidden by toggling a switch.
+
+    Parameters
+    ----------
+    group_id : str
+        Unique identifier for the group.
+    group_label : str
+        Human-readable label next to the switch.
+    group_description : str
+        Human-readable description below the switch.
+    content : list[Component]
+        Content of the div that can be shown or hidden.
+
+    Returns
+    -------
+    html.Div
+        A div containing the switch, description, and content.
+    """
     elements = [
         dbc.Switch(
             id={"type": "group-switch", "index": group_id},
@@ -78,7 +109,8 @@ def create_collapsible_group(
     Output({"type": "group-content", "index": MATCH}, "style"),
     Input({"type": "group-switch", "index": MATCH}, "value"),
 )
-def group_visibility(is_visible):
+def group_visibility(is_visible: bool) -> dict[str, str]:
+    """Update group visibility when group visibility switch is toggled."""
     if is_visible:
         return {"display": "block"}
     return {"display": "none"}

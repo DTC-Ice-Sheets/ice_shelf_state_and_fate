@@ -16,7 +16,6 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesRegion,
     TimeseriesType,
 )
 
@@ -40,7 +39,6 @@ def timeseries_1_fixture():
         unit="unit 1",
         measurement_name="measurement 1",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -70,7 +68,6 @@ def timeseries_2_fixture():
         unit="unit 2",
         measurement_name="measurement 2",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -101,7 +98,6 @@ def timeseries_3_fixture():
         unit="unit 3",
         measurement_name="measurement 3",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -124,7 +120,6 @@ def timeseries_4_fixture():
         unit="unit 4",
         measurement_name="measurement 4",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -146,7 +141,6 @@ def timeseries_5_fixture():
         unit="unit 5",
         measurement_name="measurement 5",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -169,7 +163,6 @@ def timeseries_1_inv_fixture():
         unit="unit 1 inv",
         measurement_name="measurement 1 inv",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -192,7 +185,6 @@ def timeseries_6_fixture():
         unit="unit 6",
         measurement_name="measurement 6",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -215,7 +207,6 @@ def timeseries_7_fixture():
         unit="unit 7",
         measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -237,7 +228,6 @@ def timeseries_7_lag_fixture():
         unit="unit 7 inv",
         measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -249,7 +239,6 @@ def fixture_series_x():
         label="x",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 
@@ -261,7 +250,6 @@ def fixture_series_y():
         label="y",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 
@@ -273,7 +261,6 @@ def fixture_series_y2():
         label="y",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 

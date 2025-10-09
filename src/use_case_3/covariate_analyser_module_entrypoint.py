@@ -13,7 +13,6 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesRegion,
     TimeseriesType,
 )
 
@@ -55,7 +54,6 @@ def main() -> None:
             Timeseries(
                 label=label,
                 timeseries_type=TimeseriesType(attr["timeseries_type"]),
-                timeseries_region=TimeseriesRegion(attr["timeseries_region"]),
                 measurement_name=measurement_name,
                 measurements=ds[name].to_series(),
                 **(

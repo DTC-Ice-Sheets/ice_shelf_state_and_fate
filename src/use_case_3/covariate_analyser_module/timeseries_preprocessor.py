@@ -13,6 +13,8 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationStrategy,
 )
 
+Timestamp = pd.Timestamp | np.datetime64 | int
+
 
 class TimeSeriesPreprocessor:
     """
@@ -61,9 +63,9 @@ class TimeSeriesPreprocessor:
 
         self._resample_timeseries()
 
-        start_date, end_date = self._find_start_end_dates()
+        start_date, end_date = self.find_start_end_dates()
 
-        self._trim_timeseries_date(start_date=start_date, end_date=end_date)
+        self.trim_start_end_dates(start_date=start_date, end_date=end_date)
 
         self._interpolate_timeseries()
 
@@ -75,13 +77,13 @@ class TimeSeriesPreprocessor:
 
         If both input parameters are None then it will check all of the timeseries in the container.
         """
-        start_datetime, end_datetime = self._find_start_end_dates()
+        start_datetime, end_datetime = self.find_start_end_dates()
 
         return end_datetime >= start_datetime
 
-    def _find_start_end_dates(
+    def find_start_end_dates(
         self: TimeSeriesPreprocessor,
-    ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
+    ) -> tuple[Timestamp, Timestamp]:
         """
         Return the greatest common start and the smallest common end time for a set of time series.
 
@@ -89,7 +91,7 @@ class TimeSeriesPreprocessor:
 
         Returns
         -------
-        tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]
+        tuple[Timestamp, Timestamp]
             The start and end datetime. Note it is possible for the end time to be less than the start time in cases
             where the time series do not intersect in time
         """
@@ -100,10 +102,10 @@ class TimeSeriesPreprocessor:
 
         return start_date, end_date
 
-    def _trim_timeseries_date(
+    def trim_start_end_dates(
         self: TimeSeriesPreprocessor,
-        start_date: pd.Timestamp,
-        end_date: pd.Timestamp,
+        start_date: Timestamp,
+        end_date: Timestamp,
     ) -> None:
         """
         Trim a time series using a start and end date time.
@@ -112,9 +114,9 @@ class TimeSeriesPreprocessor:
 
         Parameters
         ----------
-        start_date : pd.Timestamp
+        start_date : Timestamp
             The start date to trim.
-        end_date : pd.Timestamp
+        end_date : Timestamp
             The end date to trim.
         """
         for ts_label in self.timeseries:

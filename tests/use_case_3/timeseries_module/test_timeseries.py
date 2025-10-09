@@ -11,8 +11,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,
-    TimeseriesRegion,
-    # PlotSpreadType,
     TimeseriesType,
     UncertaintyType,
 )
@@ -51,7 +49,6 @@ def timeseries_obj_fixture():
         label="test",
         measurement_name="measurement 1",
         timeseries_type=TimeseriesType.CUMULATIVE,
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -215,16 +212,13 @@ def test_process_timeseries_1d(timeseries_dataset_1d_fixture):
         measurement_name=timeseries_dataset_1d_fixture[2],
         unit=timeseries_dataset_1d_fixture[2],
         timeseries_type=TimeseriesType(timeseries_dataset_1d_fixture[4]),
-        timeseries_region=TimeseriesRegion(timeseries_dataset_1d_fixture[5]),
     )
-
-    mask_geometries = {"ice_shelf": None, "ocean": None, "climate": None}
 
     timeseries.process_timeseries(
         data=timeseries_dataset_1d_fixture[0],
         measurement_name=timeseries_dataset_1d_fixture[3],
         measurement_uncertainty_name="measurement_uncertainties",
-        mask_geometries=mask_geometries,
+        mask_geometry=None,
         apply_mask=False,
         period=AggregationPeriod.MONTH,
         aggregate=AggregationStrategy.MEAN,
@@ -262,20 +256,15 @@ def test_process_timeseries_3d(timeseries_dataset_3d_fixture):
         measurement_name=timeseries_dataset_3d_fixture[2],
         unit=timeseries_dataset_3d_fixture[2],
         timeseries_type=TimeseriesType(timeseries_dataset_3d_fixture[4]),
-        timeseries_region=TimeseriesRegion(timeseries_dataset_3d_fixture[5]),
     )
 
-    mask_geometries = {
-        "ice_shelf": Polygon(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))),
-        "ocean": None,
-        "climate": None,
-    }
+    mask_geometry = Polygon(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)))
 
     timeseries.process_timeseries(
         data=timeseries_dataset_3d_fixture[0],
         measurement_name=timeseries_dataset_3d_fixture[3],
         measurement_uncertainty_name="measurement_uncertainties",
-        mask_geometries=mask_geometries,
+        mask_geometry=mask_geometry,
         apply_mask=False,
         period=AggregationPeriod.MONTH,
         aggregate=AggregationStrategy.MEAN,
@@ -312,7 +301,6 @@ def test_timeseries(timeseries_fixture):
         measurement_uncertainties=timeseries_fixture[1],
         unit=timeseries_fixture[3],
         timeseries_type=TimeseriesType(timeseries_fixture[5]),
-        timeseries_region=TimeseriesRegion(timeseries_fixture[6]),
     )
 
     assert timeseries.label == "time series 1"
@@ -321,7 +309,6 @@ def test_timeseries(timeseries_fixture):
     assert timeseries.measurements.equals(timeseries_fixture[0])
     assert timeseries.measurement_uncertainties.equals(timeseries_fixture[1])
     assert timeseries.timeseries_type == TimeseriesType("cumulative")
-    assert timeseries.timeseries_region == TimeseriesRegion("ice_shelf")
 
     timeseries = Timeseries(
         label=timeseries_fixture[2],
@@ -329,7 +316,6 @@ def test_timeseries(timeseries_fixture):
         measurements=timeseries_fixture[0],
         unit=timeseries_fixture[3],
         timeseries_type=TimeseriesType(timeseries_fixture[5]),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
     assert timeseries.label == "time series 1"
@@ -337,7 +323,6 @@ def test_timeseries(timeseries_fixture):
     assert timeseries.measurements.equals(timeseries_fixture[0])
     assert timeseries.measurement_uncertainties is None
     assert timeseries.timeseries_type == TimeseriesType("cumulative")
-    assert timeseries.timeseries_region == TimeseriesRegion("ocean")
 
 
 def test__move_axes_time(data_array_3d_fixture, dimension_names_3d_fixture):
@@ -832,31 +817,31 @@ def test_summary_statistics(timeseries_obj_fixture, time_series_fixture):
 
     summary_stats = timeseries_obj_fixture.summary_stats
 
-    assert summary_stats.loc["test - Initial Value (m)", "Value"] == 6
-    assert summary_stats.loc["test - Initial Value (m)", "Lower Uncertainty Bound"] == 5.5
-    assert summary_stats.loc["test - Initial Value (m)", "Upper Uncertainty Bound"] == 6.5
+    assert summary_stats.loc["Initial Value", "Value"] == 6
+    assert summary_stats.loc["Initial Value", "Lower Uncertainty Bound"] == 5.5
+    assert summary_stats.loc["Initial Value", "Upper Uncertainty Bound"] == 6.5
 
-    assert summary_stats.loc["test - Final Value (m)", "Value"] == 8
-    assert summary_stats.loc["test - Final Value (m)", "Lower Uncertainty Bound"] == 7.5
-    assert summary_stats.loc["test - Final Value (m)", "Upper Uncertainty Bound"] == 8.5
+    assert summary_stats.loc["Final Value", "Value"] == 8
+    assert summary_stats.loc["Final Value", "Lower Uncertainty Bound"] == 7.5
+    assert summary_stats.loc["Final Value", "Upper Uncertainty Bound"] == 8.5
 
-    assert summary_stats.loc["test - Difference (m)", "Value"] == 2
-    assert np.isclose(summary_stats.loc["test - Difference (m)", "Lower Uncertainty Bound"], 2 - 0.707107)
-    assert np.isclose(summary_stats.loc["test - Difference (m)", "Upper Uncertainty Bound"], 2 + 0.707107)
+    assert summary_stats.loc["Difference", "Value"] == 2
+    assert np.isclose(summary_stats.loc["Difference", "Lower Uncertainty Bound"], 2 - 0.707107)
+    assert np.isclose(summary_stats.loc["Difference", "Upper Uncertainty Bound"], 2 + 0.707107)
 
-    assert summary_stats.loc["test - Maximum Value (m)", "Value"] == 8
-    assert summary_stats.loc["test - Maximum Value (m)", "Lower Uncertainty Bound"] == 7.5
-    assert summary_stats.loc["test - Maximum Value (m)", "Upper Uncertainty Bound"] == 8.5
+    assert summary_stats.loc["Maximum Value", "Value"] == 8
+    assert summary_stats.loc["Maximum Value", "Lower Uncertainty Bound"] == 7.5
+    assert summary_stats.loc["Maximum Value", "Upper Uncertainty Bound"] == 8.5
 
-    assert summary_stats.loc["test - Minimum Value (m)", "Value"] == 6
-    assert summary_stats.loc["test - Minimum Value (m)", "Lower Uncertainty Bound"] == 5.5
-    assert summary_stats.loc["test - Minimum Value (m)", "Upper Uncertainty Bound"] == 6.5
+    assert summary_stats.loc["Minimum Value", "Value"] == 6
+    assert summary_stats.loc["Minimum Value", "Lower Uncertainty Bound"] == 5.5
+    assert summary_stats.loc["Minimum Value", "Upper Uncertainty Bound"] == 6.5
 
-    assert summary_stats.loc["test - 10th Percentile Value (m)", "Value"] == 6.2
-    assert summary_stats.loc["test - 25th Percentile Value (m)", "Value"] == 6.5
-    assert summary_stats.loc["test - 50th Percentile Value (m)", "Value"] == 7
-    assert summary_stats.loc["test - 75th Percentile Value (m)", "Value"] == 7.5
-    assert summary_stats.loc["test - 90th Percentile Value (m)", "Value"] == 7.8
+    assert summary_stats.loc["10th Percentile Value", "Value"] == 6.2
+    assert summary_stats.loc["25th Percentile Value", "Value"] == 6.5
+    assert summary_stats.loc["50th Percentile Value", "Value"] == 7
+    assert summary_stats.loc["75th Percentile Value", "Value"] == 7.5
+    assert summary_stats.loc["90th Percentile Value", "Value"] == 7.8
 
     assert summary_stats.loc["Coverage Maximum (%)", "Value"] == 100.0
     assert summary_stats.loc["Coverage Minimum (%)", "Value"] == 50.0

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -19,7 +18,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,
-    TimeseriesRegion,
     TimeseriesType,
     UncertaintyType,
 )
@@ -31,7 +29,6 @@ class Timeseries:
 
     label: str
     timeseries_type: TimeseriesType
-    timeseries_region: TimeseriesRegion
     measurement_name: str | None = None
     measurements: pd.Series | None = None
     measurement_std: pd.Series | None = None
@@ -50,8 +47,7 @@ class Timeseries:
         data: xr.Dataset,
         measurement_name: str,
         measurement_uncertainty_name: str | None,
-        mask_geometries: gpd.GeoDataFrame,
-        # mask_geometries: dict[str, Polygon | MultiPolygon | None],
+        mask_geometry: Polygon | MultiPolygon | None,
         apply_mask: bool,
         aggregate: AggregationStrategy = AggregationStrategy.MEAN,
         period: AggregationPeriod | None = AggregationPeriod.MONTH,
@@ -78,9 +74,8 @@ class Timeseries:
         measurement_uncertainty_name: str | None
             The specific name of the uncertainty associated with the measurement. If None, it is assumed that the
             measurement will have no associated uncertainty.
-        mask_geometries : dict[str, Polygon | MultiPolygon | None]
-            The mask geometries. This is provided as a dictionary with three available masks. 1) The ice shelf, 2) the
-            ocean and 3) The climate.
+        mask_geometry : Polygon | MultiPolygon | None
+            The mask geometry
         apply_mask : bool
             Boolean flag whereby if True the mask supplied to the data will be used to mask the data. If False then the
             mask is only used to calculate the coverage.
@@ -108,19 +103,6 @@ class Timeseries:
         dimension_data = {key: data[key] for key in data.coords}
 
         dimension_names = list(data[measurement_name].dims)
-        if data.rio.crs is not None:
-            mask_geometries = mask_geometries.to_crs(data.rio.crs)
-        else:
-            # currently only the SAM data has this issue, so this is a temporary fix
-            mask_geometries = mask_geometries.to_crs("epsg:3031")
-
-        # TODO: These will need to be better defined and formalised.
-        if self.timeseries_region == TimeseriesRegion.ICE_SHELF:
-            mask_geometry = mask_geometries.loc["ice_shelf", "geometry"]
-        elif self.timeseries_region == TimeseriesRegion.OCEAN:
-            mask_geometry = mask_geometries.loc["ocean", "geometry"]
-        elif self.timeseries_region == TimeseriesRegion.CLIMATE:
-            mask_geometry = mask_geometries.loc["climate", "geometry"]
 
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
@@ -1121,7 +1103,7 @@ class Timeseries:
         return n_observations / n_raster
 
     @staticmethod
-    def _count_pixels(data: np.ndarray) -> float | int:
+    def _count_pixels(data: np.ndarray) -> np.int64:
         """
         Count the number of valid pixels.
 
@@ -1135,7 +1117,7 @@ class Timeseries:
 
         Returns
         -------
-        float | int
+        np.int64
             The number of elements which are False or non-NaN.
         """
         # Assumes that False in mask are included pixels.

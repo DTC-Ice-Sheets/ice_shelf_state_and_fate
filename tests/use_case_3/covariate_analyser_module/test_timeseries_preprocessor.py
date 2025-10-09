@@ -11,7 +11,6 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesRegion,
     TimeseriesType,
 )
 
@@ -35,7 +34,6 @@ def timeseries_1_fixture():
         unit="unit 1",
         measurement_name="measurement 1",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -65,7 +63,6 @@ def timeseries_2_fixture():
         unit="unit 2",
         measurement_name="measurement 2",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -96,7 +93,6 @@ def timeseries_3_fixture():
         unit="unit 3",
         measurement_name="measurement 3",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -119,7 +115,6 @@ def timeseries_4_fixture():
         unit="unit 4",
         measurement_name="measurement 4",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -141,7 +136,6 @@ def timeseries_5_fixture():
         unit="unit 5",
         measurement_name="measurement 5",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -164,7 +158,6 @@ def timeseries_1_inv_fixture():
         unit="unit 1 inv",
         measurement_name="measurement 1 inv",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -187,7 +180,6 @@ def timeseries_6_fixture():
         unit="unit 6",
         measurement_name="measurement 6",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -210,7 +202,6 @@ def timeseries_7_fixture():
         unit="unit 7",
         measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -232,7 +223,6 @@ def timeseries_7_lag_fixture():
         unit="unit 7 inv",
         measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -431,7 +421,7 @@ def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, times
     assert (
         pd.Timestamp(year=2020, month=2, day=1),
         pd.Timestamp(year=2020, month=5, day=1),
-    ) == timeseries_container._find_start_end_dates()
+    ) == timeseries_container.find_start_end_dates()
 
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[timeseries_1_fixture, timeseries_4_fixture],
@@ -443,7 +433,7 @@ def test__find_start_end_dates(timeseries_1_fixture, timeseries_2_fixture, times
     assert (
         pd.Timestamp(year=2020, month=7, day=1),
         pd.Timestamp(year=2020, month=5, day=1),
-    ) == timeseries_container._find_start_end_dates()
+    ) == timeseries_container.find_start_end_dates()
 
 
 def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
@@ -472,7 +462,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
         process_timeseries=False,
     )
 
-    timeseries_container._trim_timeseries_date(
+    timeseries_container.trim_start_end_dates(
         start_date=pd.Timestamp(year=2020, month=2, day=1),
         end_date=pd.Timestamp(year=2020, month=4, day=1),
     )
@@ -486,7 +476,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
         process_timeseries=False,
     )
 
-    timeseries_container._trim_timeseries_date(
+    timeseries_container.trim_start_end_dates(
         start_date=pd.Timestamp(year=2020, month=2, day=1),
         end_date=pd.Timestamp(year=2020, month=4, day=1),
     )
@@ -500,7 +490,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
         process_timeseries=False,
     )
 
-    timeseries_container._trim_timeseries_date(
+    timeseries_container.trim_start_end_dates(
         start_date=pd.Timestamp(year=2020, month=2, day=1),
         end_date=pd.Timestamp(year=2020, month=4, day=1),
     )
@@ -514,7 +504,7 @@ def test__trim_timeseries_date(timeseries_1_fixture, timeseries_2_fixture):
         process_timeseries=False,
     )
 
-    timeseries_container._trim_timeseries_date(
+    timeseries_container.trim_start_end_dates(
         start_date=pd.Timestamp(year=2020, month=2, day=1),
         end_date=pd.Timestamp(year=2020, month=4, day=1),
     )
