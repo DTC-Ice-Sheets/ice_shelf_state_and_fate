@@ -4,10 +4,10 @@ import base64
 import logging
 from io import BytesIO
 from time import sleep
+from typing import Callable
 
 import dash
 import dash_bootstrap_components as dbc
-import geopandas as gpd
 import pandas as pd
 import requests
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
@@ -18,7 +18,7 @@ from use_case_3.dashboard.dashboard_layout import (
 )
 from use_case_3.dashboard.query_api import (
     config_dict,
-    query_polygons,
+    get_ice_shelf_names,
     query_summary_data,
     s3_client,
     url,
@@ -31,10 +31,10 @@ logger = logging.getLogger(__name__)
 navbar = layout_navbar(page_title="Covariate Analysis")
 
 initial_ice_shelf = "thwaites"
-initial_summary_data, _, _, _ = query_summary_data(initial_ice_shelf)
+initial_summary_data, _ = query_summary_data(initial_ice_shelf)
 
 
-def create_dataset_selector(dataset_id: str) -> html.Div:
+def _create_dataset_selector(dataset_id: str) -> html.Div:
     return create_collapsible_group(
         group_id=dataset_id,
         group_label=config_dict[dataset_id]["label"],
@@ -63,11 +63,18 @@ layout = [
                     html.Div(
                         [
                             html.P(
-                                "This is the analysis module of the digital twin. You can use the tools provided to conduct detailed analyses on the Antarctic ice shelves of your choice using both earth observation, in-situ and reanalysis datasets. Select from the ice, ocean and climate datasets provided to discover significant variables and interactions between variables which could have contributed to the current state of the ice shelves.",
+                                "This is the analysis module of the digital twin. "
+                                "You can use the tools provided to conduct detailed analyses on the Antarctic "
+                                "ice shelves of your choice using both earth observation, in-situ and reanalysis "
+                                "datasets. Select from the ice, ocean and climate datasets provided to discover "
+                                "significant variables and interactions between variables which could have "
+                                "contributed to the current state of the ice shelves.",
                                 className="analysis_intro",
                             ),
                             html.P(
-                                "If you prefer to conduct the analysis offline, you can select the datasets of interest and use the download function to retrieve them within the specified spatial and temporal extents.",
+                                "If you prefer to conduct the analysis offline, you can select the datasets of "
+                                "interest and use the download function to retrieve them within the specified "
+                                "spatial and temporal extents.",
                                 className="analysis_intro",
                             ),
                             html.Div(
@@ -88,7 +95,7 @@ layout = [
                                     ),
                                     html.Div(
                                         dbc.Select(
-                                            options=query_polygons()[0].proj["Name"].unique(),
+                                            options=get_ice_shelf_names(),
                                             value=initial_ice_shelf,
                                             id="ice_shelf_selection",
                                             style={},
@@ -97,12 +104,12 @@ layout = [
                                     ),
                                     html.Div(
                                         dcc.RangeSlider(
-                                            initial_summary_data["time"].min().values.astype(object).year,
-                                            initial_summary_data["time"].max().values.astype(object).year,
+                                            initial_summary_data["time"].min().item().year,
+                                            initial_summary_data["time"].max().item().year,
                                             1,
                                             value=[
-                                                initial_summary_data["time"].min().values.astype(object).year,
-                                                initial_summary_data["time"].max().values.astype(object).year,
+                                                initial_summary_data["time"].min().item().year,
+                                                initial_summary_data["time"].max().item().year,
                                             ],
                                             id="summary_year_selector",
                                             marks=None,
@@ -182,7 +189,7 @@ layout = [
                                             dcc.Store(id="switch-values"),
                                             html.H6("Ice Shelf Datasets: ", className="analysis_heading6"),
                                             *[
-                                                create_dataset_selector(dataset_id)
+                                                _create_dataset_selector(dataset_id)
                                                 for dataset_id in [
                                                     "polarice_elevation_change",
                                                     "elevation_change_eolis",
@@ -214,7 +221,7 @@ layout = [
                                         [
                                             html.H6("Ocean Datasets: ", className="analysis_heading6"),
                                             *[
-                                                create_dataset_selector(dataset_id)
+                                                _create_dataset_selector(dataset_id)
                                                 for dataset_id in [
                                                     "GLORYS12V1",
                                                     "sea_ice_concentration",
@@ -235,7 +242,7 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Climate Datasets: ", className="analysis_heading6"),
-                                            create_dataset_selector("southern_annular_mode"),
+                                            _create_dataset_selector("southern_annular_mode"),
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -296,23 +303,22 @@ layout = [
     prevent_initial_call=True,
 )
 def conduct_covariate_analysis_integrated(
-    set_progress, n_clicks, ice_shelf, year_range, analysis_type, selector_ids, selector_values
-):
-    ice_shelf_polygons, ocean_polygons = query_polygons()
-    ice_shelf_extent = ice_shelf_polygons.epsg4326[ice_shelf_polygons.epsg4326["Name"] == ice_shelf]["geometry"].values[
-        0
-    ]
-    ocean_extent = ocean_polygons.epsg4326[ocean_polygons.epsg4326["Name"] == ice_shelf]["geometry"].values[0]
-    climate_extent = None
+    set_progress: Callable[[tuple[str, int]], None],
+    n_clicks: int,
+    ice_shelf: str,
+    year_range: tuple[int, int],
+    analysis_type: str,
+    selector_ids: list[str],
+    selector_values: list[str],
+) -> tuple[str, bool, str]:
+    """Submit a job to the backend to conduct the covariate analysis.
 
-    polygons = gpd.GeoDataFrame(
-        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
-    )
-    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
-
+    Updates a progress bar while the job is running.
+    Provides an output image URL when done.
+    """
     # Extract tuple of (dataset_id, variable_id) from the html ID of each selected variable
-    ids: list[tuple[str, str]] = [
-        id_["index"].split(".") for id_, value in zip(selector_ids, selector_values, strict=True) if value
+    ids: list[list[str]] = [
+        id_["index"].split(".", maxsplit=1) for id_, value in zip(selector_ids, selector_values, strict=True) if value
     ]
 
     variables = [
@@ -387,7 +393,8 @@ def conduct_covariate_analysis_integrated(
     State("job-id", "data"),
     prevent_initial_call=True,
 )
-def cancel_job(n_clicks, job_id):
+def cancel_job(n_clicks: int, job_id: int) -> tuple[bool, bool, str]:
+    """Issues a request to cancel the running job."""
     if not job_id:
         return True, False, ""
     if not n_clicks:
@@ -395,7 +402,7 @@ def cancel_job(n_clicks, job_id):
     try:
         res = requests.delete(f"{url}/jobs/{job_id}")
         res.raise_for_status()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(e)
         return False, True, str(e)
     return True, False, ""

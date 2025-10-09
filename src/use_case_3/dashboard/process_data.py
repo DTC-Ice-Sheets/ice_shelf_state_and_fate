@@ -1,6 +1,14 @@
-from copy import deepcopy
+"""Local data processing functions.
 
-import geopandas as gpd
+Most if not all of this should be migrated to the dtc_query_api in the future.
+"""
+
+# Disable linting for this file because it's too much of a mess and most of the code is temporary
+# ruff: noqa
+
+from copy import deepcopy
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 import ruptures as rpt
@@ -9,12 +17,12 @@ from statsmodels.tsa.stattools import adfuller
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.dashboard.query_api import config_dict, process_all_data
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     TimeseriesType,
 )
-from use_case_3.dashboard.query_api import process_all_data
 
 
 def generate_statistic(timeseries_container, variable, steady_state_val=None):
@@ -42,25 +50,13 @@ def generate_statistic(timeseries_container, variable, steady_state_val=None):
 def generate_statistic_cummulative_difference(timeseries_container, variable, year_range):
     variable_data = timeseries_container.timeseries[variable].measurements
     variable_data = variable_data[(variable_data.index >= year_range[0]) & (variable_data.index <= year_range[1])]
-    # variable_data = variable_data[
-    #     (variable_data.index >= pd.Timestamp(year=year_range[0], month=1, day=1))
-    #     & (variable_data.index <= pd.Timestamp(year=year_range[1], month=1, day=1))
-    # ]
     if timeseries_container.timeseries[variable].measurement_uncertainties is not None:
         variable_unc = timeseries_container.timeseries[variable].measurement_uncertainties
         variable_unc = variable_unc[(variable_unc.index >= year_range[0]) & (variable_unc.index <= year_range[1])]
-        # variable_unc = variable_unc[
-        #     (variable_unc.index)
-        #     >= pd.Timestamp(year=year_range[0], month=1, day=1) & (variable_unc.index)
-        #     <= pd.Timestamp(year=year_range[1], month=1, day=1)
-        # ]
     else:
         variable_unc = np.zeros(variable_data.shape)
-
     difference = variable_data.iloc[-1] - variable_data.iloc[0]
-
     difference_unc = np.sqrt(variable_unc.iloc[0] ** 2 + variable_unc.iloc[-1] ** 2) if variable_unc.shape[0] > 0 else 0
-
     return difference, difference_unc
 
 
@@ -90,10 +86,7 @@ def generate_statistics(timeseries_container, year_range):
         if idx != "cumulative_mass_change" and np.abs(cummulative_summary.loc[idx, "Total"] / total_mass_loss) > 0.2:
             negative_cummulative_contributors.append(idx)
 
-    print(cummulative_summary)
-
     negative_cummulative_contributors = cummulative_summary.loc[negative_cummulative_contributors, :]
-    print(negative_cummulative_contributors)
 
     labels = []
     mean = []
@@ -102,7 +95,6 @@ def generate_statistics(timeseries_container, year_range):
     for label in timeseries_container.timeseries:
         if timeseries_container.timeseries[label].timeseries_type == TimeseriesType.DERIVATIVE:
             labels.append(label)
-            # print(label)
             mean.append(timeseries_container.timeseries[label].summary_stats.loc["Mean", "Value"])
             maximum.append(timeseries_container.timeseries[label].summary_stats.loc["Maximum Value", "Value"])
             totals.append(timeseries_container.timeseries[label].summary_stats.loc["Total", "Value"])
@@ -112,8 +104,6 @@ def generate_statistics(timeseries_container, year_range):
         .sort_values(["Total"])
         .set_index("Variable")
     )
-
-    print(derivative_summary)
 
     return total_mass_loss, negative_cummulative_contributors, derivative_summary
 
@@ -285,35 +275,46 @@ def calculate_mass_balance(
     return mass_balance_events, mass_balance_rate, calving_matched_years
 
 
-def example_Covariate_analysis_thwaites(ice_shelf_polygons_epsg4326, ocean_polygons_epsg4326, config_dict, year_range):
+def example_covariate_analysis_thwaites(
+    date_start: datetime,
+    date_end: datetime,
+) -> tuple[dict, dict, dict]:
+    """Perform example covariate analysis for Thwaites ice shelf.
+
+    Parameters
+    ----------
+    date_start : datetime
+        Start date of the analysis.
+    date_end : datetime
+        End date of the analysis.
+
+    Returns
+    -------
+    tuple[dict, dict, dict]
+        Tuple containing:
+        - Dictionary of strongly correlated variable pairs.
+        - Dictionary of moderately correlated variable pairs.
+        - Dictionary of weakly correlated variable pairs.
+    """
     ice_shelf = "thwaites"
-    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[
-        0
-    ]
-    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[0]
-    climate_extent = None
-
-    polygons = gpd.GeoDataFrame(
-        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
-    )
-    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
-
     variables = [
-        "moorings_1d-depth_PIG_N_and_S_combined",
-        "basal_melt_anomalies_pine_island_1d-basal_melt_anomalies",
-        "subglacial_lake_discharge_1d-lake_discharge",
-        # "subglacial_lakes_volume_change_1d-volume_change",
-        "basal_melt_anomalies_thwaites_1d-basal_melt_anomalies",
+        ("moorings_1d", "depth_PIG_N_and_S_combined"),
+        ("basal_melt_anomalies_pine_island_1d", "basal_melt_anomalies"),
+        ("subglacial_lake_discharge_1d", "lake_discharge"),
+        # ("subglacial_lakes_volume_change_1d", "volume_change"),
+        ("basal_melt_anomalies_thwaites_1d", "basal_melt_anomalies"),
     ]
 
     axis_labels = []
-    for variable in variables:
-        # print(variable)
-        axis_labels.append(
-            config_dict[variable.split("-")[0].lower()]["variables"][variable.split("-")[-1]]["y_axis_label"]
-        )
+    for dataset_id, variable_id in variables:
+        axis_labels.append(config_dict[dataset_id]["variables"][variable_id]["y_axis_label"])
 
-    timeseries = process_all_data(variables, polygons, year_range)
+    timeseries = process_all_data(
+        ice_shelf,
+        variables,
+        date_start,
+        date_end,
+    )
 
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=timeseries,
@@ -337,23 +338,34 @@ def example_Covariate_analysis_thwaites(ice_shelf_polygons_epsg4326, ocean_polyg
     return strong_correlation, medium_correlation, weak_correlation
 
 
-def example_subglacial_lake_analysis(ice_shelf, ice_shelf_polygons_epsg4326, ocean_polygons_epsg4326, year_range):
-    ice_shelf_extent = ice_shelf_polygons_epsg4326[ice_shelf_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[
-        0
-    ]
-    ice_shelf_extent = ice_shelf_extent.buffer(10)
-    ocean_extent = ocean_polygons_epsg4326[ocean_polygons_epsg4326["Name"] == ice_shelf]["geometry"].values[0]
-    climate_extent = None
+def example_subglacial_lake_analysis(
+    ice_shelf: str,
+    date_start: datetime,
+    date_end: datetime,
+) -> tuple[list[str], dict, TimeSeriesPreprocessor]:
+    """Perform example analysis of subglacial lakes under an ice shelf.
 
-    polygons = gpd.GeoDataFrame(
-        {"Name": ["ice_shelf", "ocean", "climate"], "geometry": [ice_shelf_extent, ocean_extent, climate_extent]}
-    )
-    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
+    Parameters
+    ----------
+    ice_shelf : str
+        Name of the ice shelf to analyse.
+    date_start : datetime
+        Start date of the analysis.
+    date_end : datetime
+        End date of the analysis.
 
+    Returns
+    -------
+    tuple[list[str], dict, TimeSeriesPreprocessor]
+        Tuple containing:
+        - List of lakes that had events.
+        - Dictionary of events for each lake and variable.
+        - TimeSeriesPreprocessor object containing the processed time series data.
+    """
     variables = [
-        "sub_glacial_lakes-height_above_wgs84_ellipsoid",
-        "sub_glacial_lakes-rate_of_volume_change",
-        "sub_glacial_lakes-volume_change",
+        ("sub_glacial_lakes", "height_above_wgs84_ellipsoid"),
+        ("sub_glacial_lakes", "rate_of_volume_change"),
+        ("sub_glacial_lakes", "volume_change"),
     ]
 
     lakes = [
@@ -363,7 +375,12 @@ def example_subglacial_lake_analysis(ice_shelf, ice_shelf_polygons_epsg4326, oce
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170",
     ]
 
-    timeseries = process_all_data(variables, polygons, year_range)
+    timeseries = process_all_data(
+        ice_shelf,
+        variables,
+        date_start,
+        date_end,
+    )
 
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=timeseries,

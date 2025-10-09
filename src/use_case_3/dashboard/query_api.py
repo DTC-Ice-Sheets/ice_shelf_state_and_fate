@@ -1,37 +1,32 @@
+"""Functions for querying data from the dtc_query_api.
+
+Some functions are not yet using the dtc_query_api, but they should be migrated eventually.
+"""
+
 import functools
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
+from typing import TypedDict
 
 import boto3
 import geopandas as gpd
-import numpy as np
-import pandas as pd
 import requests
 import xarray as xr
 import yaml
+from data_download_module.main import download_data
+from data_download_module.schemas import DataDownloadRequest
 from pyproj import CRS
-from shapely import MultiPolygon
+from shapely import MultiPolygon, Polygon
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
-from use_case_3.helper_functions import iceshelf_polygon
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesRegion,
     TimeseriesType,
     UncertaintyType,
 )
-
-module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_download_module/src/"
-sys.path.insert(0, module_path)
-module_path = "/home/palmerjohn/code/dtc_ice_sheets/data_converter/src"
-sys.path.insert(0, module_path)
-
-from data_download_module.main import download_data
-from data_download_module.schemas import DataDownloadRequest
 
 url = "http://localhost:8000"
 
@@ -50,18 +45,35 @@ icesheet_polygon_path = Path("src/use_case_3/dashboard/assets/icesheet_polygon.p
 initial_datasets_path = Path("/data/yak1/working/dtc_ice_sheets/initial_datasets")
 config_dict_path = Path("src/use_case_3/dashboard/variable_mappings.yml")
 
-
-with config_dict_path.open() as f:
+# Load metadata about the available datasets and variables
+with config_dict_path.open("r", encoding="utf-8") as f:
     config_dict = yaml.safe_load(f)
 
 
 class ProjectedGeoDataFrame:
+    """
+    Helper class to store multiple projections of the same GeoDataFrame in a lazily cached way.
+
+    Parameters
+    ----------
+    epsg4326 : gpd.GeoDataFrame | None
+        The GeoDataFrame in EPSG:4326 projection.
+        Must be provided if `proj` is not provided.
+    proj : gpd.GeoDataFrame | None
+        The GeoDataFrame in the projection specified by `crs`.
+        Must be provided if `epsg4326` is not provided.
+        Must be provided if `crs` is not provided.
+    crs : str | CRS | None
+        The coordinate reference system of the `proj` GeoDataFrame.
+        Must be provided if `proj` is not provided.
+    """
+
     def __init__(
         self,
         epsg4326: gpd.GeoDataFrame | None = None,
         proj: gpd.GeoDataFrame | None = None,
         crs: str | CRS | None = None,
-    ):
+    ) -> None:
         assert (epsg4326 is not None) or (proj is not None), "At least one of epsg4326 or proj must be provided"
         assert (proj is not None) or (crs is not None), "If proj is not provided, a CRS must be specified"
         self._epsg4326 = epsg4326
@@ -70,45 +82,38 @@ class ProjectedGeoDataFrame:
 
     @property
     def epsg4326(self) -> gpd.GeoDataFrame:
+        """The GeoDataFrame in EPSG:4326 projection."""
         if self._epsg4326 is None:
             self._epsg4326 = self._proj.to_crs("EPSG:4326")
         return self._epsg4326
 
     @property
     def proj(self) -> gpd.GeoDataFrame:
+        """The GeoDataFrame in the projection specified by `crs`."""
         if self._proj is None:
             self._proj = self._epsg4326.to_crs("EPSG:3031")
         return self._proj
 
 
-@functools.cache
-def query_ice_shelf_wide_data() -> ProjectedGeoDataFrame:
-    local_raw_request = DataDownloadRequest(
-        dataset_id="ICE_SHELF_MASKS", raw_download=True, output_parent_path=output_path
-    )
+class RegionPolygons(TypedDict):
+    """A set of available polygons for the data masking of an ice shelf."""
 
-    downloaded_parquet_data_path = download_data(data_download_request=local_raw_request)
-
-    ice_shelf_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
-    ice_shelf_polygons_proj = ice_shelf_polygons_proj.sort_values(["Name"])
-
-    return ProjectedGeoDataFrame(proj=ice_shelf_polygons_proj)
-
-
-@functools.cache
-def query_all_ocean_data() -> ProjectedGeoDataFrame:
-    local_raw_request = DataDownloadRequest(dataset_id="OCEAN_MASKS", raw_download=True, output_parent_path=output_path)
-
-    downloaded_parquet_data_path = download_data(data_download_request=local_raw_request)
-
-    ocean_polygons_proj = gpd.read_parquet(downloaded_parquet_data_path)
-    ocean_polygons_proj = ocean_polygons_proj.sort_values(["Name"])
-
-    return ProjectedGeoDataFrame(proj=ocean_polygons_proj)
+    ice_shelf: Polygon | MultiPolygon | None
+    ocean: Polygon | MultiPolygon | None
+    climate: Polygon | MultiPolygon | None
 
 
 @functools.cache
 def query_polygons() -> tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]:
+    """Get the polygon geometries for all ice shelves.
+
+    Returns
+    -------
+    tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]
+        A tuple containing:
+        - A polygon of the ice shelf
+        - A polygon of the surrounding ocean
+    """
     polygons_epsg4326 = gpd.read_parquet(polygon_path)
     polygons_epsg4326 = polygons_epsg4326.sort_values(["Name"])
     ice_shelf_polygons_epsg4326 = (
@@ -131,7 +136,31 @@ def query_polygons() -> tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]:
 
 
 @functools.cache
+def get_ice_shelf_names() -> list[str]:
+    """Get the names of all available ice shelves."""
+    ice_shelf_polygons = query_polygons()[0].proj
+    return ice_shelf_polygons["Name"].unique().tolist()
+
+
+@functools.cache
+def get_ice_shelf_polygons(ice_shelf: str) -> RegionPolygons:
+    """Get the polygon geometries for a given ice shelf."""
+    ice_shelf_polygons, ocean_polygons = query_polygons()
+    ice_shelf_extent = ice_shelf_polygons.epsg4326[ice_shelf_polygons.epsg4326["Name"] == ice_shelf]["geometry"].iloc[0]
+    ice_shelf_extent = ice_shelf_extent.buffer(10)
+    ocean_extent = ocean_polygons.epsg4326[ocean_polygons.epsg4326["Name"] == ice_shelf]["geometry"].iloc[0]
+    climate_extent = None
+
+    return RegionPolygons(
+        ice_shelf=ice_shelf_extent,
+        ocean=ocean_extent,
+        climate=climate_extent,
+    )
+
+
+@functools.cache
 def query_ice_sheet_data() -> ProjectedGeoDataFrame:
+    """Get the polygon geometry for the entire ice sheet."""
     ice_sheet_polygons_proj = gpd.read_parquet(icesheet_polygon_path)
     ice_sheet_polygons_proj = ice_sheet_polygons_proj.sort_values(["Name"])
     return ProjectedGeoDataFrame(proj=ice_sheet_polygons_proj)
@@ -140,17 +169,10 @@ def query_ice_sheet_data() -> ProjectedGeoDataFrame:
 @functools.cache
 def query_summary_data(
     ice_shelf: str = "thwaites",
-    start_date: pd.Timestamp | np.datetime64 | None = None,
-    end_date: pd.Timestamp | np.datetime64 | None = None,
-) -> tuple[xr.Dataset, TimeSeriesPreprocessor, MultiPolygon, MultiPolygon]:
-    ice_shelf_polygon_epsg4326, ice_shelf_polygon = iceshelf_polygon(
-        ice_shelf_polygons=query_polygons()[0].proj,
-        ice_shelf_name=ice_shelf,
-    )
-
-    polygons = gpd.GeoDataFrame({"Name": ["ice_shelf", "ocean", "climate"], "geometry": [None, None, None]})
-    polygons = polygons.set_crs("epsg: 4326").set_index("Name")
-
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> tuple[xr.Dataset, TimeSeriesPreprocessor]:
+    """Get the summary data for a given ice shelf."""
     response = requests.get(f"{url}/ice-shelves/{ice_shelf}/summary-url")
     summary_zarr_url = response.json()["url"]
 
@@ -169,12 +191,11 @@ def query_summary_data(
 
     timeseries_list = []
 
-    for var in summary_data.keys():
+    for var in summary_data:
         if var in config_dict["timeseries_summary"]:
             timeseries = Timeseries(
                 label=var,
                 timeseries_type=TimeseriesType(config_dict["timeseries_summary"][var]["timeseries_type"]),
-                timeseries_region=TimeseriesRegion(config_dict["timeseries_summary"][var]["region"]),
                 unit=config_dict["timeseries_summary"][var]["units"],
             )
 
@@ -182,7 +203,7 @@ def query_summary_data(
                 data=summary_data,
                 measurement_name=var,
                 measurement_uncertainty_name=config_dict["timeseries_summary"][var]["measurement_uncertainties"],
-                mask_geometries=polygons,
+                mask_geometry=None,
                 apply_mask=False,
                 aggregate=AggregationStrategy.MEAN,
                 period=AggregationPeriod.YEAR,
@@ -200,22 +221,27 @@ def query_summary_data(
         process_timeseries=False,
     )
 
-    if start_date is None or end_date is None:
-        min_date, max_date = timeseries_container._find_start_end_dates()
-        start_date = start_date or min_date
-        end_date = end_date or max_date
+    if start_year is None or end_year is None:
+        min_year, max_year = timeseries_container.find_start_end_dates()
+        start_year = start_year or min_year
+        end_year = end_year or max_year
 
-    timeseries_container._trim_timeseries_date(start_date=start_date, end_date=end_date)
+    timeseries_container.trim_start_end_dates(start_date=start_year, end_date=end_year)
 
-    return summary_data, timeseries_container, ice_shelf_polygon_epsg4326, ice_shelf_polygon
+    return summary_data, timeseries_container
 
 
-def query_local_data(dataset_id, variable, polygons, start_time, end_time):
-    region = config_dict[dataset_id.lower()]["variables"][variable]["region"]
+def _query_local_data(
+    dataset_id: str,
+    variable_id: str,
+    mask_geometry: Polygon | MultiPolygon | None,
+    start_time: datetime,
+    end_time: datetime,
+) -> list[Timeseries]:
     if dataset_id == "OCEAN_MOORINGS":
-        dataset_download_ids = get_all_ocean_moorings()
+        dataset_download_ids = _get_all_ocean_moorings()
     elif dataset_id == "SUB_GLACIAL_LAKES":
-        dataset_download_ids = get_all_sg_lakes()
+        dataset_download_ids = _get_all_sg_lakes()
     else:
         dataset_download_ids = [dataset_id]
 
@@ -225,7 +251,7 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
             dataset_id=dataset_download_id,
             start_time=start_time,
             end_time=end_time,
-            epsg4326_polygon=polygons.loc[region, "geometry"],
+            epsg4326_polygon=mask_geometry,
             raw_download=False,
             output_parent_path=output_path,
         )
@@ -243,25 +269,24 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
 
         if include_data:
             timeseries = Timeseries(
-                label=dataset_download_id + "-" + variable,
+                label=dataset_download_id + "-" + variable_id,
                 timeseries_type=TimeseriesType(
-                    config_dict[dataset_id.lower()]["variables"][variable]["timeseries_type"]
+                    config_dict[dataset_id.lower()]["variables"][variable_id]["timeseries_type"]
                 ),
-                timeseries_region=TimeseriesRegion(config_dict[dataset_id.lower()]["variables"][variable]["region"]),
-                unit=config_dict[dataset_id.lower()]["variables"][variable]["units"],
+                unit=config_dict[dataset_id.lower()]["variables"][variable_id]["units"],
             )
             timeseries.process_timeseries(
                 data=data,
-                measurement_name=variable,
-                measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable][
+                measurement_name=variable_id,
+                measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable_id][
                     "measurement_uncertainties"
                 ],
-                mask_geometries=polygons,
+                mask_geometry=mask_geometry,
                 apply_mask=False,
                 aggregate=AggregationStrategy.MEAN,
                 period=AggregationPeriod.MONTH,
                 uncertainty=UncertaintyType(
-                    config_dict[dataset_id.lower()]["variables"][variable]["measurement_uncertainty_type"]
+                    config_dict[dataset_id.lower()]["variables"][variable_id]["measurement_uncertainty_type"]
                 ),
                 independent=True,
                 t0_normalisation=None,
@@ -269,35 +294,59 @@ def query_local_data(dataset_id, variable, polygons, start_time, end_time):
     return timeseries_list
 
 
-def get_all_ocean_moorings():
+def _get_all_ocean_moorings() -> list[str]:
     return [
         "OCEAN_MOORINGS_" + mooring.with_suffix("").name.upper()
         for mooring in (initial_datasets_path / "ocean_moorings").iterdir()
     ]
 
 
-def get_all_sg_lakes():
+def _get_all_sg_lakes() -> list[str]:
     return [
         "SUGLACIAL_LAKE_" + sg_lake.with_suffix("").name.upper()
         for sg_lake in (initial_datasets_path / "subglacial_lakes").iterdir()
     ]
 
 
-def process_all_data(variables, polygons, year_range):
-    timeseries_list = []
-    for i, var in enumerate(variables):
-        # if variable_states[i]:
-        dataset_id = var.split("-")[0]
-        var_id = var.split("-")[-1]
+def process_all_data(
+    ice_shelf: str,
+    variables: list[tuple[str, str]],
+    start_date: datetime,
+    end_date: datetime,
+) -> list[Timeseries]:
+    """
+    Download all required data and process it locally into Timeseries objects.
 
-        timeseries = query_local_data(
+    Parameters
+    ----------
+    ice_shelf : str
+        The name of the ice shelf to query data for.
+    variables : list[tuple[str, str]]
+        A list of tuples: (dataset_id, variable_id)
+    start_date : datetime
+        The start date for the time series.
+    end_date : datetime
+        The end date for the time series.
+
+    Returns
+    -------
+    list[Timeseries]
+        A list of processed Timeseries objects.
+    """
+    polygons = get_ice_shelf_polygons(ice_shelf)
+
+    timeseries_list = []
+    for dataset_id, variable_id in variables:
+        timeseries_region = config_dict[dataset_id.lower()]["variables"][variable_id]["region"]
+        mask_geometry = polygons[timeseries_region]
+
+        timeseries = _query_local_data(
             dataset_id=dataset_id.upper(),
-            variable=var_id,
-            polygons=polygons,
-            start_time=datetime(year_range[0], 1, 1),
-            end_time=datetime(year_range[1], 1, 1),
+            variable_id=variable_id,
+            mask_geometry=mask_geometry,
+            start_time=start_date,
+            end_time=end_date,
         )
         for ts in timeseries:
             timeseries_list.append(ts)
-
     return timeseries_list

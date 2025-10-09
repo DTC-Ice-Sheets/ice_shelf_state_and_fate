@@ -1,3 +1,5 @@
+"""Homme page for the dashboard."""
+
 import dash
 import dash_bootstrap_components as dbc
 from dash import html
@@ -17,10 +19,16 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "Welcome to Digital Twin of Antarctic Ice Shelves. The twin is based on Earth Observation, In-situ, re-analysis, and simulation data, to provide a reconstruction of the state of Antarctic Ice Shelves, and of their interactions with the ice sheet, atmosphere, and ocean. The twin makes use of these data to forecast ice shelves evolution."
+                    "Welcome to Digital Twin of Antarctic Ice Shelves. "
+                    "The twin is based on Earth Observation, In-situ, re-analysis, and simulation data, to "
+                    "provide a reconstruction of the state of Antarctic Ice Shelves, and of their interactions "
+                    "with the ice sheet, atmosphere, and ocean. The twin makes use of these data to forecast "
+                    "ice shelves evolution."
                 ),
                 html.P(
-                    "The DTC Ice Sheets Project is part of the European Space Agency's Digital Twin Earth (DTE) initiative, developed under the Lead Digital Twin Components (DTC) Development Actions for the Ice Sheets."
+                    "The DTC Ice Sheets Project is part of the European Space Agency's Digital Twin Earth (DTE) "
+                    "initiative, developed under the Lead Digital Twin Components (DTC) Development Actions for "
+                    "the Ice Sheets."
                 ),
                 html.Div(
                     [

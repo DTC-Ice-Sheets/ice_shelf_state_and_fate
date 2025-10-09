@@ -1,3 +1,5 @@
+"""Dashboard entrypoint."""
+
 import logging
 
 import dash

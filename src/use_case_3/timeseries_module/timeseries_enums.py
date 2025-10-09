@@ -79,19 +79,6 @@ class TimeseriesType(StrEnum):
     DERIVATIVE = "derivative"
 
 
-class TimeseriesRegion(StrEnum):
-    """
-    Define the region type of the timeseries.
-
-    This can be iceshelf, ocean or climate. This defines how the mask is
-    calculated and applied.
-    """
-
-    ICE_SHELF = "ice_shelf"
-    OCEAN = "ocean"
-    CLIMATE = "climate"
-
-
 class ModelEvaluationMetric(StrEnum):
     """The available model evaluation metrics."""
 
