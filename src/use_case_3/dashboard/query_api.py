@@ -1,4 +1,4 @@
-"""Functions for querying data from the dtc_query_api.
+"""Functions for querying data from the dtc_query_api with memoization.
 
 Some functions are not yet using the dtc_query_api, but they should be migrated eventually.
 """
@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypedDict
 
+import asyncstdlib
 import boto3
 import geopandas as gpd
 import xarray as xr
@@ -162,6 +163,14 @@ def query_ice_sheet_data() -> ProjectedGeoDataFrame:
     return ProjectedGeoDataFrame(proj=ice_sheet_polygons_proj)
 
 
+@asyncstdlib.cache
+async def get_ice_shelves() -> list[str]:
+    """List the available ice shelves."""
+    async with ApiClient(api_config) as client:
+        return await IceShelvesApi(client).list_ice_shelves()
+
+
+@asyncstdlib.lru_cache(128)
 async def query_summary_data(
     ice_shelf: str = "thwaites",
     start_year: int | None = None,
