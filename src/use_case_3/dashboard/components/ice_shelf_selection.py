@@ -2,11 +2,10 @@
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, dcc, html
-from dtc_query_client import ApiClient, IceShelvesApi
 
 from use_case_3.dashboard.mapping import plot_ice_shelf_map
 from use_case_3.dashboard.query_api import (
-    api_config,
+    get_ice_shelves,
     query_summary_data,
 )
 
@@ -68,10 +67,8 @@ def create_ice_shelf_map() -> html.Div:
 )
 async def load_ice_shelves(_id: str) -> tuple[list[str], str]:
     """Set up the ice shelf selection dropdown."""
+    ice_shelves = await get_ice_shelves()
     initial_ice_shelf = "thwaites"
-    async with ApiClient(api_config) as client:
-        ice_shelves = await IceShelvesApi(client).list_ice_shelves()
-
     return ice_shelves, initial_ice_shelf
 
 

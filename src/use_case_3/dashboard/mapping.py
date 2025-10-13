@@ -1,6 +1,7 @@
 """Map plotting functions."""
 
 import base64
+import functools
 from io import BytesIO
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from use_case_3.dashboard.query_api import query_ice_sheet_data, query_polygons
 BUFFER_PATH = Path("/data/yak1/working/dtc_ice_sheets/dashboard_map_buffer")
 
 
+@functools.lru_cache(8)
 def plot_ice_shelf_map(ice_shelf: str | None = "Thwaites") -> html.Img:
     """Plot a map for the given ice shelf.
 
