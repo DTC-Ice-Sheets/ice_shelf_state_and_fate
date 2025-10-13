@@ -11,11 +11,11 @@ from typing import TypedDict
 
 import boto3
 import geopandas as gpd
-import requests
 import xarray as xr
 import yaml
 from data_download_module.main import download_data
 from data_download_module.schemas import DataDownloadRequest
+from dtc_query_client import ApiClient, Configuration, IceShelvesApi
 from pyproj import CRS
 from shapely import MultiPolygon, Polygon
 
@@ -27,6 +27,9 @@ from use_case_3.timeseries_module.timeseries_enums import (
     TimeseriesType,
     UncertaintyType,
 )
+
+api_config = Configuration(host="http://localhost:8000")
+
 
 url = "http://localhost:8000"
 
@@ -136,13 +139,6 @@ def query_polygons() -> tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]:
 
 
 @functools.cache
-def get_ice_shelf_names() -> list[str]:
-    """Get the names of all available ice shelves."""
-    ice_shelf_polygons = query_polygons()[0].proj
-    return ice_shelf_polygons["Name"].unique().tolist()
-
-
-@functools.cache
 def get_ice_shelf_polygons(ice_shelf: str) -> RegionPolygons:
     """Get the polygon geometries for a given ice shelf."""
     ice_shelf_polygons, ocean_polygons = query_polygons()
@@ -166,15 +162,14 @@ def query_ice_sheet_data() -> ProjectedGeoDataFrame:
     return ProjectedGeoDataFrame(proj=ice_sheet_polygons_proj)
 
 
-@functools.cache
-def query_summary_data(
+async def query_summary_data(
     ice_shelf: str = "thwaites",
     start_year: int | None = None,
     end_year: int | None = None,
 ) -> tuple[xr.Dataset, TimeSeriesPreprocessor]:
     """Get the summary data for a given ice shelf."""
-    response = requests.get(f"{url}/ice-shelves/{ice_shelf}/summary-url")
-    summary_zarr_url = response.json()["url"]
+    async with ApiClient(api_config) as client:
+        summary_zarr_url = (await IceShelvesApi(client).get_summary_url(ice_shelf_id=ice_shelf)).url
 
     summary_data = xr.open_dataset(
         summary_zarr_url,

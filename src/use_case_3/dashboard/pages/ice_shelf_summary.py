@@ -5,19 +5,15 @@ import dash_bootstrap_components as dbc
 import numpy as np
 from dash import Input, Output, State, callback, dcc, html
 
+from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
 from use_case_3.dashboard.dashboard_layout import layout_navbar
-from use_case_3.dashboard.mapping import create_ice_shelf_map
 from use_case_3.dashboard.plotting import plot_gauge_indicator_timeseries, plot_summary_timeseries
 from use_case_3.dashboard.process_data import generate_statistic, generate_statistic_cummulative_difference
 from use_case_3.dashboard.query_api import (
-    get_ice_shelf_names,
     query_summary_data,
 )
 
 dash.register_page(__name__)
-
-ice_shelf_inital = "thwaites"
-summary_data_initial, _ = query_summary_data(ice_shelf=ice_shelf_inital)
 
 navbar = layout_navbar(page_title="Ice Shelf Summary")
 
@@ -153,38 +149,8 @@ layout = html.Div(
                                 # This column is for the map, ice shelf selector and time range selector.
                                 dbc.Col(
                                     [
-                                        html.Div(
-                                            dcc.Dropdown(
-                                                get_ice_shelf_names(),
-                                                ice_shelf_inital,
-                                                id="ice_shelf_selection",
-                                                style={},
-                                            ),
-                                            style={"border": "0px black solid", "padding-top": "10px"},
-                                        ),
-                                        html.Div(
-                                            dcc.RangeSlider(
-                                                summary_data_initial["time"].min().values.astype(object).year,
-                                                summary_data_initial["time"].max().values.astype(object).year,
-                                                1,
-                                                value=[
-                                                    summary_data_initial["time"].min().values.astype(object).year,
-                                                    summary_data_initial["time"].max().values.astype(object).year,
-                                                ],
-                                                id="summary_year_selector",
-                                                marks=None,
-                                                tooltip={
-                                                    "placement": "bottom",
-                                                    "always_visible": True,
-                                                    "style": {"color": "White", "fontSize": "20px"},
-                                                },
-                                            ),
-                                            style={"border": "0px black solid", "padding-top": "10px"},
-                                        ),
-                                        html.Div(
-                                            id="ice_shelf_map",
-                                            style={"text-align": "center", "border": "0px black solid"},
-                                        ),
+                                        *create_ice_shelf_selection(),
+                                        create_ice_shelf_map(),
                                     ],
                                     width=8,
                                 ),
@@ -576,18 +542,13 @@ layout = html.Div(
 )
 
 
-@callback(Output("ice_shelf_map", "children"), Input("ice_shelf_selection", "value"))
-def update_graph(value):  # noqa: ANN001, ANN201, D103
-    return create_ice_shelf_map(ice_shelf=value)
-
-
 @callback(
     Output("iceshelf-summary-text-div", "children"),
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def update_ice_shelf_summary(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
-    summary_data, timeseries_container = query_summary_data(
+async def update_ice_shelf_summary(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+    summary_data, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -764,8 +725,8 @@ def plot_summary_indicator10_visible(visibility):  # noqa: ANN001, ANN201, D103
     Input("summary_year_selector", "value"),
     State("indicator_1_store", "data"),
 )
-def plot_summary_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -780,8 +741,8 @@ def plot_summary_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, A
     Input("summary_year_selector", "value"),
     State("indicator_2_store", "data"),
 )
-def plot_summary_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -796,8 +757,8 @@ def plot_summary_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, A
     Input("summary_year_selector", "value"),
     State("indicator_3_store", "data"),
 )
-def plot_summary_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -812,8 +773,8 @@ def plot_summary_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, A
     Input("summary_year_selector", "value"),
     State("indicator_4_store", "data"),
 )
-def plot_summary_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -828,8 +789,8 @@ def plot_summary_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, A
     Input("summary_year_selector", "value"),
     State("indicator_5_store", "data"),
 )
-def plot_summary_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -844,8 +805,8 @@ def plot_summary_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, A
     Input("summary_year_selector", "value"),
     State("indicator_1_store_deriv", "data"),
 )
-def plot_summary_timeseries1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_timeseries1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -860,8 +821,8 @@ def plot_summary_timeseries1(ice_shelf, year_range, variable):  # noqa: ANN001, 
     Input("summary_year_selector", "value"),
     State("indicator_2_store_deriv", "data"),
 )
-def plot_summary_timeseries2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_timeseries2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -876,8 +837,8 @@ def plot_summary_timeseries2(ice_shelf, year_range, variable):  # noqa: ANN001, 
     Input("summary_year_selector", "value"),
     State("indicator_3_store_deriv", "data"),
 )
-def plot_summary_timeseries3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_timeseries3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -892,8 +853,8 @@ def plot_summary_timeseries3(ice_shelf, year_range, variable):  # noqa: ANN001, 
     Input("summary_year_selector", "value"),
     State("indicator_4_store_deriv", "data"),
 )
-def plot_summary_timeseries4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_timeseries4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -908,8 +869,8 @@ def plot_summary_timeseries4(ice_shelf, year_range, variable):  # noqa: ANN001, 
     Input("summary_year_selector", "value"),
     State("indicator_5_store_deriv", "data"),
 )
-def plot_summary_timeseries5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_summary_timeseries5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -924,8 +885,8 @@ def plot_summary_timeseries5(ice_shelf, year_range, variable):  # noqa: ANN001, 
     Input("summary_year_selector", "value"),
     State("gauge_1_store", "data"),
 )
-def plot_gauge_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_gauge_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -956,8 +917,8 @@ def plot_gauge_indicator1_text(year_range):  # noqa: ANN001, ANN201, D103
     Input("summary_year_selector", "value"),
     State("gauge_2_store", "data"),
 )
-def plot_gauge_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_gauge_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -988,8 +949,8 @@ def plot_gauge_indicator2_text(year_range):  # noqa: ANN001, ANN201, D103
     Input("summary_year_selector", "value"),
     State("gauge_3_store", "data"),
 )
-def plot_gauge_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_gauge_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -1020,8 +981,8 @@ def plot_gauge_indicator3_text(year_range):  # noqa: ANN001, ANN201, D103
     Input("summary_year_selector", "value"),
     State("gauge_4_store", "data"),
 )
-def plot_gauge_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_gauge_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -1052,8 +1013,8 @@ def plot_gauge_indicator4_text(year_range):  # noqa: ANN001, ANN201, D103
     Input("summary_year_selector", "value"),
     State("gauge_5_store", "data"),
 )
-def plot_gauge_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
-    _, timeseries_container = query_summary_data(
+async def plot_gauge_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],

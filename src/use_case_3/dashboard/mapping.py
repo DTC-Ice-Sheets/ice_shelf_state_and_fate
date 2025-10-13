@@ -12,7 +12,7 @@ from use_case_3.dashboard.query_api import query_ice_sheet_data, query_polygons
 BUFFER_PATH = Path("/data/yak1/working/dtc_ice_sheets/dashboard_map_buffer")
 
 
-def create_ice_shelf_map(ice_shelf: str | None = "Thwaites") -> html.Img:
+def plot_ice_shelf_map(ice_shelf: str | None = "Thwaites") -> html.Img:
     """Plot a map for the given ice shelf.
 
     Parameters

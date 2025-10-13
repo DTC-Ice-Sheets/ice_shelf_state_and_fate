@@ -7,6 +7,7 @@ import numpy as np
 from dash import Input, Output, callback, dcc, html, register_page
 from num2words import num2words
 
+from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
 from use_case_3.dashboard.dashboard_layout import layout_navbar
 from use_case_3.dashboard.plotting import plot_summary_timeseries, plot_summary_timeseries_multiple
 from use_case_3.dashboard.process_data import (
@@ -17,12 +18,9 @@ from use_case_3.dashboard.process_data import (
     example_covariate_analysis_thwaites,
     example_subglacial_lake_analysis,
 )
-from use_case_3.dashboard.query_api import get_ice_shelf_names, query_summary_data
+from use_case_3.dashboard.query_api import query_summary_data
 
 register_page(__name__)
-
-ice_shelf_inital = "thwaites"
-summary_data_initial, _ = query_summary_data(ice_shelf=ice_shelf_inital)
 
 ice_shelf_inital = None
 
@@ -50,34 +48,7 @@ layout = html.Div(
                             ),
                             className="insights_intro_text",
                         ),
-                        html.Div(
-                            dbc.Select(
-                                get_ice_shelf_names(),
-                                ice_shelf_inital,
-                                id="ice_shelf_selection",
-                                style={},
-                            ),
-                            style={"border": "0px black solid", "padding-top": "10px"},
-                        ),
-                        html.Div(
-                            dcc.RangeSlider(
-                                summary_data_initial["time"].min().item().year,
-                                summary_data_initial["time"].max().item().year,
-                                1,
-                                value=[
-                                    summary_data_initial["time"].min().item().year,
-                                    summary_data_initial["time"].max().item().year,
-                                ],
-                                id="summary_year_selector",
-                                marks=None,
-                                tooltip={
-                                    "placement": "bottom",
-                                    "always_visible": True,
-                                    "style": {"color": "White", "fontSize": "20px"},
-                                },
-                            ),
-                            style={"border": "0px black solid", "padding-top": "10px"},
-                        ),
+                        *create_ice_shelf_selection(),
                         # Insights mass balance
                         dbc.Row(
                             [
@@ -249,12 +220,7 @@ layout = html.Div(
                     width=6,
                 ),
                 dbc.Col(
-                    [
-                        html.Div(
-                            id="ice_shelf_map",
-                            style={"text-align": "center", "border": "0px"},
-                        ),
-                    ],
+                    [create_ice_shelf_map()],
                     width=4,
                 ),
             ]
@@ -270,9 +236,9 @@ layout = html.Div(
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
-        _, timeseries_container = query_summary_data(
+        _, timeseries_container = await query_summary_data(
             ice_shelf=ice_shelf,
             start_year=year_range[0],
             end_year=year_range[1],
@@ -306,9 +272,9 @@ def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: ANN001,
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
-        _, timeseries_container = query_summary_data(
+        _, timeseries_container = await query_summary_data(
             ice_shelf=ice_shelf,
             start_year=year_range[0],
             end_year=year_range[1],
@@ -374,10 +340,10 @@ def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN001, A
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def plot_mass_balance(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def plot_mass_balance(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is None:
         ice_shelf = "thwaites"
-    _, timeseries_container = query_summary_data(
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -411,9 +377,9 @@ def button_detailed_mass_balance(n_clicks):  # noqa: ANN001, ANN201, D103
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_calving_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_calving_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
-        _, timeseries_container = query_summary_data(
+        _, timeseries_container = await query_summary_data(
             ice_shelf=ice_shelf,
             start_year=year_range[0],
             end_year=year_range[1],
@@ -458,9 +424,9 @@ def insight_update_calving_headline(ice_shelf, year_range):  # noqa: ANN001, ANN
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
-        _, timeseries_container = query_summary_data(
+        _, timeseries_container = await query_summary_data(
             ice_shelf=ice_shelf,
             start_year=year_range[0],
             end_year=year_range[1],
@@ -505,11 +471,11 @@ def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001, ANN20
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def plot_calving(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def plot_calving(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is None:
         ice_shelf = "thwaites"
 
-    _, timeseries_container = query_summary_data(
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -587,10 +553,10 @@ def insight_update_sg_lake_headline(ice_shelf, year_range):  # noqa: ANN001, ANN
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def plot_sg_lake(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def plot_sg_lake(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     ice_shelf = "thwaites"
 
-    _, timeseries_container = query_summary_data(
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
@@ -655,9 +621,9 @@ def button_detailed_sg_lake(n_clicks):  # noqa: ANN001, ANN201, D103
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_basal_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_basal_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
-        _, timeseries_container = query_summary_data(
+        _, timeseries_container = await query_summary_data(
             ice_shelf=ice_shelf,
             start_year=year_range[0],
             end_year=year_range[1],
@@ -699,9 +665,9 @@ def insight_update_basal_headline(ice_shelf, year_range):  # noqa: ANN001, ANN20
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
-        _, timeseries_container = query_summary_data(
+        _, timeseries_container = await query_summary_data(
             ice_shelf=ice_shelf,
             start_year=year_range[0],
             end_year=year_range[1],
@@ -737,11 +703,11 @@ def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa: ANN00
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def plot_basal_melt_flux(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def plot_basal_melt_flux(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is None:
         ice_shelf = "thwaites"
 
-    _, timeseries_container = query_summary_data(
+    _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
         end_year=year_range[1],
