@@ -2,26 +2,23 @@
 
 import base64
 import logging
+from asyncio import sleep
+from datetime import datetime
 from io import BytesIO
-from time import sleep
 from typing import Callable
 
 import dash
 import dash_bootstrap_components as dbc
-import pandas as pd
-import requests
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
+from dtc_query_client import ApiClient, CovariateAnalysisRequest, IceShelvesApi, JobsApi, VariableItem
 
-from use_case_3.dashboard.dashboard_layout import (
-    create_collapsible_group,
-    layout_navbar,
-)
+from use_case_3.dashboard.components.collapsible_group import create_collapsible_group
+from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
+from use_case_3.dashboard.dashboard_layout import layout_navbar
 from use_case_3.dashboard.query_api import (
+    api_config,
     config_dict,
-    get_ice_shelf_names,
-    query_summary_data,
     s3_client,
-    url,
 )
 
 dash.register_page(__name__)
@@ -29,9 +26,6 @@ dash.register_page(__name__)
 logger = logging.getLogger(__name__)
 
 navbar = layout_navbar(page_title="Covariate Analysis")
-
-initial_ice_shelf = "thwaites"
-initial_summary_data, _ = query_summary_data(initial_ice_shelf)
 
 
 def _create_dataset_selector(dataset_id: str) -> html.Div:
@@ -93,38 +87,8 @@ layout = [
                                             dbc.Button("Run Analysis", id="run_analysis-button", n_clicks=0),
                                         ]
                                     ),
-                                    html.Div(
-                                        dbc.Select(
-                                            options=get_ice_shelf_names(),
-                                            value=initial_ice_shelf,
-                                            id="ice_shelf_selection",
-                                            style={},
-                                        ),
-                                        style={"border": "0px black solid", "padding-top": "10px"},
-                                    ),
-                                    html.Div(
-                                        dcc.RangeSlider(
-                                            initial_summary_data["time"].min().item().year,
-                                            initial_summary_data["time"].max().item().year,
-                                            1,
-                                            value=[
-                                                initial_summary_data["time"].min().item().year,
-                                                initial_summary_data["time"].max().item().year,
-                                            ],
-                                            id="summary_year_selector",
-                                            marks=None,
-                                            tooltip={
-                                                "placement": "bottom",
-                                                "always_visible": True,
-                                                "style": {"color": "White", "fontSize": "20px"},
-                                            },
-                                        ),
-                                        style={"border": "0px black solid", "padding-top": "10px"},
-                                    ),
-                                    html.Div(
-                                        id="ice_shelf_map",
-                                        style={"text-align": "center", "border": "0px black solid"},
-                                    ),
+                                    *create_ice_shelf_selection(),
+                                    create_ice_shelf_map(),
                                 ],
                                 id="analysis_parameters",
                             ),
@@ -302,7 +266,7 @@ layout = [
     background=True,
     prevent_initial_call=True,
 )
-def conduct_covariate_analysis_integrated(
+async def conduct_covariate_analysis_integrated(
     set_progress: Callable[[tuple[str, int]], None],
     n_clicks: int,
     ice_shelf: str,
@@ -322,65 +286,62 @@ def conduct_covariate_analysis_integrated(
     ]
 
     variables = [
-        {
-            "name": f"{config_dict[dataset_id]['label']} {config_dict[dataset_id]['variables'][variable_id]['label']}",
-            "dataset": dataset_id,
-            "variable": variable_id,
-            "extent": config_dict[dataset_id]["variables"][variable_id]["region"],
-        }
+        VariableItem(
+            name=f"{config_dict[dataset_id]['label']} {config_dict[dataset_id]['variables'][variable_id]['label']}",
+            dataset=dataset_id,
+            variable=variable_id,
+            extent=config_dict[dataset_id]["variables"][variable_id]["region"],
+        )
         for dataset_id, variable_id in ids
     ]
 
     try:
-        res = requests.post(
-            f"{url}/ice-shelves/{ice_shelf}/covariate-analysis",
-            json={
-                "start_time": pd.Timestamp(year=year_range[0], month=1, day=1).isoformat(),
-                "end_time": pd.Timestamp(year=year_range[1], month=1, day=1).isoformat(),
-                "variables": variables,
-            },
-        )
-        res.raise_for_status()
-        job_id = res.json()["job_id"]
-        set_props("job-id", {"data": job_id})
-
-        while True:
-            sleep(1)
-            res = requests.get(f"{url}/jobs/{job_id}")
-            res.raise_for_status()
-            data = res.json()
-
-            if data["status"] == "Failed":
-                return "", True, "Job failed or was cancelled."
-            if data["status"] == "Error":
-                return "", True, "An error occurred while running the job."
-
-            pdone = data["progress_done"]
-            ptotal = data["progress_total"]
-
-            percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
-
-            set_progress(
-                (
-                    data["status"] + "...",
-                    percent,
-                )
+        async with ApiClient(api_config) as client:
+            res = await IceShelvesApi(client).run_covariate_analysis(
+                ice_shelf_id=ice_shelf,
+                covariate_analysis_request=CovariateAnalysisRequest(
+                    start_time=datetime(year=year_range[0], month=1, day=1),
+                    end_time=datetime(year=year_range[1], month=1, day=1),
+                    variables=variables,
+                ),
             )
-            if ptotal > 0 and pdone >= ptotal:
-                break
+            job_id = res.job_id
+            set_props("job-id", {"data": job_id})
 
-        set_progress(("Downloading result...", 95))
+            while True:
+                await sleep(1)
+                res = await JobsApi(client).job_status(job_id=job_id)
+                if res.status == "Failed":
+                    return "", True, "Job failed or was cancelled."
+                if res.status == "Error":
+                    return "", True, "An error occurred while running the job."
 
-        output_url = data["outputs"]["use-case-3-covariate-analyser"]["output_plot"]
-        bucket, key = output_url.lower().removeprefix("s3://").split("/", 1)
-        b = BytesIO()
-        s3_client.download_fileobj(Bucket=bucket, Key=key, Fileobj=b)
-        b.seek(0)
-        src = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+                pdone = res.progress_done
+                ptotal = res.progress_total
+
+                percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
+
+                set_progress(
+                    (
+                        res.status + "...",
+                        percent,
+                    )
+                )
+                if ptotal > 0 and pdone >= ptotal:
+                    break
+
+            set_progress(("Downloading result...", 95))
+
+            output_url = res.outputs["use-case-3-covariate-analyser"]["output_plot"]
+            bucket, key = output_url.lower().removeprefix("s3://").split("/", 1)
+            b = BytesIO()
+            s3_client.download_fileobj(Bucket=bucket, Key=key, Fileobj=b)
+            b.seek(0)
+            src = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
     except Exception as e:
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
-            logger.error(res.text)
+            logger.error(res)
         return "", True, str(e)
     return src, False, ""
 
@@ -393,15 +354,15 @@ def conduct_covariate_analysis_integrated(
     State("job-id", "data"),
     prevent_initial_call=True,
 )
-def cancel_job(n_clicks: int, job_id: int) -> tuple[bool, bool, str]:
+async def cancel_job(n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
     """Issues a request to cancel the running job."""
     if not job_id:
         return True, False, ""
     if not n_clicks:
         return False, False, ""
     try:
-        res = requests.delete(f"{url}/jobs/{job_id}")
-        res.raise_for_status()
+        async with ApiClient(api_config) as client:
+            await JobsApi(client).cancel_job(job_id=job_id)
     except Exception as e:  # noqa: BLE001
         logger.error(e)
         return False, True, str(e)
