@@ -275,7 +275,7 @@ def calculate_mass_balance(
     return mass_balance_events, mass_balance_rate, calving_matched_years
 
 
-def example_covariate_analysis_thwaites(
+async def example_covariate_analysis_thwaites(
     date_start: datetime,
     date_end: datetime,
 ) -> tuple[dict, dict, dict]:
@@ -309,7 +309,7 @@ def example_covariate_analysis_thwaites(
     for dataset_id, variable_id in variables:
         axis_labels.append(config_dict[dataset_id]["variables"][variable_id]["y_axis_label"])
 
-    timeseries = process_all_data(
+    timeseries = await process_all_data(
         ice_shelf,
         variables,
         date_start,
@@ -338,7 +338,7 @@ def example_covariate_analysis_thwaites(
     return strong_correlation, medium_correlation, weak_correlation
 
 
-def example_subglacial_lake_analysis(
+async def example_subglacial_lake_analysis(
     ice_shelf: str,
     date_start: datetime,
     date_end: datetime,
@@ -375,7 +375,7 @@ def example_subglacial_lake_analysis(
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170",
     ]
 
-    timeseries = process_all_data(
+    timeseries = await process_all_data(
         ice_shelf,
         variables,
         date_start,

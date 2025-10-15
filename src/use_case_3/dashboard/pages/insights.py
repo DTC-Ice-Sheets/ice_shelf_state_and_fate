@@ -511,9 +511,9 @@ def button_detailed_calving(n_clicks):  # noqa: ANN001, ANN201, D103
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_sg_lake_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_sg_lake_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf == "thwaites":
-        lakes_events, _, _ = example_subglacial_lake_analysis(
+        lakes_events, _, _ = await example_subglacial_lake_analysis(
             ice_shelf,
             datetime(year_range[0], 1, 1),
             datetime(year_range[1], 1, 1),
@@ -562,7 +562,7 @@ async def plot_sg_lake(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
         end_year=year_range[1],
     )
 
-    _, _, timeseries_container = example_subglacial_lake_analysis(
+    _, _, timeseries_container = await example_subglacial_lake_analysis(
         ice_shelf,
         datetime(year_range[0], 1, 1),
         datetime(year_range[1], 1, 1),
@@ -746,9 +746,9 @@ def button_detailed_basal_melt_flux(n_clicks):  # noqa: ANN001, ANN201, D103
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_cov_analysis_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_cov_analysis_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf == "thwaites":
-        strong_correlation, medium_correlation, weak_correlation = example_covariate_analysis_thwaites(
+        strong_correlation, medium_correlation, weak_correlation = await example_covariate_analysis_thwaites(
             date_start=datetime(year_range[0], 1, 1),
             date_end=datetime(year_range[1], 1, 1),
         )
@@ -779,9 +779,9 @@ def insight_update_cov_analysis_headline(ice_shelf, year_range):  # noqa: ANN001
     Input("ice_shelf_selection", "value"),
     Input("summary_year_selector", "value"),
 )
-def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
+async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf == "thwaites":
-        strong_correlation, medium_correlation, weak_correlation = example_covariate_analysis_thwaites(
+        strong_correlation, medium_correlation, weak_correlation = await example_covariate_analysis_thwaites(
             date_start=datetime(year_range[0], 1, 1),
             date_end=datetime(year_range[1], 1, 1),
         )
