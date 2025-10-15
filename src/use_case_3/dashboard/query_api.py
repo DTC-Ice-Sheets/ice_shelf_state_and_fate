@@ -1,24 +1,23 @@
-"""Functions for querying data from the dtc_query_api with memoization.
+"""Helper functions for working with the DTC Query API.
+
+Mostly these are simple wrappers that provide memoization for common API queries.
 
 Some functions are not yet using the dtc_query_api, but they should be migrated eventually.
 """
 
-import functools
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
 
 import asyncstdlib
 import boto3
-import geopandas as gpd
 import xarray as xr
 import yaml
 from data_download_module.main import download_data
 from data_download_module.schemas import DataDownloadRequest
-from dtc_query_client import ApiClient, Configuration, IceShelvesApi
-from pyproj import CRS
+from dtc_query_client import ApiClient, Configuration, IceShelfExtent, IceShelvesApi
 from shapely import MultiPolygon, Polygon
+from shapely.geometry import shape
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
@@ -31,9 +30,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
 
 api_config = Configuration(host="http://localhost:8000")
 
-
-url = "http://localhost:8000"
-
 s3_client = boto3.client(
     "s3",
     aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
@@ -44,123 +40,12 @@ s3_client = boto3.client(
 )
 
 output_path = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
-polygon_path = Path("src/use_case_3/dashboard/assets/polygons.parquet")
-icesheet_polygon_path = Path("src/use_case_3/dashboard/assets/icesheet_polygon.parquet")
 initial_datasets_path = Path("/data/yak1/working/dtc_ice_sheets/initial_datasets")
 config_dict_path = Path("src/use_case_3/dashboard/variable_mappings.yml")
 
 # Load metadata about the available datasets and variables
 with config_dict_path.open("r", encoding="utf-8") as f:
     config_dict = yaml.safe_load(f)
-
-
-class ProjectedGeoDataFrame:
-    """
-    Helper class to store multiple projections of the same GeoDataFrame in a lazily cached way.
-
-    Parameters
-    ----------
-    epsg4326 : gpd.GeoDataFrame | None
-        The GeoDataFrame in EPSG:4326 projection.
-        Must be provided if `proj` is not provided.
-    proj : gpd.GeoDataFrame | None
-        The GeoDataFrame in the projection specified by `crs`.
-        Must be provided if `epsg4326` is not provided.
-        Must be provided if `crs` is not provided.
-    crs : str | CRS | None
-        The coordinate reference system of the `proj` GeoDataFrame.
-        Must be provided if `proj` is not provided.
-    """
-
-    def __init__(
-        self,
-        epsg4326: gpd.GeoDataFrame | None = None,
-        proj: gpd.GeoDataFrame | None = None,
-        crs: str | CRS | None = None,
-    ) -> None:
-        assert (epsg4326 is not None) or (proj is not None), "At least one of epsg4326 or proj must be provided"
-        assert (proj is not None) or (crs is not None), "If proj is not provided, a CRS must be specified"
-        self._epsg4326 = epsg4326
-        self._proj = proj
-        self.crs = CRS(crs or proj.crs)
-
-    @property
-    def epsg4326(self) -> gpd.GeoDataFrame:
-        """The GeoDataFrame in EPSG:4326 projection."""
-        if self._epsg4326 is None:
-            self._epsg4326 = self._proj.to_crs("EPSG:4326")
-        return self._epsg4326
-
-    @property
-    def proj(self) -> gpd.GeoDataFrame:
-        """The GeoDataFrame in the projection specified by `crs`."""
-        if self._proj is None:
-            self._proj = self._epsg4326.to_crs("EPSG:3031")
-        return self._proj
-
-
-class RegionPolygons(TypedDict):
-    """A set of available polygons for the data masking of an ice shelf."""
-
-    ice_shelf: Polygon | MultiPolygon | None
-    ocean: Polygon | MultiPolygon | None
-    climate: Polygon | MultiPolygon | None
-
-
-@functools.cache
-def query_polygons() -> tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]:
-    """Get the polygon geometries for all ice shelves.
-
-    Returns
-    -------
-    tuple[ProjectedGeoDataFrame, ProjectedGeoDataFrame]
-        A tuple containing:
-        - A polygon of the ice shelf
-        - A polygon of the surrounding ocean
-    """
-    polygons_epsg4326 = gpd.read_parquet(polygon_path)
-    polygons_epsg4326 = polygons_epsg4326.sort_values(["Name"])
-    ice_shelf_polygons_epsg4326 = (
-        polygons_epsg4326.copy()
-        .drop(["geometry_ocean"], axis=1)
-        .rename({"geometry_ice_shelf": "geometry"}, axis=1)
-        .set_geometry("geometry")
-    )
-    ocean_polygons_epsg4326 = (
-        polygons_epsg4326.copy()
-        .drop(["geometry_ice_shelf"], axis=1)
-        .rename({"geometry_ocean": "geometry"}, axis=1)
-        .set_geometry("geometry")
-    )
-
-    return (
-        ProjectedGeoDataFrame(epsg4326=ice_shelf_polygons_epsg4326, crs="EPSG:3031"),
-        ProjectedGeoDataFrame(epsg4326=ocean_polygons_epsg4326, crs="EPSG:3031"),
-    )
-
-
-@functools.cache
-def get_ice_shelf_polygons(ice_shelf: str) -> RegionPolygons:
-    """Get the polygon geometries for a given ice shelf."""
-    ice_shelf_polygons, ocean_polygons = query_polygons()
-    ice_shelf_extent = ice_shelf_polygons.epsg4326[ice_shelf_polygons.epsg4326["Name"] == ice_shelf]["geometry"].iloc[0]
-    ice_shelf_extent = ice_shelf_extent.buffer(10)
-    ocean_extent = ocean_polygons.epsg4326[ocean_polygons.epsg4326["Name"] == ice_shelf]["geometry"].iloc[0]
-    climate_extent = None
-
-    return RegionPolygons(
-        ice_shelf=ice_shelf_extent,
-        ocean=ocean_extent,
-        climate=climate_extent,
-    )
-
-
-@functools.cache
-def query_ice_sheet_data() -> ProjectedGeoDataFrame:
-    """Get the polygon geometry for the entire ice sheet."""
-    ice_sheet_polygons_proj = gpd.read_parquet(icesheet_polygon_path)
-    ice_sheet_polygons_proj = ice_sheet_polygons_proj.sort_values(["Name"])
-    return ProjectedGeoDataFrame(proj=ice_sheet_polygons_proj)
 
 
 @asyncstdlib.cache
@@ -171,17 +56,21 @@ async def get_ice_shelves() -> list[str]:
 
 
 @asyncstdlib.lru_cache(128)
-async def query_summary_data(
-    ice_shelf: str = "thwaites",
-    start_year: int | None = None,
-    end_year: int | None = None,
-) -> tuple[xr.Dataset, TimeSeriesPreprocessor]:
-    """Get the summary data for a given ice shelf."""
+async def get_ice_shelf_geometry(ice_shelf: str, extent: IceShelfExtent) -> Polygon:
+    """Query and parse the geometry for a given ice shelf and extent type."""
     async with ApiClient(api_config) as client:
-        summary_zarr_url = (await IceShelvesApi(client).get_summary_url(ice_shelf_id=ice_shelf)).url
+        return shape((await IceShelvesApi(client).get_geometry(ice_shelf, extent)).to_dict())
 
-    summary_data = xr.open_dataset(
-        summary_zarr_url,
+
+@asyncstdlib.cache
+async def _get_summary_zarr_url(ice_shelf: str) -> str:
+    async with ApiClient(api_config) as client:
+        return (await IceShelvesApi(client).get_summary_url(ice_shelf_id=ice_shelf)).url
+
+
+def _open_s3_zarr(s3_url: str) -> xr.Dataset:
+    return xr.open_dataset(
+        s3_url,
         engine="zarr",
         backend_kwargs={
             "storage_options": {
@@ -193,8 +82,31 @@ async def query_summary_data(
         chunks={},
     )
 
-    timeseries_list = []
 
+@asyncstdlib.cache
+async def get_ice_shelf_time_range(ice_shelf: str) -> tuple[datetime, datetime]:
+    """Get the time range of the summary data for a given ice shelf."""
+    summary_data = _open_s3_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
+    min_time = summary_data["time"].min().item()
+    max_time = summary_data["time"].max().item()
+    return min_time, max_time
+
+
+###################################################################
+# Functions below this line should be migrated to use the DTC API #
+###################################################################
+
+
+@asyncstdlib.lru_cache(128)
+async def query_summary_data(
+    ice_shelf: str = "thwaites",
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> tuple[xr.Dataset, TimeSeriesPreprocessor]:
+    """Get the summary data for a given ice shelf."""
+    summary_data = _open_s3_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
+
+    timeseries_list = []
     for var in summary_data:
         if var in config_dict["timeseries_summary"]:
             timeseries = Timeseries(
@@ -312,7 +224,7 @@ def _get_all_sg_lakes() -> list[str]:
     ]
 
 
-def process_all_data(
+async def process_all_data(
     ice_shelf: str,
     variables: list[tuple[str, str]],
     start_date: datetime,
@@ -337,12 +249,10 @@ def process_all_data(
     list[Timeseries]
         A list of processed Timeseries objects.
     """
-    polygons = get_ice_shelf_polygons(ice_shelf)
-
     timeseries_list = []
     for dataset_id, variable_id in variables:
         timeseries_region = config_dict[dataset_id.lower()]["variables"][variable_id]["region"]
-        mask_geometry = polygons[timeseries_region]
+        mask_geometry = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent(timeseries_region))
 
         timeseries = _query_local_data(
             dataset_id=dataset_id.upper(),

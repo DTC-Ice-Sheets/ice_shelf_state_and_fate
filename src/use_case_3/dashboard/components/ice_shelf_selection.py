@@ -1,12 +1,13 @@
 """Ice shelf dropdown and time range selection."""
 
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
 
 from use_case_3.dashboard.mapping import plot_ice_shelf_map
 from use_case_3.dashboard.query_api import (
+    get_ice_shelf_time_range,
     get_ice_shelves,
-    query_summary_data,
 )
 
 
@@ -30,9 +31,9 @@ def create_ice_shelf_selection() -> list[html.Div]:
         ),
         html.Div(
             dcc.RangeSlider(
-                1990,
-                2025,
-                1,
+                0,
+                0,
+                0,
                 id="summary_year_selector",
                 marks=None,
                 tooltip={
@@ -46,17 +47,17 @@ def create_ice_shelf_selection() -> list[html.Div]:
     ]
 
 
-def create_ice_shelf_map() -> html.Div:
+def create_ice_shelf_map() -> dcc.Loading:
     """Create the ice shelf map.
 
     Returns
     -------
-    html.Div
+    dcc.Loading
         A container that will be updated to show the ice shelf map.
     """
-    return html.Div(
-        id="ice_shelf_map",
-        style={"text-align": "center", "border": "0px black solid"},
+    return dcc.Loading(
+        [dcc.Graph(id="ice_shelf_map")],
+        type="default",
     )
 
 
@@ -80,9 +81,9 @@ async def load_ice_shelves(_id: str) -> tuple[list[str], str]:
 )
 async def update_summary_year_selector(ice_shelf: str) -> tuple[int, int, list[int]]:
     """Update the summary year selector when the ice shelf selection changes."""
-    summary_data, _ = await query_summary_data(ice_shelf)
-    min_year = summary_data["time"].min().item().year
-    max_year = summary_data["time"].max().item().year
+    min_time, max_time = await get_ice_shelf_time_range(ice_shelf=ice_shelf)
+    min_year = min_time.year
+    max_year = max_time.year
 
     return (
         min_year,
@@ -92,9 +93,9 @@ async def update_summary_year_selector(ice_shelf: str) -> tuple[int, int, list[i
 
 
 @callback(
-    Output("ice_shelf_map", "children"),
+    Output("ice_shelf_map", "figure"),
     Input("ice_shelf_selection", "value"),
 )
-def update_graph(value: str) -> html.Img:
+async def update_graph(value: str) -> go.Figure:
     """Update the ice shelf map when the ice shelf selection changes."""
-    return plot_ice_shelf_map(ice_shelf=value)
+    return await plot_ice_shelf_map(ice_shelf=value)

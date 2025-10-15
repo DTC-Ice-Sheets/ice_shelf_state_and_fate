@@ -1,99 +1,87 @@
 """Map plotting functions."""
 
-import base64
 import functools
-from io import BytesIO
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-from dash import html
+import geopandas as gpd
+import plotly.express as px
+import plotly.graph_objects as go
+from dtc_query_client import IceShelfExtent
+from shapely import MultiPolygon
 
-from use_case_3.dashboard.query_api import query_ice_sheet_data, query_polygons
+from use_case_3.dashboard.query_api import get_ice_shelf_geometry
 
-BUFFER_PATH = Path("/data/yak1/working/dtc_ice_sheets/dashboard_map_buffer")
+icesheet_polygon_path = Path("src/use_case_3/dashboard/assets/icesheet_polygon.parquet")
 
 
-@functools.lru_cache(8)
-def plot_ice_shelf_map(ice_shelf: str | None = "Thwaites") -> html.Img:
+@functools.cache
+def get_antarctica_outline() -> MultiPolygon:
+    """Get a high-resolution outline of Antarctica for plotting."""
+    return gpd.read_parquet(icesheet_polygon_path).to_crs("EPSG:4326").iloc[0].geometry
+
+
+async def plot_ice_shelf_map(ice_shelf: str) -> go.Figure:
     """Plot a map for the given ice shelf.
 
     Parameters
     ----------
-    ice_shelf : str | None
+    ice_shelf : str
         Name of the ice shelf to plot.
 
     Returns
     -------
-    html.Img
-        A Dash HTML image component containing the map.
+    go.Figure
+        A Plotly figure displaying the map.
     """
-    ice_sheet_polygons = query_ice_sheet_data()
-    ice_shelf_polygons, ocean_polygons = query_polygons()
+    geom_shelf = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent.ICE_SHELF)
+    geom_ocean = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent.OCEAN)
+    antarctica_outline = get_antarctica_outline()
 
-    fig, axes = plt.subplots(figsize=(15, 15))
-    if ice_shelf is not None:
-        ice_shelf_polygons.proj[ice_shelf_polygons.proj["Name"] == ice_shelf].plot(
-            ax=axes,
-            color="salmon",
-            alpha=1,
-            linewidth=1,
-            edgecolor="black",
-        )
-        if ocean_polygons is not None:
-            ocean_polygons.proj[ocean_polygons.proj["Name"] == ice_shelf].plot(
-                ax=axes,
-                color="lightskyblue",
-                alpha=0.5,
-                linewidth=1,
-                edgecolor="black",
+    gdf = gpd.GeoDataFrame(
+        {"name": ["Ice Shelf", "Ocean"]},
+        geometry=[geom_shelf, geom_ocean],
+        crs="EPSG:4326",
+    )
+
+    fig = px.choropleth(
+        gdf,
+        geojson=gdf.geometry,
+        locations=gdf.index,
+        color="name",
+        color_discrete_map={"Ice Shelf": "salmon", "Ocean": "lightskyblue"},
+        projection="stereographic",
+        basemap_visible=False,
+        hover_name="name",
+        hover_data={"index": (False, gdf.index), "name": False},
+    )
+
+    fig.add_traces(
+        [
+            go.Scattergeo(
+                lon=[point[0] for point in antarctica_outline.geoms[i].exterior.coords],
+                lat=[point[1] for point in antarctica_outline.geoms[i].exterior.coords],
+                mode="lines",
+                fill="toself",
+                fillcolor="darkgray",
+                opacity=0.5,
+                line=go.Line(width=0),
+                hoverinfo="skip",
+                showlegend=False,
             )
-        if ice_sheet_polygons is not None:
-            ice_sheet_polygons.proj.plot(
-                ax=axes,
-                color="palegreen",
-                alpha=0.5,
-                linewidth=1,
-                edgecolor="black",
-                autolim=False,
-            )
-        ice_shelf_polygons.proj.plot(
-            ax=axes,
-            color="silver",
-            alpha=0.25,
-            linewidth=1,
-            edgecolor="black",
-            autolim=False,
-        )
-    else:
-        ice_shelf_polygons.proj.plot(
-            ax=axes,
-            color="lightblue",
-            alpha=1,
-            linewidth=1,
-            edgecolor="black",
-        )
-        if ice_sheet_polygons is not None:
-            ice_sheet_polygons.proj.plot(
-                ax=axes,
-                color="lightgrey",
-                alpha=0.5,
-                linewidth=1,
-                edgecolor="black",
-                autolim=False,
-            )
-        axes.axes.set_axis_off()
+            for i in range(len(antarctica_outline.geoms))
+        ]
+    )
 
-    # cx.add_basemap(axes, crs="EPSG:3031")
-    plt.grid()
-    plt.xlabel("")
-    plt.ylabel("")
-    axes.axes.get_xaxis().set_ticks([])
-    axes.axes.get_yaxis().set_ticks([])
+    minx, miny, maxx, maxy = gdf.total_bounds
+    fig.update_geos(
+        lonaxis={"range": [minx, maxx]},
+        lataxis={"range": [miny, maxy]},
+    )
+    fig.update_layout(
+        height=300,
+        margin={"r": 0, "t": 20, "l": 0, "b": 0},
+        showlegend=True,
+        legend_title=None,
+    )
 
-    buffer = BytesIO()
-    fig.savefig(buffer, format="png")
-    buffer.seek(0)
-    image_string = base64.b64encode(buffer.getvalue()).decode()
-
-    ice_shelf_map = "data:image/png;base64," + image_string
-    return html.Img(src=ice_shelf_map, style={"max-width": "100%", "max-height": "100%", "border": "0px"})
+    return fig
