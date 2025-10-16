@@ -301,7 +301,6 @@ async def example_covariate_analysis_thwaites(
         ("moorings_1d", "depth_PIG_N_and_S_combined"),
         ("basal_melt_anomalies_pine_island_1d", "basal_melt_anomalies"),
         ("subglacial_lake_discharge_1d", "lake_discharge"),
-        # ("subglacial_lakes_volume_change_1d", "volume_change"),
         ("basal_melt_anomalies_thwaites_1d", "basal_melt_anomalies"),
     ]
 
@@ -362,18 +361,20 @@ async def example_subglacial_lake_analysis(
         - Dictionary of events for each lake and variable.
         - TimeSeriesPreprocessor object containing the processed time series data.
     """
-    variables = [
-        ("sub_glacial_lakes", "height_above_wgs84_ellipsoid"),
-        ("sub_glacial_lakes", "rate_of_volume_change"),
-        ("sub_glacial_lakes", "volume_change"),
-    ]
-
     lakes = [
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW70",
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW124",
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW142",
         "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170",
     ]
+
+    variables = []
+    for lake in lakes:
+        variables += [
+            (lake, "height_above_wgs84_ellipsoid"),
+            (lake, "rate_of_volume_change"),
+            (lake, "volume_change"),
+        ]
 
     timeseries = await process_all_data(
         ice_shelf,

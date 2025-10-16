@@ -1505,8 +1505,8 @@ zarr = ">=3.0.6"
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/data_download_module.git"
-reference = "main"
-resolved_reference = "cbf8084e894e932c795a8a57fb775f3250a2110d"
+reference = "use-case-3-dashboard-local-datasets"
+resolved_reference = "ae3cf4a7f24fa799750fb40485ca08511c158b38"
 
 [[package]]
 name = "debugpy"
@@ -7015,4 +7015,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "8b9106165af1ad40ccc3c4f73d2474389e2c683b76272938d9a5f1b3d3df68c4"
+content-hash = "ae26ee84a4b43acc6cc8585a6d6890f977680dc0123e310d3ac9ff9f2d978080"

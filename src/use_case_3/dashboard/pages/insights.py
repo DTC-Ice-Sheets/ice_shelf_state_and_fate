@@ -594,7 +594,7 @@ async def plot_sg_lake(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     fig_rate_vol_change = plot_summary_timeseries_multiple(
         timeseries_container,
         variables=variables,
-        outliers=(),
+        outliers=None,
         margin={"t": 0, "l": 150, "b": 25, "r": 50},
         y_label="Rate of Volume Change (#)",
     )
