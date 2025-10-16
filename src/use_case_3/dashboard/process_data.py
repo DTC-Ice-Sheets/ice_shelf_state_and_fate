@@ -17,7 +17,7 @@ from statsmodels.tsa.stattools import adfuller
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
-from use_case_3.dashboard.query_api import config_dict, process_all_data
+from use_case_3.dashboard.query_api import config_dict_local, process_all_data
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
@@ -307,7 +307,7 @@ async def example_covariate_analysis_thwaites(
 
     axis_labels = []
     for dataset_id, variable_id in variables:
-        axis_labels.append(config_dict[dataset_id]["variables"][variable_id]["y_axis_label"])
+        axis_labels.append(config_dict_local[dataset_id]["variables"][variable_id]["y_axis_label"])
 
     timeseries = await process_all_data(
         ice_shelf,
