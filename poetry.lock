@@ -1539,8 +1539,8 @@ zarr = ">=3.0.6"
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/data_download_module.git"
-reference = "main"
-resolved_reference = "cbf8084e894e932c795a8a57fb775f3250a2110d"
+reference = "use-case-3-dashboard-local-datasets"
+resolved_reference = "ae3cf4a7f24fa799750fb40485ca08511c158b38"
 
 [[package]]
 name = "debugpy"

@@ -1,7 +1,4 @@
-# ERA5_REANALYSIS
-# ICE_VELOCITY-S1-MONTHLY
-# ICE_VELOCITY-S1-YEARLY
-4D_ANTARCTICA_SUBGLACIAL_LAKES: # Unsure!
+4D_ANTARCTICA_SUBGLACIAL_LAKES:
   description: "The 4D Antarctica Subglacial Lakes dataset."
   label: "4D Antarctica Subglacial Lakes:"
   region: "ice_shelf"
@@ -27,7 +24,8 @@
       measurement_uncertainty_type: "std"
       label: "Volume Change"
       y_axis_label: ""
-BAS_OCEAN_MOORINGS: # Unsure!
+
+BAS_OCEAN_MOORINGS:
   description: "In situ ocean moorings data."
   label: "Ocean Moorings:"
   region: "ocean"
@@ -39,6 +37,7 @@ BAS_OCEAN_MOORINGS: # Unsure!
       measurement_uncertainties: null
       label: "Temperature"
       y_axis_label: "Mooring Temp"
+
 BED_MACHINE:
   description: "The Bed Machine v3 dataset."
   label: "Bed Machine v3:"
@@ -63,6 +62,7 @@ BED_MACHINE:
       measurement_uncertainty_type: null
       label: "Land Ice Thickness"
       y_axis_label: ""
+
 C3S_SEA_ICE_EDGE:
   description: "CS3 sea ice edge."
   label: "Sea Ice Edge:"
@@ -75,6 +75,7 @@ C3S_SEA_ICE_EDGE:
       measurement_uncertainty_type: "std"
       label: "Sea Ice Edge"
       y_axis_label: "Sea Ice Edge"
+
 C3S_SEA_ICE_CONCENTRATION:
   description: "CS3 mean monthly sea ice concentration."
   label: "Sea Ice Concentration:"
@@ -87,14 +88,7 @@ C3S_SEA_ICE_CONCENTRATION:
       measurement_uncertainty_type: null
       label: "Sea Ice Concentration"
       y_axis_label: "Sea Ice Concentration"
-# ICE_LINES_FRONTS_QUARTERLY
-# ICE_LINES_FRONTS_ANNUAL
-# ICE_LINES_FRONTS_MONTHLY
-# ICE_LINES_FRONTS_DAILY
-# ICE_LINES_FRONTS_ELIM_DAILY
-# ICE_LINES_FRONTS_ELIM_MONTHLY
-# ICE_LINES_FRONTS_ELIM_QUARTERLY
-# ICE_LINES_FRONTS_ELIM_ANNUAL
+
 ITS_LIVE_VELOCITY:
   description: "ITSLive annual velocity data."
   label: "ITSLive Velocity:"
@@ -121,6 +115,7 @@ ITS_LIVE_VELOCITY:
       measurement_uncertainty_type: "std"
       label: "Ice velocity - y"
       y_axis_label: ""
+
 ITS_LIVE_BASAL_MELT:
   description: "ITSLive Basal melt data."
   label: "ITSLive Basal Melt:"
@@ -161,6 +156,7 @@ ITS_LIVE_BASAL_MELT:
       measurement_uncertainty_type: "std"
       label: "Surface Mass Balance"
       y_axis_label: ""
+
 POLAR_PLUS_ICE_SHELVES_BASAL_MELT:
   description: "Basal melt map from the Polar+ Ice Shelves project."
   label: "Polar+ Ice Shelves Basal Melt:"
@@ -173,6 +169,7 @@ POLAR_PLUS_ICE_SHELVES_BASAL_MELT:
       measurement_uncertainty_type: null
       label: "Basal Melt Map"
       y_axis_label: ""
+
 POLAR_PLUS_ICE_SHELVES_CALVING_FRONTS:
   description: "Calving front maps from the Polar+ Ice Shelves project."
   label: "Polar+ Ice Shelves Calving Fronts:"
@@ -185,6 +182,7 @@ POLAR_PLUS_ICE_SHELVES_CALVING_FRONTS:
       measurement_uncertainty_type: null
       label: "Calving Front Maps"
       y_axis_label: ""
+
 RACMO:
   description: "The RACMO SMB variable."
   label: "RACMO:"
@@ -197,6 +195,7 @@ RACMO:
       measurement_uncertainty_type: null
       label: "Surface Mass Balance"
       y_axis_label: ""
+
 REMA_MOSAIC_1000:
   description: "The REMA v2 DEM at 1000m."
   label: "REMA v2 Digital Elevation Maps (1000m):"
@@ -209,6 +208,7 @@ REMA_MOSAIC_1000:
       measurement_uncertainty_type: null
       label: "1000m mosaic"
       y_axis_label: ""
+
 REMA_MOSAIC_100:
   description: "The REMA v2 DEM at 100m."
   label: "REMA v2 Digital Elevation Maps (100m):"
@@ -221,6 +221,7 @@ REMA_MOSAIC_100:
       measurement_uncertainty_type: null
       label: "100m mosaic"
       y_axis_label: ""
+
 REMA_GAPLESS_100:
   description: "The REMA v2 DEM at 100m (gapless)."
   label: "REMA v2 Digital Elevation Maps (100m gapless):"
@@ -233,6 +234,7 @@ REMA_GAPLESS_100:
       measurement_uncertainty_type: null
       label: "100m mosaic (gap filled)"
       y_axis_label: ""
+
 SOUTHERN_ANNULAR_MODE:
   description: "Southern Annular Mode Index."
   label: "SAM Index:"
@@ -245,6 +247,7 @@ SOUTHERN_ANNULAR_MODE:
       measurement_uncertainties: null
       label: "Temperature"
       y_axis_label: "SAM Index"
+
 GLORYS12V1:
   description: "The GLORY ocean reanalysis dataset"
   label: "GLORY Ocean Re-analysis:"
@@ -334,9 +337,7 @@ GLORYS12V1:
       measurement_uncertainty_type: null
       label: "Sea Water Salinity"
       y_axis_label: "Sea Water Salinity"
-# TEST_ITS_LIVE
-# TEST_AUXILIARY_PARQUET
-# YOUR_DATASET_ID
+
 EOLIS_GRID:
   description: "CryoTEMPO EOLIS gridded swath elevation product."
   label: "CryoTEMPO EOLIS elevation product:"

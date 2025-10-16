@@ -48,7 +48,7 @@ config_dict_local_path = Path("src/use_case_3/dashboard/variable_mappings_local.
 with config_dict_path.open("r", encoding="utf-8") as f:
     config_dict = yaml.safe_load(f)
 with config_dict_local_path.open("r", encoding="utf-8") as f:
-    config_dict_local = yaml.safe_load(f)
+    config_dict_local = config_dict.copy() | yaml.safe_load(f)
 
 
 @asyncstdlib.cache
@@ -157,69 +157,47 @@ def _query_local_data(
     mask_geometry: Polygon | MultiPolygon | None,
     start_time: datetime,
     end_time: datetime,
-) -> list[Timeseries]:
-    if dataset_id == "OCEAN_MOORINGS":
-        dataset_download_ids = _get_all_ocean_moorings()
-    elif dataset_id == "SUB_GLACIAL_LAKES":
-        dataset_download_ids = _get_all_sg_lakes()
-    else:
-        dataset_download_ids = [dataset_id]
+) -> Timeseries:
+    local_request = DataDownloadRequest(
+        dataset_id=dataset_id,
+        start_time=start_time,
+        end_time=end_time,
+        epsg4326_polygon=mask_geometry,
+        raw_download=False,
+        output_parent_path=output_path,
+    )
 
-    timeseries_list = []
-    for dataset_download_id in dataset_download_ids:
-        local_request = DataDownloadRequest(
-            dataset_id=dataset_download_id,
-            start_time=start_time,
-            end_time=end_time,
-            epsg4326_polygon=mask_geometry,
-            raw_download=False,
-            output_parent_path=output_path,
-        )
+    download_path = download_data(data_download_request=local_request)
 
-        download_path = download_data(data_download_request=local_request)
+    data = xr.open_dataset(download_path, engine="zarr")
 
-        data = xr.open_dataset(download_path, engine="zarr")
+    data = data.rio.write_crs(data.spatial_ref.spatial_ref)
 
-        data = data.rio.write_crs(data.spatial_ref.spatial_ref)
+    timeseries = Timeseries(
+        label=dataset_id + "-" + variable_id,
+        timeseries_type=TimeseriesType(config_dict_local[dataset_id]["variables"][variable_id]["timeseries_type"]),
+        unit=config_dict_local[dataset_id]["variables"][variable_id]["units"],
+    )
 
-        include_data = True
-        for dataset_var in data:
-            if xr.ufuncs.isnan(data[dataset_var]).all():
-                include_data = False
+    uncertainty_type = config_dict_local[dataset_id]["variables"][variable_id]["measurement_uncertainty_type"]
+    if uncertainty_type is not None:
+        uncertainty_type = UncertaintyType(uncertainty_type)
 
-        if include_data:
-            timeseries = Timeseries(
-                label=dataset_download_id + "-" + variable_id,
-                timeseries_type=TimeseriesType(
-                    config_dict[dataset_id.lower()]["variables"][variable_id]["timeseries_type"]
-                ),
-                unit=config_dict[dataset_id.lower()]["variables"][variable_id]["units"],
-            )
-            timeseries.process_timeseries(
-                data=data,
-                measurement_name=variable_id,
-                measurement_uncertainty_name=config_dict[dataset_id.lower()]["variables"][variable_id][
-                    "measurement_uncertainties"
-                ],
-                mask_geometry=mask_geometry,
-                apply_mask=False,
-                aggregate=AggregationStrategy.MEAN,
-                period=AggregationPeriod.MONTH,
-                uncertainty=UncertaintyType(
-                    config_dict[dataset_id.lower()]["variables"][variable_id]["measurement_uncertainty_type"]
-                ),
-                independent=True,
-                t0_normalisation=None,
-            )
-    return timeseries_list
-
-
-def _get_all_ocean_moorings() -> list[str]:
-    return [key for key in config_dict if "mooring" in key.lower()]
-
-
-def _get_all_sg_lakes() -> list[str]:
-    return [key for key in config_dict if "subglacial" in key.lower()]
+    timeseries.process_timeseries(
+        data=data,
+        measurement_name=variable_id,
+        measurement_uncertainty_name=config_dict_local[dataset_id]["variables"][variable_id][
+            "measurement_uncertainties"
+        ],
+        mask_geometry=mask_geometry,
+        apply_mask=False,
+        aggregate=AggregationStrategy.MEAN,
+        period=AggregationPeriod.MONTH,
+        uncertainty=uncertainty_type,
+        independent=True,
+        t0_normalisation=None,
+    )
+    return timeseries
 
 
 async def process_all_data(
@@ -259,6 +237,5 @@ async def process_all_data(
             start_time=start_date,
             end_time=end_date,
         )
-        for ts in timeseries:
-            timeseries_list.append(ts)
+        timeseries_list.append(timeseries)
     return timeseries_list
