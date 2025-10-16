@@ -2,7 +2,6 @@
 
 import base64
 import logging
-from asyncio import sleep
 from datetime import datetime
 from io import BytesIO
 from typing import Callable
@@ -11,6 +10,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
 from dtc_query_client import ApiClient, CovariateAnalysisRequest, IceShelvesApi, JobsApi, VariableItem
+from dtc_query_client.helpers import iterate_job
 
 from use_case_3.dashboard.components.collapsible_group import create_collapsible_group
 from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
@@ -297,27 +297,19 @@ async def conduct_covariate_analysis_integrated(
             job_id = res.job_id
             set_props("job-id", {"data": job_id})
 
-            while True:
-                await sleep(1)
-                res = await JobsApi(client).job_status(job_id=job_id)
-                if res.status == "Failed":
-                    return "", True, "Job failed or was cancelled."
-                if res.status == "Error":
-                    return "", True, "An error occurred while running the job."
-
-                pdone = res.progress_done
-                ptotal = res.progress_total
-
-                percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
-
-                set_progress(
-                    (
-                        res.status + "...",
-                        percent,
+            try:
+                async for res in iterate_job(client, job_id):
+                    pdone = res.progress_done
+                    ptotal = res.progress_total
+                    percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
+                    set_progress(
+                        (
+                            res.status + "...",
+                            percent,
+                        )
                     )
-                )
-                if ptotal > 0 and pdone >= ptotal:
-                    break
+            except RuntimeError as e:
+                return "", True, str(e)
 
             set_progress(("Downloading result...", 95))
 
