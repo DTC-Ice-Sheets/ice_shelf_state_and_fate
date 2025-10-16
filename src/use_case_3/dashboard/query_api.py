@@ -42,10 +42,13 @@ s3_client = boto3.client(
 output_path = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
 initial_datasets_path = Path("/data/yak1/working/dtc_ice_sheets/initial_datasets")
 config_dict_path = Path("src/use_case_3/dashboard/variable_mappings.yml")
+config_dict_local_path = Path("src/use_case_3/dashboard/variable_mappings_local.yml")
 
 # Load metadata about the available datasets and variables
 with config_dict_path.open("r", encoding="utf-8") as f:
     config_dict = yaml.safe_load(f)
+with config_dict_local_path.open("r", encoding="utf-8") as f:
+    config_dict_local = yaml.safe_load(f)
 
 
 @asyncstdlib.cache
@@ -105,25 +108,26 @@ async def query_summary_data(
 ) -> tuple[xr.Dataset, TimeSeriesPreprocessor]:
     """Get the summary data for a given ice shelf."""
     summary_data = _open_s3_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
+    metadata = config_dict_local["timeseries_summary"]
 
     timeseries_list = []
     for var in summary_data:
-        if var in config_dict["timeseries_summary"]:
+        if var in metadata:
             timeseries = Timeseries(
                 label=var,
-                timeseries_type=TimeseriesType(config_dict["timeseries_summary"][var]["timeseries_type"]),
-                unit=config_dict["timeseries_summary"][var]["units"],
+                timeseries_type=TimeseriesType(metadata[var]["timeseries_type"]),
+                unit=metadata[var]["units"],
             )
 
             timeseries.process_timeseries(
                 data=summary_data,
                 measurement_name=var,
-                measurement_uncertainty_name=config_dict["timeseries_summary"][var]["measurement_uncertainties"],
+                measurement_uncertainty_name=metadata[var]["measurement_uncertainties"],
                 mask_geometry=None,
                 apply_mask=False,
                 aggregate=AggregationStrategy.MEAN,
                 period=AggregationPeriod.YEAR,
-                uncertainty=UncertaintyType(config_dict["timeseries_summary"][var]["measurement_uncertainty_type"]),
+                uncertainty=UncertaintyType(metadata[var]["measurement_uncertainty_type"]),
                 independent=True,
                 t0_normalisation=None,
             )
@@ -211,17 +215,11 @@ def _query_local_data(
 
 
 def _get_all_ocean_moorings() -> list[str]:
-    return [
-        "OCEAN_MOORINGS_" + mooring.with_suffix("").name.upper()
-        for mooring in (initial_datasets_path / "ocean_moorings").iterdir()
-    ]
+    return [key for key in config_dict if "mooring" in key.lower()]
 
 
 def _get_all_sg_lakes() -> list[str]:
-    return [
-        "SUGLACIAL_LAKE_" + sg_lake.with_suffix("").name.upper()
-        for sg_lake in (initial_datasets_path / "subglacial_lakes").iterdir()
-    ]
+    return [key for key in config_dict if "subglacial" in key.lower()]
 
 
 async def process_all_data(
@@ -251,11 +249,11 @@ async def process_all_data(
     """
     timeseries_list = []
     for dataset_id, variable_id in variables:
-        timeseries_region = config_dict[dataset_id.lower()]["variables"][variable_id]["region"]
+        timeseries_region = config_dict_local[dataset_id]["region"]
         mask_geometry = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent(timeseries_region))
 
         timeseries = _query_local_data(
-            dataset_id=dataset_id.upper(),
+            dataset_id=dataset_id,
             variable_id=variable_id,
             mask_geometry=mask_geometry,
             start_time=start_date,

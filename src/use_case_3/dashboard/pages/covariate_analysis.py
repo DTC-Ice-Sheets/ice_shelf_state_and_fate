@@ -155,21 +155,9 @@ layout = [
                                             *[
                                                 _create_dataset_selector(dataset_id)
                                                 for dataset_id in [
-                                                    "polarice_elevation_change",
-                                                    "elevation_change_eolis",
-                                                    "rema_v2",
-                                                    "bedmachine_v3",
-                                                    "polar_plus_ice_shelves_basal_melt",
-                                                    "polar_plus_ice_shelves_calving_front",
-                                                    "sub_glacial_lakes",
-                                                    "its_live_basal_melt",
-                                                    "its_live_ice_velocity",
-                                                    "racmo",
-                                                    "moorings_1d",
-                                                    "subglacial_lake_discharge_1d",
-                                                    "subglacial_lakes_volume_change_1d",
-                                                    "basal_melt_anomalies_pine_island_1d",
-                                                    "basal_melt_anomalies_thwaites_1d",
+                                                    key
+                                                    for key, val in config_dict.items()
+                                                    if val["region"] == "ice_shelf"
                                                 ]
                                             ],
                                         ],
@@ -187,11 +175,7 @@ layout = [
                                             *[
                                                 _create_dataset_selector(dataset_id)
                                                 for dataset_id in [
-                                                    "GLORYS12V1",
-                                                    "sea_ice_concentration",
-                                                    "sea_ice_edge",
-                                                    "sea_ice_thickness",
-                                                    "ocean_moorings",
+                                                    key for key, val in config_dict.items() if val["region"] == "ocean"
                                                 ]
                                             ],
                                         ],
@@ -206,7 +190,12 @@ layout = [
                                     html.Div(
                                         [
                                             html.H6("Climate Datasets: ", className="analysis_heading6"),
-                                            _create_dataset_selector("southern_annular_mode"),
+                                            *[
+                                                _create_dataset_selector(dataset_id)
+                                                for dataset_id in [
+                                                    key for key, val in config_dict.items() if val["region"] == "both"
+                                                ]
+                                            ],
                                         ],
                                         style={"padding-left": "30px"},
                                     )
@@ -290,7 +279,7 @@ async def conduct_covariate_analysis_integrated(
             name=f"{config_dict[dataset_id]['label']} {config_dict[dataset_id]['variables'][variable_id]['label']}",
             dataset=dataset_id,
             variable=variable_id,
-            extent=config_dict[dataset_id]["variables"][variable_id]["region"],
+            extent=config_dict[dataset_id]["region"],
         )
         for dataset_id, variable_id in ids
     ]
