@@ -629,8 +629,6 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        self : CovariateAnalyser
-            The CovariateAnalyser instance.
         max_lag : int | None, optional
             The maximum lag to consider for the analysis, by default None.
         analysis_type : JointPlotAnalysisType, optional
@@ -660,9 +658,9 @@ class CovariateAnalyser:
             for ts_b in self.timeseries_container.timeseries.values():
                 if ts_a.label == ts_b.label:
                     continue
-                if f"{ts_b.label}:{ts_a.label}" in out["covariate_stats"]:
+                if f"{ts_b.label}/{ts_a.label}" in out["covariate_stats"]:
                     continue
-                key = f"{ts_a.label}:{ts_b.label}"
+                key = f"{ts_a.label}/{ts_b.label}"
 
                 stats = {}
                 if analysis_type == JointPlotAnalysisType.CROSS_CORR:
