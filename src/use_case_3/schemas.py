@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
+    JointPlotAnalysisType,
     NormalisationType,
     TimeseriesType,
     UncertaintyType,
@@ -84,3 +85,7 @@ class CovariateAnalyserModuleEntryPointSchema(BaseModel):
 
     input_path: Path = Field(..., description="Path to the input .zarr file containing pre-processed timeseries.")
     output_path: Path = Field(..., description="Path to save the output .json file.")
+    analysis_type: JointPlotAnalysisType = Field(
+        JointPlotAnalysisType.CORR,
+        description="Type of covariate analysis to perform.",
+    )
