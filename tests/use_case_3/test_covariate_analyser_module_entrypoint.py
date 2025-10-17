@@ -8,7 +8,7 @@ def test_main(tmp_path) -> None:
     from use_case_3.covariate_analyser_module_entrypoint import main
 
     input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_preprocessed_timeseries.zarr"
-    output_path = tmp_path / "output_plot.png"
+    output_path = tmp_path / "output.json"
 
     with patch.object(
         sys,

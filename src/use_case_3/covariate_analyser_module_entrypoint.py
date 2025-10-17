@@ -1,6 +1,7 @@
 """Entrypoint for the covariate analyser module."""
 
 import argparse
+import json
 from types import UnionType
 from typing import get_args
 
@@ -74,9 +75,10 @@ def main() -> None:
     )
     analyser = CovariateAnalyser(preprocessor)
 
-    fig, _ = analyser.jointplot_grid()
+    results = analyser.run_analysis()
 
-    fig.savefig(model.output_path)
+    with model.output_path.open("w") as f:
+        json.dump(results, f)
 
 
 if __name__ == "__main__":

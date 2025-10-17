@@ -619,6 +619,90 @@ class CovariateAnalyser:
 
         return joint
 
+    def run_analysis(
+        self: CovariateAnalyser,
+        max_lag: int | None = None,
+        analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
+    ) -> dict:
+        """
+        Perform an analysis of the covariate relationships between the timeseries.
+
+        Parameters
+        ----------
+        self : CovariateAnalyser
+            The CovariateAnalyser instance.
+        max_lag : int | None, optional
+            The maximum lag to consider for the analysis, by default None.
+        analysis_type : JointPlotAnalysisType, optional
+            The type of analysis to perform, by default JointPlotAnalysisType.CORR.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the results of the analysis.
+        """
+        out = {
+            "variables": {},
+            "covariate_stats": {},
+        }
+
+        for ts in self.timeseries_container.timeseries.values():
+            title = ts.measurement_name.replace("_", " ").title()
+            hist, bin_edges = np.histogram(ts.measurements)
+            out["variables"][ts.label] = {
+                "title": title,
+                "values": ts.measurements.to_list(),
+                "hist_values": hist.tolist(),
+                "hist_edges": bin_edges.tolist(),
+            }
+
+        for ts_a in self.timeseries_container.timeseries.values():
+            for ts_b in self.timeseries_container.timeseries.values():
+                if ts_a.label == ts_b.label:
+                    continue
+                if f"{ts_b.label}:{ts_a.label}" in out["covariate_stats"]:
+                    continue
+                key = f"{ts_a.label}:{ts_b.label}"
+
+                stats = {}
+                if analysis_type == JointPlotAnalysisType.CROSS_CORR:
+                    freq, lag = self._align_timeseries(
+                        timeseries_label_1=ts_a.label, timeseries_label_2=ts_b.label, max_lag=max_lag
+                    )
+                    corr, p_value = self.correlation_coefficient(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                        altered=True,
+                    )
+                    stats |= {
+                        "Aligned Frequency": freq,
+                        "Aligned Lag": lag,
+                        "Correlation Coefficient": corr,
+                        "P-Value": p_value,
+                    }
+                elif analysis_type == JointPlotAnalysisType.CORR:
+                    corr, p_value = self.correlation_coefficient(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                    )
+                    stats |= {
+                        "Correlation Coefficient": corr,
+                        "P-Value": p_value,
+                    }
+                elif analysis_type == JointPlotAnalysisType.CAUSAL:
+                    f_score, p_value = self._granger_causality_test(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                        max_lags=max_lag or 20,
+                        metric=ModelEvaluationMetric.BIC,
+                    )
+                    stats |= {
+                        "F-Score": f_score,
+                        "P-Value": p_value,
+                    }
+                out["covariate_stats"][key] = stats
+        return out
+
     def jointplot_grid(  # noqa C901
         self: CovariateAnalyser,
         axis_labels: list | None = None,

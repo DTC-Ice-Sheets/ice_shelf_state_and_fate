@@ -103,8 +103,8 @@ def main() -> None:
             "time": next(iter(preprocessor.timeseries.values())).measurements.index.values,
         },
         attrs={
-            "time_period": model.time_period,
-            "aggregation": model.aggregation,
+            "time_period": preprocessor.aggregation_period,
+            "aggregation": preprocessor.aggregation,
             "timeseries": timeseries_attrs,
         },
     )
