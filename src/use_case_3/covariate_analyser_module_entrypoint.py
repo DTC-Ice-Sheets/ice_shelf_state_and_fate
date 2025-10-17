@@ -75,7 +75,9 @@ def main() -> None:
     )
     analyser = CovariateAnalyser(preprocessor)
 
-    results = analyser.run_analysis()
+    results = analyser.run_analysis(
+        analysis_type=model.analysis_type,
+    )
 
     with model.output_path.open("w") as f:
         json.dump(results, f)

@@ -1,6 +1,6 @@
 """Perform covariate analysis on selected variables."""
 
-import base64
+import json
 import logging
 from datetime import datetime
 from io import BytesIO
@@ -8,13 +8,22 @@ from typing import Callable
 
 import dash
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
-from dtc_query_client import ApiClient, CovariateAnalysisRequest, IceShelvesApi, JobsApi, VariableItem
+from dtc_query_client import (
+    ApiClient,
+    CovariateAnalysisRequest,
+    CovariateAnalysisType,
+    IceShelvesApi,
+    JobsApi,
+    VariableItem,
+)
 from dtc_query_client.helpers import iterate_job
 
 from use_case_3.dashboard.components.collapsible_group import create_collapsible_group
 from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
 from use_case_3.dashboard.dashboard_layout import layout_navbar
+from use_case_3.dashboard.plotting import plot_covariate_analysis
 from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
@@ -77,11 +86,11 @@ layout = [
                                         [
                                             dbc.Select(
                                                 id="select-analysis-type",
-                                                value="1",
+                                                value="corr",
                                                 options=[
-                                                    {"label": "Correlation", "value": "1"},
-                                                    {"label": "Cross-correlation", "value": "2"},
-                                                    {"label": "Granger Causality", "value": "3"},
+                                                    {"label": "Correlation", "value": "corr"},
+                                                    {"label": "Cross-correlation", "value": "cross_corr"},
+                                                    {"label": "Granger Causality", "value": "causal"},
                                                 ],
                                             ),
                                             dbc.Button("Run Analysis", id="run_analysis-button", n_clicks=0),
@@ -220,7 +229,7 @@ layout = [
                         id="analysis_results_div",
                     ),
                     dcc.Loading(
-                        [html.Img(id="results-plot")],
+                        [dcc.Graph(id="results-plot")],
                         id="loading",
                         type="default",
                     ),
@@ -233,7 +242,7 @@ layout = [
 
 
 @callback(
-    Output("results-plot", "src"),
+    Output("results-plot", "figure"),
     Output("error-message", "is_open", allow_duplicate=True),
     Output("error-message", "children", allow_duplicate=True),
     Input("run_analysis-button", "n_clicks"),
@@ -263,7 +272,7 @@ async def conduct_covariate_analysis_integrated(
     analysis_type: str,
     selector_ids: list[str],
     selector_values: list[str],
-) -> tuple[str, bool, str]:
+) -> tuple[go.Figure | None, bool, str]:
     """Submit a job to the backend to conduct the covariate analysis.
 
     Updates a progress bar while the job is running.
@@ -292,6 +301,7 @@ async def conduct_covariate_analysis_integrated(
                     start_time=datetime(year=year_range[0], month=1, day=1),
                     end_time=datetime(year=year_range[1], month=1, day=1),
                     variables=variables,
+                    analysis_type=CovariateAnalysisType(analysis_type),
                 ),
             )
             job_id = res.job_id
@@ -309,22 +319,23 @@ async def conduct_covariate_analysis_integrated(
                         )
                     )
             except RuntimeError as e:
-                return "", True, str(e)
+                return None, True, str(e)
 
             set_progress(("Downloading result...", 95))
 
-            output_url = res.outputs["use-case-3-covariate-analyser"]["output_plot"]
+            output_url = res.outputs["use-case-3-covariate-analyser"]["output_json"]
             bucket, key = output_url.lower().removeprefix("s3://").split("/", 1)
             b = BytesIO()
             s3_client.download_fileobj(Bucket=bucket, Key=key, Fileobj=b)
             b.seek(0)
-            src = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+            plot_data = json.load(b)
+            fig = plot_covariate_analysis(plot_data)
     except Exception as e:
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
             logger.error(res)
-        return "", True, str(e)
-    return src, False, ""
+        return None, True, str(e)
+    return fig, False, ""
 
 
 @callback(

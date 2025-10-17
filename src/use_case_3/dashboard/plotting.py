@@ -2,6 +2,8 @@
 
 import numpy as np
 import plotly.graph_objects as go
+from plotly.colors import qualitative
+from plotly.subplots import make_subplots
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
@@ -269,4 +271,121 @@ def plot_summary_timeseries_multiple(
     if y_label is not None:
         fig.update_layout(yaxis_title=y_label)
 
+    return fig
+
+
+def plot_covariate_analysis(plot_data: dict) -> go.Figure:
+    """
+    Plot the results of a covariate analysis.
+
+    Parameters
+    ----------
+    plot_data : dict
+        Dictionary containing the data for plotting.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly figure containing the covariate analysis results.
+    """
+    colors = qualitative.Plotly
+    labels = list(plot_data["variables"].keys())
+    datas = [plot_data["variables"][label] for label in labels]
+    titles = [d["title"] for d in datas] + ["Frequency"]
+    fig = make_subplots(
+        len(labels) + 1,
+        len(labels) + 1,
+        row_titles=titles,
+        column_titles=titles,
+        shared_xaxes=True,
+        shared_yaxes=True,
+        vertical_spacing=0.02,
+        horizontal_spacing=0.02,
+    )
+
+    for idx, data in enumerate(datas):
+        edge_starts = data["hist_edges"][:-1]
+        edge_ends = data["hist_edges"][1:]
+        widths = [b - a for a, b in zip(edge_starts, edge_ends, strict=True)]
+        y = data["hist_values"]
+        fig.add_trace(
+            go.Bar(
+                x=edge_starts,
+                customdata=edge_ends,
+                width=widths,
+                y=y,
+                offset=0,
+                orientation="v",
+                marker={"color": colors[1]},
+                hovertemplate=f"<b>%{{x:.2f}} to %{{customdata:.2f}}: </b> %{{y}}<extra>{titles[idx]}</extra>",
+            ),
+            row=len(labels) + 1,
+            col=idx + 1,
+        )
+        fig.add_trace(
+            go.Bar(
+                y=edge_starts,
+                customdata=edge_ends,
+                width=widths,
+                x=y,
+                offset=0,
+                orientation="h",
+                marker={"color": colors[1]},
+                hovertemplate=f"<b>%{{y:.2f}} to %{{customdata:.2f}}: </b> %{{x}}<extra>{titles[idx]}</extra>",
+            ),
+            row=idx + 1,
+            col=len(labels) + 1,
+        )
+
+    for a_idx, a_label in enumerate(labels):
+        for b_idx, b_label in enumerate(labels):
+            if a_idx == b_idx:
+                continue
+            a_data, b_data = (
+                plot_data["variables"][a_label],
+                plot_data["variables"][b_label],
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=a_data["values"],
+                    y=b_data["values"],
+                    mode="markers",
+                    marker={"color": colors[0]},
+                    hovertemplate=(
+                        f"<b>{titles[a_idx]}:</b> %{{x:.2f}}<br><b>{titles[b_idx]}:</b> %{{y:.2f}}<extra></extra>"
+                    ),
+                ),
+                row=b_idx + 1,
+                col=a_idx + 1,
+            )
+            stats = plot_data["covariate_stats"].get(
+                f"{a_label}/{b_label}",
+                plot_data["covariate_stats"].get(
+                    f"{b_label}/{a_label}",
+                    {},
+                ),
+            )
+            axes_id = a_idx + b_idx * (len(labels) + 1) + 1
+            axes_name = str(axes_id) if axes_id > 0 else ""
+            fig.add_annotation(
+                text="<br>".join([f"<b>{k}:</b> {v:.2f}" for k, v in stats.items()]),
+                xref=f"x{axes_name} domain",
+                yref=f"y{axes_name} domain",
+                x=0.01,
+                y=0.99,
+                showarrow=False,
+                align="left",
+                bgcolor="white",
+                borderpad=5,
+                opacity=0.9,
+            )
+
+    for i in range(len(labels) + 1):
+        fig.add_trace(go.Scatter(), row=i + 1, col=i + 1)
+
+    fig.update_layout(
+        height=1024,
+        width=1024,
+        showlegend=False,
+    )
     return fig
