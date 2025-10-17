@@ -43,8 +43,9 @@ layout = html.Div(
                     [
                         html.P(
                             (
-                                "Welcome to Digital Twin Ice Sheets. Choose an ice shelf below to uncover key "
-                                "insights relating to the state and the fate of this ice shelf."
+                                "Welcome to Digital Twin Ice Sheets. Use the menu below to select an ice shelf for "
+                                "diagnostics of its present state and observed changes over time, derived from "
+                                "satellite observations, in-situ measurements, models, and reanalysis data."
                             ),
                             className="insights_intro_text",
                         ),
