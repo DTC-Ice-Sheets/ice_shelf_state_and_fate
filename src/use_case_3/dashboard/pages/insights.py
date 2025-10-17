@@ -43,7 +43,7 @@ layout = html.Div(
                     [
                         html.P(
                             (
-                                "Welcome to Digital Twin Ice Sheets. Choose an ice sheet below to uncover key "
+                                "Welcome to Digital Twin Ice Sheets. Choose an ice shelf below to uncover key "
                                 "insights relating to the state and the fate of this ice shelf."
                             ),
                             className="insights_intro_text",
@@ -253,7 +253,7 @@ async def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: A
                 html.P(
                     (
                         f"In the past {year_range[1] - year_range[0]} years, {ice_shelf.replace('_', ' ').title()} "
-                        f"Ice Shelf has {gained_lost} {np.abs(mass_balance_events[0]): .0f} Gt of ice."
+                        f"ice shelf has {gained_lost} {np.abs(mass_balance_events[0]): .0f} Gt of ice."
                     ),
                     className="insights_headline_text",
                 )
@@ -297,8 +297,8 @@ async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN
         intro = dcc.Markdown(
             (
                 f"In the past {year_range[1] - year_range[0]} years, {ice_shelf.replace('_', ' ').title()} "
-                f"Ice Shelf has {gained_lost} {np.abs(mass_balance_events[0]): .0f}+/-{mass_balance_events[1]: .0f}Gt "
-                f"of ice. This ice loss is currently {increasing_decreasing} at a rate of "
+                f"ice shelf has {gained_lost} {np.abs(mass_balance_events[0]): .0f}+/-{mass_balance_events[1]: .0f}Gt "
+                f"of ice. This mass change is currently {increasing_decreasing} at a rate of "
                 f"{np.abs(mass_balance_rate): .1f} Gt/yr <sup>2</sup>."
             ),
             dangerously_allow_html=True,

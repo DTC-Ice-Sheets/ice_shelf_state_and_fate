@@ -25,7 +25,7 @@ def create_ice_shelf_selection() -> list[html.Div]:
                 options=["Loading..."],
                 value="Loading...",
                 id="ice_shelf_selection",
-                style={},
+                style={"textTransform": "capitalize"},
             ),
             style={"border": "0px black solid", "padding-top": "10px"},
         ),
