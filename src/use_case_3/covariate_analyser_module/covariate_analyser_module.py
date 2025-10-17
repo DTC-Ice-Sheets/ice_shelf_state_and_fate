@@ -419,7 +419,7 @@ class CovariateAnalyser:
             AggregationPeriod.DAY: pd.offsets.Day,
         }
 
-        offset_func = offset_map[self.timeseries_container.aggregation_period]
+        offset_func = offset_map[freq]
 
         timeseries_2.measurements.index = timeseries_2.measurements.index + offset_func(corr_lag)
         if timeseries_2.measurement_uncertainties is not None:
@@ -674,7 +674,7 @@ class CovariateAnalyser:
                     )
                     stats |= {
                         "Aligned Frequency": freq,
-                        "Aligned Lag": lag,
+                        "Aligned Lag": int(lag),
                         "Correlation Coefficient": corr,
                         "P-Value": p_value,
                     }
