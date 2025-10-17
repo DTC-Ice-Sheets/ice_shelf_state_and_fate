@@ -69,11 +69,9 @@ class TimeseriesPreprocessorModuleEntryPointSchema(BaseModel):
         description="List of paths to the input timeseries .zarr files",
     )
     output_path: Path = Field(..., description="Path to save the output .zarr file.")
-    time_period: AggregationPeriod = Field(
-        AggregationPeriod.MONTH,
-        description=(
-            "Time period for aggregation. If None, a single value will be computed for the entire timeseries."
-        ),
+    time_period: AggregationPeriod | None = Field(
+        None,
+        description="Time period for aggregation. If None, the lowest frequency from the input timeseries is used.",
     )
     aggregation: AggregationStrategy = Field(
         AggregationStrategy.MEAN,
