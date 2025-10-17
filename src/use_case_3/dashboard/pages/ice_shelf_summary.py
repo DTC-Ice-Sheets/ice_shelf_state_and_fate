@@ -574,13 +574,15 @@ async def update_ice_shelf_summary(ice_shelf, year_range):  # noqa: ANN001, ANN2
     lost_gained = "lost" if total_mass_loss < 0 else "gained"
     loss_gain = "loss" if total_mass_loss < 0 else "gain"
 
+    number_of_years = year_range[1] - year_range[0]
+
     return html.Div(
         [
             html.P(" "),
             html.H5(f"{' '.join(ice_shelf.split('_')).title()} Ice Shelf Summary:"),
             html.P(
                 (
-                    f"Overall the {' '.join(ice_shelf.split('_')).title()} Ice Shelf has {lost_gained} "
+                    f"Overall the {' '.join(ice_shelf.split('_')).title()} ice shelf has {lost_gained} "
                     f"{int(np.round(np.abs(total_mass_loss))): .0f} Gt of ice "
                     f"between {year_range[0]} and {year_range[1]}."
                 ),
@@ -590,12 +592,12 @@ async def update_ice_shelf_summary(ice_shelf, year_range):  # noqa: ANN001, ANN2
                 [
                     html.Li(
                         "Basal melting has contributed approximately "
-                        f"{np.abs(total_basal_melt_contribution / (year_range[1] - year_range[0])): .0f} Gt/yr "
+                        f"{np.abs(total_basal_melt_contribution / number_of_years): .0f} Gt/yr "
                         f"to this total {loss_gain} over this period."
                     ),
                     html.Li(
                         "Calving front retreat has contributed approximately "
-                        f"{np.abs(cummulative_retreat / (year_range[1] - year_range[0])):.0f} Gt/yr "
+                        f"{np.abs(cummulative_retreat / number_of_years):.0f} Gt/yr "
                         f"to this total {loss_gain} over this period."
                     ),
                 ]
@@ -606,8 +608,8 @@ async def update_ice_shelf_summary(ice_shelf, year_range):  # noqa: ANN001, ANN2
             ),
             html.Ul(
                 [
-                    html.Li(f"{np.abs(total_calving):.0f} Gt from iceberg calving."),
-                    html.Li(f"{np.abs(total_basal_melt_flux):.0f} Gt from basal melting."),
+                    html.Li(f"{np.abs(total_calving / number_of_years):.1f} Gt/yr from iceberg calving."),
+                    html.Li(f"{np.abs(total_basal_melt_flux / number_of_years):.1f} Gt/yr from basal melting."),
                 ]
             ),
             html.H5(
