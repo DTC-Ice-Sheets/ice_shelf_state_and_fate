@@ -33,7 +33,7 @@ def create_ice_shelf_selection() -> list[html.Div]:
             dcc.RangeSlider(
                 0,
                 0,
-                0,
+                1,
                 id="summary_year_selector",
                 marks=None,
                 tooltip={
