@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+import numpy as np
+
 
 class AggregationStrategy(StrEnum):
     """The available aggregation types."""
@@ -47,6 +49,23 @@ class AggregationPeriod(StrEnum):
             AggregationPeriod.MONTH: "MS",
             AggregationPeriod.DAY: "D",
         }[period]
+
+    @staticmethod
+    def format_with_units(
+        value: np.int64 | int | float,
+        period: AggregationPeriod,
+        max_decimal_places: int = 2,
+    ) -> str:
+        """Format a value with its corresponding time unit as a human-readable string."""
+        unit = {
+            AggregationPeriod.YEAR: "year",
+            AggregationPeriod.QUARTER: "quarter",
+            AggregationPeriod.MONTH: "month",
+            AggregationPeriod.DAY: "day",
+        }[period]
+        if abs(value) != 1:
+            unit += "s"
+        return f"{value:.{max_decimal_places}g} {unit}"
 
 
 class UncertaintyType(StrEnum):
