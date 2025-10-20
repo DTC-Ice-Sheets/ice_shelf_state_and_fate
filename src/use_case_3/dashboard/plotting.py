@@ -368,7 +368,9 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
             axes_id = a_idx + b_idx * (len(labels) + 1) + 1
             axes_name = str(axes_id) if axes_id > 0 else ""
             fig.add_annotation(
-                text="<br>".join([f"<b>{k}:</b> {v:.2f}" for k, v in stats.items()]),
+                text="<br>".join(
+                    [f"<b>{k}:</b> {round(v, 2) if isinstance(v, float) else v}" for k, v in stats.items()]
+                ),
                 xref=f"x{axes_name} domain",
                 yref=f"y{axes_name} domain",
                 x=0.01,
