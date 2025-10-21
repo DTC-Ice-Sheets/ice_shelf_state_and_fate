@@ -234,8 +234,8 @@ layout = html.Div(
     Output("insights_headline_title_mass_balance_div", "children"),
     Output("insights_headline_text_mass_balance_div", "children"),
     Output("insights_btn_show_mass_balance_div", "style"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
@@ -270,8 +270,8 @@ async def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: A
 
 @callback(
     Output("insights_mass_balance_div", "children"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
@@ -338,8 +338,8 @@ async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN
 
 @callback(
     Output("mass_balance_graph", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def plot_mass_balance(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is None:
@@ -375,8 +375,8 @@ def button_detailed_mass_balance(n_clicks):  # noqa: ANN001, ANN201, D103
     Output("insights_headline_title_calving_div", "children"),
     Output("insights_headline_text_calving_div", "children"),
     Output("insights_btn_show_calving_div", "style"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_calving_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
@@ -422,8 +422,8 @@ async def insight_update_calving_headline(ice_shelf, year_range):  # noqa: ANN00
 
 @callback(
     Output("insights_calving_detail_div", "children"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
@@ -469,8 +469,8 @@ async def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001,
 
 @callback(
     Output("calving_graph", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def plot_calving(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is None:
@@ -509,8 +509,8 @@ def button_detailed_calving(n_clicks):  # noqa: ANN001, ANN201, D103
     Output("insights_headline_title_sg_lakes_div", "children"),
     Output("insights_headline_text_sg_lakes_div", "children"),
     Output("insights_btn_show_sg_lakes_div", "style"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_sg_lake_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf == "thwaites":
@@ -551,8 +551,8 @@ async def insight_update_sg_lake_headline(ice_shelf, year_range):  # noqa: ANN00
 @callback(
     Output("sg_lakes_graph_vol_change", "figure"),
     Output("sg_lakes_graph_rate_vol_change", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def plot_sg_lake(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     ice_shelf = "thwaites"
@@ -619,8 +619,8 @@ def button_detailed_sg_lake(n_clicks):  # noqa: ANN001, ANN201, D103
     Output("insights_headline_title_basal_div", "children"),
     Output("insights_headline_text_basal_div", "children"),
     Output("insights_btn_show_basal_div", "style"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_basal_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
@@ -663,8 +663,8 @@ async def insight_update_basal_headline(ice_shelf, year_range):  # noqa: ANN001,
 
 @callback(
     Output("insights_basal_detail_div", "children"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is not None:
@@ -701,8 +701,8 @@ async def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa:
 
 @callback(
     Output("basal_graph", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def plot_basal_melt_flux(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf is None:
@@ -744,8 +744,8 @@ def button_detailed_basal_melt_flux(n_clicks):  # noqa: ANN001, ANN201, D103
     Output("insights_headline_title_cov_analysis_div", "children"),
     Output("insights_headline_text_cov_analysis_div", "children"),
     Output("insights_btn_show_cov_analysis_div", "style"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_cov_analysis_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf == "thwaites":
@@ -777,8 +777,8 @@ async def insight_update_cov_analysis_headline(ice_shelf, year_range):  # noqa: 
 
 @callback(
     Output("insights_cov_analysis_detail_div", "children"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     if ice_shelf == "thwaites":

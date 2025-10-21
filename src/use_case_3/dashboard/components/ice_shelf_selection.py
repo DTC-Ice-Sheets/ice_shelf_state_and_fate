@@ -24,7 +24,7 @@ def create_ice_shelf_selection() -> list[html.Div]:
             dbc.Select(
                 options=["Loading..."],
                 value="Loading...",
-                id="ice_shelf_selection",
+                id="ice-shelf-selection",
                 style={"textTransform": "capitalize"},
             ),
             style={"border": "0px black solid", "padding-top": "10px"},
@@ -34,7 +34,7 @@ def create_ice_shelf_selection() -> list[html.Div]:
                 0,
                 0,
                 1,
-                id="summary_year_selector",
+                id="summary-year-selector",
                 marks=None,
                 tooltip={
                     "placement": "bottom",
@@ -62,8 +62,8 @@ def create_ice_shelf_map() -> dcc.Loading:
 
 
 @callback(
-    Output("ice_shelf_selection", "options"),
-    Output("ice_shelf_selection", "value"),
+    Output("ice-shelf-selection", "options"),
+    Output("ice-shelf-selection", "value"),
     Input("_pages_content", "id"),
 )
 async def load_ice_shelves(_id: str) -> tuple[list[str], str]:
@@ -74,10 +74,10 @@ async def load_ice_shelves(_id: str) -> tuple[list[str], str]:
 
 
 @callback(
-    Output("summary_year_selector", "min"),
-    Output("summary_year_selector", "max"),
-    Output("summary_year_selector", "value"),
-    Input("ice_shelf_selection", "value"),
+    Output("summary-year-selector", "min"),
+    Output("summary-year-selector", "max"),
+    Output("summary-year-selector", "value"),
+    Input("ice-shelf-selection", "value"),
 )
 async def update_summary_year_selector(ice_shelf: str) -> tuple[int, int, list[int]]:
     """Update the summary year selector when the ice shelf selection changes."""
@@ -94,7 +94,7 @@ async def update_summary_year_selector(ice_shelf: str) -> tuple[int, int, list[i
 
 @callback(
     Output("ice_shelf_map", "figure"),
-    Input("ice_shelf_selection", "value"),
+    Input("ice-shelf-selection", "value"),
 )
 async def update_graph(value: str) -> go.Figure:
     """Update the ice shelf map when the ice shelf selection changes."""

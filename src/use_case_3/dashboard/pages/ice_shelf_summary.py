@@ -544,8 +544,8 @@ layout = html.Div(
 
 @callback(
     Output("iceshelf-summary-text-div", "children"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
 )
 async def update_ice_shelf_summary(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
     summary_data, timeseries_container = await query_summary_data(
@@ -723,8 +723,8 @@ def plot_summary_indicator10_visible(visibility):  # noqa: ANN001, ANN201, D103
 
 @callback(
     Output("indicator_1_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_1_store", "data"),
 )
 async def plot_summary_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -739,8 +739,8 @@ async def plot_summary_indicator1(ice_shelf, year_range, variable):  # noqa: ANN
 
 @callback(
     Output("indicator_2_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_2_store", "data"),
 )
 async def plot_summary_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -755,8 +755,8 @@ async def plot_summary_indicator2(ice_shelf, year_range, variable):  # noqa: ANN
 
 @callback(
     Output("indicator_3_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_3_store", "data"),
 )
 async def plot_summary_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -771,8 +771,8 @@ async def plot_summary_indicator3(ice_shelf, year_range, variable):  # noqa: ANN
 
 @callback(
     Output("indicator_4_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_4_store", "data"),
 )
 async def plot_summary_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -787,8 +787,8 @@ async def plot_summary_indicator4(ice_shelf, year_range, variable):  # noqa: ANN
 
 @callback(
     Output("indicator_5_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_5_store", "data"),
 )
 async def plot_summary_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -803,8 +803,8 @@ async def plot_summary_indicator5(ice_shelf, year_range, variable):  # noqa: ANN
 
 @callback(
     Output("indicator_1_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_1_store_deriv", "data"),
 )
 async def plot_summary_timeseries1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -819,8 +819,8 @@ async def plot_summary_timeseries1(ice_shelf, year_range, variable):  # noqa: AN
 
 @callback(
     Output("indicator_2_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_2_store_deriv", "data"),
 )
 async def plot_summary_timeseries2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -835,8 +835,8 @@ async def plot_summary_timeseries2(ice_shelf, year_range, variable):  # noqa: AN
 
 @callback(
     Output("indicator_3_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_3_store_deriv", "data"),
 )
 async def plot_summary_timeseries3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -851,8 +851,8 @@ async def plot_summary_timeseries3(ice_shelf, year_range, variable):  # noqa: AN
 
 @callback(
     Output("indicator_4_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_4_store_deriv", "data"),
 )
 async def plot_summary_timeseries4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -867,8 +867,8 @@ async def plot_summary_timeseries4(ice_shelf, year_range, variable):  # noqa: AN
 
 @callback(
     Output("indicator_5_figure_deriv", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("indicator_5_store_deriv", "data"),
 )
 async def plot_summary_timeseries5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -883,8 +883,8 @@ async def plot_summary_timeseries5(ice_shelf, year_range, variable):  # noqa: AN
 
 @callback(
     Output("gauge_1_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("gauge_1_store", "data"),
 )
 async def plot_gauge_indicator1(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -899,7 +899,7 @@ async def plot_gauge_indicator1(ice_shelf, year_range, variable):  # noqa: ANN00
 
 @callback(
     Output("total_mass_change_gauge_text", "children"),
-    Input("summary_year_selector", "value"),
+    Input("summary-year-selector", "value"),
 )
 def plot_gauge_indicator1_text(year_range):  # noqa: ANN001, ANN201, D103
     return html.Div(
@@ -915,8 +915,8 @@ def plot_gauge_indicator1_text(year_range):  # noqa: ANN001, ANN201, D103
 
 @callback(
     Output("gauge_2_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("gauge_2_store", "data"),
 )
 async def plot_gauge_indicator2(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -931,7 +931,7 @@ async def plot_gauge_indicator2(ice_shelf, year_range, variable):  # noqa: ANN00
 
 @callback(
     Output("total_basal_melt_flux_gauge_text", "children"),
-    Input("summary_year_selector", "value"),
+    Input("summary-year-selector", "value"),
 )
 def plot_gauge_indicator2_text(year_range):  # noqa: ANN001, ANN201, D103
     return html.Div(
@@ -947,8 +947,8 @@ def plot_gauge_indicator2_text(year_range):  # noqa: ANN001, ANN201, D103
 
 @callback(
     Output("gauge_3_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("gauge_3_store", "data"),
 )
 async def plot_gauge_indicator3(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -963,7 +963,7 @@ async def plot_gauge_indicator3(ice_shelf, year_range, variable):  # noqa: ANN00
 
 @callback(
     Output("total_calving_gauge_text", "children"),
-    Input("summary_year_selector", "value"),
+    Input("summary-year-selector", "value"),
 )
 def plot_gauge_indicator3_text(year_range):  # noqa: ANN001, ANN201, D103
     return html.Div(
@@ -979,8 +979,8 @@ def plot_gauge_indicator3_text(year_range):  # noqa: ANN001, ANN201, D103
 
 @callback(
     Output("gauge_4_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("gauge_4_store", "data"),
 )
 async def plot_gauge_indicator4(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -995,7 +995,7 @@ async def plot_gauge_indicator4(ice_shelf, year_range, variable):  # noqa: ANN00
 
 @callback(
     Output("total_discharge_gauge_text", "children"),
-    Input("summary_year_selector", "value"),
+    Input("summary-year-selector", "value"),
 )
 def plot_gauge_indicator4_text(year_range):  # noqa: ANN001, ANN201, D103
     return html.Div(
@@ -1011,8 +1011,8 @@ def plot_gauge_indicator4_text(year_range):  # noqa: ANN001, ANN201, D103
 
 @callback(
     Output("gauge_5_figure", "figure"),
-    Input("ice_shelf_selection", "value"),
-    Input("summary_year_selector", "value"),
+    Input("ice-shelf-selection", "value"),
+    Input("summary-year-selector", "value"),
     State("gauge_5_store", "data"),
 )
 async def plot_gauge_indicator5(ice_shelf, year_range, variable):  # noqa: ANN001, ANN201, D103
@@ -1027,7 +1027,7 @@ async def plot_gauge_indicator5(ice_shelf, year_range, variable):  # noqa: ANN00
 
 @callback(
     Output("total_surface_mass_balance_gauge_text", "children"),
-    Input("summary_year_selector", "value"),
+    Input("summary-year-selector", "value"),
 )
 def plot_gauge_indicator5_text(year_range):  # noqa: ANN001, ANN201, D103
     return html.Div(

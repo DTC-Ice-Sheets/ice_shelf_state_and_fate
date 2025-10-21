@@ -21,7 +21,9 @@ from dtc_query_client import (
 from dtc_query_client.helpers import iterate_job
 
 from use_case_3.dashboard.components.collapsible_group import create_collapsible_group
+from use_case_3.dashboard.components.error_banner import create_error_banner
 from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
+from use_case_3.dashboard.components.progress_dialog import create_progress_dialog
 from use_case_3.dashboard.dashboard_layout import layout_navbar
 from use_case_3.dashboard.plotting import plot_covariate_analysis
 from use_case_3.dashboard.query_api import (
@@ -93,7 +95,7 @@ layout = [
                                                     {"label": "Granger Causality", "value": "causal"},
                                                 ],
                                             ),
-                                            dbc.Button("Run Analysis", id="run_analysis-button", n_clicks=0),
+                                            dbc.Button("Run Analysis", id="run-analysis-button"),
                                         ]
                                     ),
                                     *create_ice_shelf_selection(),
@@ -110,47 +112,11 @@ layout = [
             # Column for the datasets
             dbc.Col(
                 [
-                    dbc.Modal(
-                        dbc.Card(
-                            [
-                                dbc.CardBody(
-                                    [
-                                        dcc.Store(id="job-id", data=""),
-                                        html.H3("Running Workflow", style={"alignSelf": "center"}),
-                                        html.H4("Setting up...", id="status"),
-                                        dbc.Progress(
-                                            id="progress",
-                                            value=5,
-                                            striped=True,
-                                            animated=True,
-                                            style={"height": "4em"},
-                                        ),
-                                        dbc.Button(
-                                            "Cancel",
-                                            id="cancel-button",
-                                            color="danger",
-                                            size="lg",
-                                        ),
-                                    ],
-                                    style={
-                                        "display": "flex",
-                                        "padding": "1em",
-                                        "gap": "0.5em",
-                                        "flexDirection": "column",
-                                        "alignItems": "stretch",
-                                    },
-                                ),
-                            ],
-                        ),
-                        id="job-status",
-                        is_open=False,
-                    ),
-                    dbc.Alert(
-                        "Error",
-                        id="error-message",
-                        color="danger",
-                        is_open=False,
-                        dismissable=True,
+                    create_error_banner(id="job-runner-error-message"),
+                    create_progress_dialog(
+                        title="Running Workflow",
+                        prefix="job-runner",
+                        cancellable=True,
                     ),
                     html.Div(
                         [
@@ -243,30 +209,31 @@ layout = [
 
 @callback(
     Output("results-plot", "figure"),
-    Output("error-message", "is_open", allow_duplicate=True),
-    Output("error-message", "children", allow_duplicate=True),
-    Input("run_analysis-button", "n_clicks"),
-    State("ice_shelf_selection", "value"),
-    State("summary_year_selector", "value"),
+    Output("job-runner-error-message", "is_open"),
+    Output("job-runner-error-message", "children"),
+    Input("run-analysis-button", "n_clicks"),
+    State("ice-shelf-selection", "value"),
+    State("summary-year-selector", "value"),
     State("select-analysis-type", "value"),
     State({"type": "data-selector", "index": ALL}, "id"),
     State({"type": "data-selector", "index": ALL}, "value"),
     running=[
-        (Output("run_analysis-button", "disabled"), True, False),
-        (Output("status", "children"), "Setting up...", "Done!"),
-        (Output("progress", "value"), 0, 100),
-        (Output("job-status", "is_open"), True, False),
+        (Output("run-analysis-button", "disabled"), True, False),
+        (Output("job-runner-modal", "is_open"), True, False),
+        (Output("job-runner-state", "data"), "", ""),
+        (Output("job-runner-status-message", "children"), "Setting up...", "Done!"),
+        (Output("job-runner-progress-bar", "value"), 0, 100),
     ],
     progress=[
-        Output("status", "children"),
-        Output("progress", "value"),
+        Output("job-runner-status-message", "children"),
+        Output("job-runner-progress-bar", "value"),
     ],
     background=True,
     prevent_initial_call=True,
 )
 async def conduct_covariate_analysis_integrated(
     set_progress: Callable[[tuple[str, int]], None],
-    n_clicks: int,
+    _n_clicks: int,
     ice_shelf: str,
     year_range: tuple[int, int],
     analysis_type: str,
@@ -305,19 +272,15 @@ async def conduct_covariate_analysis_integrated(
                 ),
             )
             job_id = res.job_id
-            set_props("job-id", {"data": job_id})
+            set_props("job-runner-state", {"data": job_id})
+            set_progress(("Starting...", 6))
 
             try:
                 async for res in iterate_job(client, job_id):
                     pdone = res.progress_done
                     ptotal = res.progress_total
                     percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
-                    set_progress(
-                        (
-                            res.status + "...",
-                            percent,
-                        )
-                    )
+                    set_progress((res.status + "...", percent))
             except RuntimeError as e:
                 return None, True, str(e)
 
@@ -339,19 +302,28 @@ async def conduct_covariate_analysis_integrated(
 
 
 @callback(
-    Output("cancel-button", "disabled"),
-    Output("error-message", "is_open", allow_duplicate=True),
-    Output("error-message", "children", allow_duplicate=True),
-    Input("cancel-button", "n_clicks"),
-    State("job-id", "data"),
+    Output("job-runner-cancel-button", "disabled"),
+    Output("job-runner-cancel-error-message", "is_open"),
+    Output("job-runner-cancel-error-message", "children"),
+    Input("job-runner-cancel-button", "n_clicks"),
+    Input("job-runner-state", "data"),
     prevent_initial_call=True,
 )
-async def cancel_job(n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
+async def cancel_job(_n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
     """Issues a request to cancel the running job."""
-    if not job_id:
+    was_clicked = dash.ctx.triggered_id == "job-runner-cancel-button"
+
+    if not was_clicked:
+        # New job ID. If its empty disable button, otherwise enable it.
+        return job_id == "", False, ""
+
+    if job_id == "":
+        # Shouldn't be possible to click cancel if no job is running, but just ignore it
         return True, False, ""
-    if not n_clicks:
-        return False, False, ""
+
+    # Button was clicked, and we have a job ID to cancel. Issue cancel request and disable button.
+    # Issue a set_props in advance to give immediate feedback in the UI.
+    set_props("job-runner-cancel-button", {"disabled": True})
     try:
         async with ApiClient(api_config) as client:
             await JobsApi(client).cancel_job(job_id=job_id)
