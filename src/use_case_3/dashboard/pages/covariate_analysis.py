@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import datetime
 from io import BytesIO
+from shutil import make_archive, rmtree
 from typing import Callable
 
 import dash
@@ -19,16 +20,19 @@ from dtc_query_client import (
     VariableItem,
 )
 from dtc_query_client.helpers import iterate_job
+from dtc_wrapper.helpers import download_directory_from_s3, parse_s3_url
 
 from use_case_3.dashboard.components.collapsible_group import create_collapsible_group
 from use_case_3.dashboard.components.error_banner import create_error_banner
 from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
 from use_case_3.dashboard.components.progress_dialog import create_progress_dialog
+from use_case_3.dashboard.components.s3_directory_download_button import create_s3_directory_download_button
 from use_case_3.dashboard.dashboard_layout import layout_navbar
 from use_case_3.dashboard.plotting import plot_covariate_analysis
 from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
+    output_path,
     s3_client,
 )
 
@@ -115,7 +119,7 @@ layout = [
                     create_error_banner(id="job-runner-error-message"),
                     create_progress_dialog(
                         title="Running Workflow",
-                        prefix="job-runner",
+                        index="job-runner",
                         cancellable=True,
                     ),
                     html.Div(
@@ -180,10 +184,6 @@ layout = [
                         ],
                         style={"padding-top": "25px"},
                     ),
-                    html.Div(
-                        dbc.Button("Download Data", color="primary", id="analysis-datadownload"),
-                        className="d-grid gap-2",
-                    ),
                 ],
                 width=3,
             ),
@@ -195,7 +195,13 @@ layout = [
                         id="analysis_results_div",
                     ),
                     dcc.Loading(
-                        [dcc.Graph(id="results-plot")],
+                        [
+                            create_s3_directory_download_button(
+                                "Download Raw Data",
+                                index="download-raw-data",
+                            ),
+                            dcc.Graph(id="results-plot"),
+                        ],
                         id="loading",
                         type="default",
                     ),
@@ -209,6 +215,7 @@ layout = [
 
 @callback(
     Output("results-plot", "figure"),
+    Output({"type": "s3-download-url", "index": "download-raw-data"}, "data"),
     Output("job-runner-error-message", "is_open"),
     Output("job-runner-error-message", "children"),
     Input("run-analysis-button", "n_clicks"),
@@ -219,14 +226,18 @@ layout = [
     State({"type": "data-selector", "index": ALL}, "value"),
     running=[
         (Output("run-analysis-button", "disabled"), True, False),
-        (Output("job-runner-modal", "is_open"), True, False),
-        (Output("job-runner-state", "data"), "", ""),
-        (Output("job-runner-status-message", "children"), "Setting up...", "Done!"),
-        (Output("job-runner-progress-bar", "value"), 0, 100),
+        (Output({"type": "progress-dialog-modal", "index": "job-runner"}, "is_open"), True, False),
+        (Output({"type": "progress-dialog-state", "index": "job-runner"}, "data"), "", ""),
+        (
+            Output({"type": "progress-dialog-status-message", "index": "job-runner"}, "children"),
+            "Setting up...",
+            "Done!",
+        ),
+        (Output({"type": "progress-dialog-progress-bar", "index": "job-runner"}, "value"), 0, 100),
     ],
     progress=[
-        Output("job-runner-status-message", "children"),
-        Output("job-runner-progress-bar", "value"),
+        Output({"type": "progress-dialog-status-message", "index": "job-runner"}, "children"),
+        Output({"type": "progress-dialog-progress-bar", "index": "job-runner"}, "value"),
     ],
     background=True,
     prevent_initial_call=True,
@@ -239,7 +250,7 @@ async def conduct_covariate_analysis_integrated(
     analysis_type: str,
     selector_ids: list[str],
     selector_values: list[str],
-) -> tuple[go.Figure | None, bool, str]:
+) -> tuple[go.Figure | None, str | None, bool, str]:
     """Submit a job to the backend to conduct the covariate analysis.
 
     Updates a progress bar while the job is running.
@@ -272,20 +283,18 @@ async def conduct_covariate_analysis_integrated(
                 ),
             )
             job_id = res.job_id
-            set_props("job-runner-state", {"data": job_id})
+            set_props({"type": "progress-dialog-state", "index": "job-runner"}, {"data": job_id})
             set_progress(("Starting...", 6))
 
-            try:
-                async for res in iterate_job(client, job_id):
-                    pdone = res.progress_done
-                    ptotal = res.progress_total
-                    percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
-                    set_progress((res.status + "...", percent))
-            except RuntimeError as e:
-                return None, True, str(e)
+            async for res in iterate_job(client, job_id):
+                pdone = res.progress_done
+                ptotal = res.progress_total
+                percent = 5 if ptotal == 0 else max(5, min(95, int(pdone / ptotal * 100)))
+                set_progress((res.status + "...", percent))
 
             set_progress(("Downloading result...", 95))
 
+            raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
             output_url = res.outputs["use-case-3-covariate-analyser"]["output_json"]
             bucket, key = output_url.lower().removeprefix("s3://").split("/", 1)
             b = BytesIO()
@@ -297,21 +306,22 @@ async def conduct_covariate_analysis_integrated(
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
             logger.error(res)
-        return None, True, str(e)
-    return fig, False, ""
+        return None, None, True, str(e)
+    return fig, raw_data_url, False, ""
 
 
 @callback(
-    Output("job-runner-cancel-button", "disabled"),
-    Output("job-runner-cancel-error-message", "is_open"),
-    Output("job-runner-cancel-error-message", "children"),
-    Input("job-runner-cancel-button", "n_clicks"),
-    Input("job-runner-state", "data"),
+    Output({"type": "progress-dialog-cancel-button", "index": "job-runner"}, "disabled"),
+    Output({"type": "progress-dialog-cancel-error-message", "index": "job-runner"}, "is_open"),
+    Output({"type": "progress-dialog-cancel-error-message", "index": "job-runner"}, "children"),
+    Input({"type": "progress-dialog-cancel-button", "index": "job-runner"}, "n_clicks"),
+    Input({"type": "progress-dialog-state", "index": "job-runner"}, "data"),
     prevent_initial_call=True,
 )
 async def cancel_job(_n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
     """Issues a request to cancel the running job."""
-    was_clicked = dash.ctx.triggered_id == "job-runner-cancel-button"
+    button_id = {"type": "progress-dialog-cancel-button", "index": "job-runner"}
+    was_clicked = dash.ctx.triggered_id == button_id
 
     if not was_clicked:
         # New job ID. If its empty disable button, otherwise enable it.
@@ -323,7 +333,7 @@ async def cancel_job(_n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
 
     # Button was clicked, and we have a job ID to cancel. Issue cancel request and disable button.
     # Issue a set_props in advance to give immediate feedback in the UI.
-    set_props("job-runner-cancel-button", {"disabled": True})
+    set_props(button_id, {"disabled": True})
     try:
         async with ApiClient(api_config) as client:
             await JobsApi(client).cancel_job(job_id=job_id)
@@ -331,3 +341,60 @@ async def cancel_job(_n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
         logger.error(e)
         return False, True, str(e)
     return True, False, ""
+
+
+@callback(
+    Output({"type": "s3-download-download", "index": "download-raw-data"}, "data"),
+    Output({"type": "s3-download-error-message", "index": "download-raw-data"}, "is_open"),
+    Output({"type": "s3-download-error-message", "index": "download-raw-data"}, "children"),
+    Input({"type": "s3-download-button", "index": "download-raw-data"}, "n_clicks"),
+    State({"type": "s3-download-url", "index": "download-raw-data"}, "data"),
+    running=[
+        (Output({"type": "s3-download-button", "index": "download-raw-data"}, "disabled"), True, False),
+        (Output({"type": "progress-dialog-modal", "index": "download-raw-data"}, "is_open"), True, False),
+        (Output({"type": "progress-dialog-state", "index": "download-raw-data"}, "data"), "", ""),
+        (
+            Output({"type": "progress-dialog-status-message", "index": "download-raw-data"}, "children"),
+            "Setting up...",
+            "Done!",
+        ),
+        (Output({"type": "progress-dialog-progress-bar", "index": "download-raw-data"}, "value"), 0, 100),
+    ],
+    progress=[
+        Output({"type": "progress-dialog-status-message", "index": "download-raw-data"}, "children"),
+        Output({"type": "progress-dialog-progress-bar", "index": "download-raw-data"}, "value"),
+    ],
+    background=True,
+    prevent_initial_call=True,
+)
+def s3_directory_download(
+    set_progress: Callable[[tuple[str, int]], None], _n_clicks: int, s3_url: str
+) -> tuple[dict | None, bool, str]:
+    """Trigger a download of the raw data.
+
+    This should absolutely be a pattern matching callback inside `s3_directory_download_button.py`.
+    Unfortunately, dash throws an error that pattern matching is not supported in background callbacks.
+    """
+    try:
+        bucket_name, s3_prefix = parse_s3_url(s3_url)
+        set_progress(("Downloading data...", 33))
+        local_path = download_directory_from_s3(
+            bucket_name,
+            s3_prefix,
+            output_path,
+            s3_client,
+        )
+        set_progress(("Compressing data...", 66))
+        archive_path = make_archive(
+            base_dir=local_path,
+            root_dir=local_path,
+            base_name=str(local_path),
+            format="zip",
+        )
+        set_progress(("Cleaning up...", 90))
+        rmtree(local_path)
+    except Exception as e:
+        logger.exception("Failed to prepare S3 directory download.")
+        return None, True, str(e)
+
+    return dcc.express.send_file(archive_path), False, ""

@@ -8,7 +8,7 @@ from use_case_3.dashboard.components.error_banner import create_error_banner
 
 def create_progress_dialog(
     title: str,
-    prefix: str,
+    index: str,
     cancellable: bool = False,
 ) -> dbc.Modal:
     """Create a modal dialog for showing the progress of a long-running task.
@@ -17,15 +17,15 @@ def create_progress_dialog(
     ----------
     title : str
         A static title at the top of the dialog.
-    prefix : str
-        A prefix to use for the IDs of the sub-components.
-        The following IDs will be created:
-        - {prefix}-modal: The parent modal dialog. Set `is_open=True` to show the dialog.
-        - {prefix}-state: A dcc.Store to hold some state of the task shared between callbacks (e.g. job ID).
-        - {prefix}-status-message: Text indicating the current status of the task.
-        - {prefix}-progress-bar: A dbc.Progress bar showing the percentage completion of the task.
-        - {prefix}-cancel-button: (optional) A button to cancel the task.
-        - {prefix}-cancel-error-message: (optional) An error banner to show errors related to cancelling the task.
+    index : str
+        Index used for all sub-components.
+        The following component types will be created with this index:
+        - progress-dialog-modal: The parent modal dialog. Set `is_open=True` to show the dialog.
+        - progress-dialog-state: A dcc.Store to hold some state of the task shared between callbacks (e.g. job ID).
+        - progress-dialog-status-message: Text indicating the current status of the task.
+        - progress-dialog-progress-bar: A dbc.Progress bar showing the percentage completion of the task.
+        - progress-dialog-cancel-button: (optional) A button to cancel the task.
+        - progress-dialog-cancel-error-message: (optional) An error banner to show cancellation errors.
     cancellable : bool, optional
         Whether to include the cancel button and error message, by default False.
 
@@ -39,11 +39,11 @@ def create_progress_dialog(
             [
                 dbc.CardBody(
                     [
-                        dcc.Store(id=f"{prefix}-state", data=""),
+                        dcc.Store(id={"type": "progress-dialog-state", "index": index}, data=""),
                         html.H3(title, style={"alignSelf": "center"}),
-                        html.H4("Setting up...", id=f"{prefix}-status-message"),
+                        html.H4("Setting up...", id={"type": "progress-dialog-status-message", "index": index}),
                         dbc.Progress(
-                            id=f"{prefix}-progress-bar",
+                            id={"type": "progress-dialog-progress-bar", "index": index},
                             value=5,
                             striped=True,
                             animated=True,
@@ -51,10 +51,10 @@ def create_progress_dialog(
                         ),
                         *(
                             [
-                                create_error_banner(id=f"{prefix}-cancel-error-message"),
+                                create_error_banner({"type": "progress-dialog-cancel-error-message", "index": index}),
                                 dbc.Button(
                                     "Cancel",
-                                    id=f"{prefix}-cancel-button",
+                                    id={"type": "progress-dialog-cancel-button", "index": index},
                                     disabled=True,
                                     color="danger",
                                     size="lg",
@@ -74,6 +74,6 @@ def create_progress_dialog(
                 ),
             ],
         ),
-        id=f"{prefix}-modal",
+        id={"type": "progress-dialog-modal", "index": index},
         is_open=False,
     )

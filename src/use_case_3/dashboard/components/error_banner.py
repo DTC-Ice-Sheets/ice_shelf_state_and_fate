@@ -3,7 +3,7 @@
 import dash_bootstrap_components as dbc
 
 
-def create_error_banner(id: str) -> dbc.Alert:  # noqa: A002
+def create_error_banner(id: str | dict[str, str]) -> dbc.Alert:  # noqa: A002
     """Create an error banner component.
 
     By default the banner is hidden. To show an error, set `is_open` to True and
@@ -11,7 +11,7 @@ def create_error_banner(id: str) -> dbc.Alert:  # noqa: A002
 
     Parameters
     ----------
-    id : str
+    id : str | dict[str, str]
         The ID of the error banner.
 
     Returns
