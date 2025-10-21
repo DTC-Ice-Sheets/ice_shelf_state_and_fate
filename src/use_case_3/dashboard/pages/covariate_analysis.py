@@ -172,7 +172,9 @@ layout = [
                                             *[
                                                 _create_dataset_selector(dataset_id)
                                                 for dataset_id in [
-                                                    key for key, val in config_dict.items() if val["region"] == "both"
+                                                    key
+                                                    for key, val in config_dict.items()
+                                                    if val["region"] == "climate"
                                                 ]
                                             ],
                                         ],

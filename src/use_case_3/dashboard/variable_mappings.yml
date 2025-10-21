@@ -238,7 +238,7 @@ REMA_GAPLESS_100:
 SOUTHERN_ANNULAR_MODE:
   description: "Southern Annular Mode Index."
   label: "SAM Index:"
-  region: "both"
+  region: "climate"
   variables:
     souther_annular_mode_index:
       units: "#"
