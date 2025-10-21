@@ -1767,7 +1767,7 @@ urllib3 = ">=2.1.0,<3.0.0"
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_query_api.git"
 reference = "use-case-3-dashboard"
-resolved_reference = "809c269b8dd17880c56f3f5f950300fe9a56d244"
+resolved_reference = "ff8789d520a388a2387ea7562e54255c979fef92"
 subdirectory = "dtc_query_client"
 
 [[package]]

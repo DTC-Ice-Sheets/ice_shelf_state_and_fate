@@ -35,11 +35,12 @@ async def plot_ice_shelf_map(ice_shelf: str) -> go.Figure:
     """
     geom_shelf = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent.ICE_SHELF)
     geom_ocean = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent.OCEAN)
+    geom_climate = await get_ice_shelf_geometry(ice_shelf, IceShelfExtent.CLIMATE)
     antarctica_outline = get_antarctica_outline()
 
     gdf = gpd.GeoDataFrame(
-        {"name": ["Ice Shelf", "Ocean"]},
-        geometry=[geom_shelf, geom_ocean],
+        {"name": ["Climate", "Ocean", "Ice Shelf"]},
+        geometry=[geom_climate, geom_ocean, geom_shelf],
         crs="EPSG:4326",
     )
 
@@ -48,7 +49,7 @@ async def plot_ice_shelf_map(ice_shelf: str) -> go.Figure:
         geojson=gdf.geometry,
         locations=gdf.index,
         color="name",
-        color_discrete_map={"Ice Shelf": "salmon", "Ocean": "lightskyblue"},
+        color_discrete_map={"Climate": "lightgreen", "Ocean": "lightskyblue", "Ice Shelf": "salmon"},
         projection="stereographic",
         basemap_visible=False,
         hover_name="name",
