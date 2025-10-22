@@ -76,4 +76,5 @@ def create_progress_dialog(
         ),
         id={"type": "progress-dialog-modal", "index": index},
         is_open=False,
+        backdrop="static",
     )

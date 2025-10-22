@@ -391,3 +391,28 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
         showlegend=False,
     )
     return fig
+
+
+def plot_dataset_summary(plot_data: dict) -> go.Figure:
+    """Plot the output of the dataset summary module.
+
+    Parameters
+    ----------
+    plot_data : dict
+        The dataset summary data to plot. See `dataset_summary_module.py` for details.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly figure containing the dataset summary plot.
+    """
+    fig = go.Figure()
+    for name, var in plot_data["vars"].items():
+        values = np.array(var["values"])
+        if "x" not in var["coords"] or "y" not in var["coords"]:
+            continue
+        xi = var["coords"].index("x")
+        yi = var["coords"].index("y")
+        mean_vals = values.mean(axis=tuple(i for i in range(values.ndim) if i not in (xi, yi)), keepdims=False)
+        fig.add_trace(go.Heatmap(z=mean_vals, name=name))
+    return fig

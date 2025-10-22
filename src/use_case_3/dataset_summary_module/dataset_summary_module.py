@@ -48,7 +48,7 @@ def calculate_summary_grid(data: xr.Dataset, max_res: int = 50) -> dict:
         coords = list(var.coords)
         values = var.isel({coord: out["dims"][coord]["idxs"] for coord in coords}).values
         out["vars"][name] = {
-            "coords": list(var.coords),
+            "coords": coords,
             "values": values.tolist(),
         }
     return out
