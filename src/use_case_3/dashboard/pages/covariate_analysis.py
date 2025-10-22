@@ -22,7 +22,7 @@ from dtc_query_client import (
 from dtc_query_client.helpers import iterate_job
 from dtc_wrapper.helpers import download_directory_from_s3, parse_s3_url
 
-from use_case_3.dashboard.components.collapsible_group import create_collapsible_group
+from use_case_3.dashboard.components.dataset_selection import create_dataset_selection
 from use_case_3.dashboard.components.error_banner import create_error_banner
 from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
 from use_case_3.dashboard.components.progress_dialog import create_progress_dialog
@@ -41,25 +41,6 @@ dash.register_page(__name__)
 logger = logging.getLogger(__name__)
 
 navbar = layout_navbar(page_title="Covariate Analysis")
-
-
-def _create_dataset_selector(dataset_id: str) -> html.Div:
-    return create_collapsible_group(
-        group_id=dataset_id,
-        group_label=config_dict[dataset_id]["label"],
-        group_description=config_dict[dataset_id]["description"],
-        content=[
-            dbc.Checkbox(
-                id={
-                    "type": "data-selector",
-                    "index": f"{dataset_id}.{var_id}",
-                },
-                label=var["label"],
-                value=False,
-            )
-            for var_id, var in config_dict[dataset_id]["variables"].items()
-        ],
-    )
 
 
 layout = [
@@ -122,70 +103,7 @@ layout = [
                         index="job-runner",
                         cancellable=True,
                     ),
-                    html.Div(
-                        [
-                            # Container for the ice related variables
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [
-                                            dcc.Store(id="switch-values"),
-                                            html.H6("Ice Shelf Datasets: ", className="analysis_heading6"),
-                                            *[
-                                                _create_dataset_selector(dataset_id)
-                                                for dataset_id in [
-                                                    key
-                                                    for key, val in config_dict.items()
-                                                    if val["region"] == "ice_shelf"
-                                                ]
-                                            ],
-                                        ],
-                                        style={"padding-left": "30px"},
-                                    )
-                                ],
-                                id="ice_data_selector",
-                            ),
-                            # Container for the ocean related variables
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [
-                                            html.H6("Ocean Datasets: ", className="analysis_heading6"),
-                                            *[
-                                                _create_dataset_selector(dataset_id)
-                                                for dataset_id in [
-                                                    key for key, val in config_dict.items() if val["region"] == "ocean"
-                                                ]
-                                            ],
-                                        ],
-                                        style={"padding-left": "30px"},
-                                    )
-                                ],
-                                id="ocean_data_selector",
-                            ),
-                            # Container for the climate related variables
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [
-                                            html.H6("Climate Datasets: ", className="analysis_heading6"),
-                                            *[
-                                                _create_dataset_selector(dataset_id)
-                                                for dataset_id in [
-                                                    key
-                                                    for key, val in config_dict.items()
-                                                    if val["region"] == "climate"
-                                                ]
-                                            ],
-                                        ],
-                                        style={"padding-left": "30px"},
-                                    )
-                                ],
-                                id="climate_data_selector",
-                            ),
-                        ],
-                        style={"padding-top": "25px"},
-                    ),
+                    create_dataset_selection(),
                 ],
                 width=3,
             ),

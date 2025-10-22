@@ -1,6 +1,6 @@
 4D_ANTARCTICA_SUBGLACIAL_LAKES:
   description: "The 4D Antarctica Subglacial Lakes dataset."
-  label: "4D Antarctica Subglacial Lakes:"
+  label: "4D Antarctica Subglacial Lakes"
   region: "ice_shelf"
   variables:
     height_above_wgs84_ellipsoid:
@@ -27,7 +27,7 @@
 
 BAS_OCEAN_MOORINGS:
   description: "In situ ocean moorings data."
-  label: "Ocean Moorings:"
+  label: "Ocean Moorings"
   region: "ocean"
   variables:
     temperature:
@@ -40,7 +40,7 @@ BAS_OCEAN_MOORINGS:
 
 BED_MACHINE:
   description: "The Bed Machine v3 dataset."
-  label: "Bed Machine v3:"
+  label: "Bed Machine v3"
   region: "ice_shelf"
   variables:
     bed_topography_elevation:
@@ -65,7 +65,7 @@ BED_MACHINE:
 
 C3S_SEA_ICE_EDGE:
   description: "CS3 sea ice edge."
-  label: "Sea Ice Edge:"
+  label: "Sea Ice Edge"
   region: "ocean"
   variables:
     sea_ice_edge:
@@ -78,7 +78,7 @@ C3S_SEA_ICE_EDGE:
 
 C3S_SEA_ICE_CONCENTRATION:
   description: "CS3 mean monthly sea ice concentration."
-  label: "Sea Ice Concentration:"
+  label: "Sea Ice Concentration"
   region: "ocean"
   variables:
     sea_ice_area_fraction:
@@ -91,7 +91,7 @@ C3S_SEA_ICE_CONCENTRATION:
 
 ITS_LIVE_VELOCITY:
   description: "ITSLive annual velocity data."
-  label: "ITSLive Velocity:"
+  label: "ITSLive Velocity"
   region: "ice_shelf"
   variables:
     land_ice_velocity_magnitude:
@@ -118,7 +118,7 @@ ITS_LIVE_VELOCITY:
 
 ITS_LIVE_BASAL_MELT:
   description: "ITSLive Basal melt data."
-  label: "ITSLive Basal Melt:"
+  label: "ITSLive Basal Melt"
   region: "ice_shelf"
   variables:
     firn_air_content:
@@ -159,7 +159,7 @@ ITS_LIVE_BASAL_MELT:
 
 POLAR_PLUS_ICE_SHELVES_BASAL_MELT:
   description: "Basal melt map from the Polar+ Ice Shelves project."
-  label: "Polar+ Ice Shelves Basal Melt:"
+  label: "Polar+ Ice Shelves Basal Melt"
   region: "ice_shelf"
   variables:
     basal_melt_flux:
@@ -172,7 +172,7 @@ POLAR_PLUS_ICE_SHELVES_BASAL_MELT:
 
 POLAR_PLUS_ICE_SHELVES_CALVING_FRONTS:
   description: "Calving front maps from the Polar+ Ice Shelves project."
-  label: "Polar+ Ice Shelves Calving Fronts:"
+  label: "Polar+ Ice Shelves Calving Fronts"
   region: "ice_shelf"
   variables:
     coastline:
@@ -185,7 +185,7 @@ POLAR_PLUS_ICE_SHELVES_CALVING_FRONTS:
 
 RACMO:
   description: "The RACMO SMB variable."
-  label: "RACMO:"
+  label: "RACMO"
   region: "ice_shelf"
   variables:
     surface_mass_balance:
@@ -198,7 +198,7 @@ RACMO:
 
 REMA_MOSAIC_1000:
   description: "The REMA v2 DEM at 1000m."
-  label: "REMA v2 Digital Elevation Maps (1000m):"
+  label: "REMA v2 Digital Elevation Maps (1000m)"
   region: "ice_shelf"
   variables:
     REMA_1000m:
@@ -211,7 +211,7 @@ REMA_MOSAIC_1000:
 
 REMA_MOSAIC_100:
   description: "The REMA v2 DEM at 100m."
-  label: "REMA v2 Digital Elevation Maps (100m):"
+  label: "REMA v2 Digital Elevation Maps (100m)"
   region: "ice_shelf"
   variables:
     REMA_100m:
@@ -224,7 +224,7 @@ REMA_MOSAIC_100:
 
 REMA_GAPLESS_100:
   description: "The REMA v2 DEM at 100m (gapless)."
-  label: "REMA v2 Digital Elevation Maps (100m gapless):"
+  label: "REMA v2 Digital Elevation Maps (100m gapless)"
   region: "ice_shelf"
   variables:
     REMA_100m_filled:
@@ -237,7 +237,7 @@ REMA_GAPLESS_100:
 
 SOUTHERN_ANNULAR_MODE:
   description: "Southern Annular Mode Index."
-  label: "SAM Index:"
+  label: "SAM Index"
   region: "climate"
   variables:
     souther_annular_mode_index:
@@ -250,7 +250,7 @@ SOUTHERN_ANNULAR_MODE:
 
 GLORYS12V1:
   description: "The GLORY ocean reanalysis dataset"
-  label: "GLORY Ocean Re-analysis:"
+  label: "GLORY Ocean Re-analysis"
   region: "ocean"
   variables:
     eastward_sea_ice_velocity:
@@ -340,7 +340,7 @@ GLORYS12V1:
 
 EOLIS_GRID:
   description: "CryoTEMPO EOLIS gridded swath elevation product."
-  label: "CryoTEMPO EOLIS elevation product:"
+  label: "CryoTEMPO EOLIS elevation product"
   region: "ice_shelf"
   variables:
     height_difference_from_reference_elevation:
