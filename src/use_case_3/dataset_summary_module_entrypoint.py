@@ -46,3 +46,7 @@ def main() -> None:
     summary = calculate_summary_grid(data, max_res=model.max_res)
     with model.output_path.open("w") as f:
         json.dump(summary, f)
+
+
+if __name__ == "__main__":
+    main()
