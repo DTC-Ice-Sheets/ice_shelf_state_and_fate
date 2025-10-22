@@ -216,7 +216,7 @@ async def conduct_covariate_analysis_integrated(
 
             raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
             output_url = res.outputs["use-case-3-covariate-analyser"]["output_json"]
-            bucket, key = output_url.lower().removeprefix("s3://").split("/", 1)
+            bucket, key = output_url.removeprefix("s3://").removeprefix("S3://").split("/", 1)
             b = BytesIO()
             s3_client.download_fileobj(Bucket=bucket, Key=key, Fileobj=b)
             b.seek(0)
