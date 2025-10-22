@@ -2,13 +2,20 @@
 
 import argparse
 import json
+from datetime import datetime
 from types import UnionType
-from typing import get_args
+from typing import Any, get_args
 
 import xarray as xr
 
 from use_case_3.dataset_summary_module.dataset_summary_module import calculate_summary_grid
 from use_case_3.schemas import DatasetSummaryEntrypointSchema
+
+
+def _json_encoder(obj: Any) -> Any:  # noqa: ANN401
+    if isinstance(obj, datetime):
+        return int(obj.timestamp())
+    return obj
 
 
 def main() -> None:
@@ -45,7 +52,7 @@ def main() -> None:
     data = xr.open_zarr(model.input_path)
     summary = calculate_summary_grid(data, max_res=model.max_res)
     with model.output_path.open("w") as f:
-        json.dump(summary, f)
+        json.dump(summary, f, default=_json_encoder)
 
 
 if __name__ == "__main__":

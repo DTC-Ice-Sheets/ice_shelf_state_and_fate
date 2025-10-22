@@ -38,10 +38,11 @@ def calculate_summary_grid(data: xr.Dataset, max_res: int = 50) -> dict:
     }
     for name, size in data.dims.items():
         idxs = np.linspace(0, size - 1, min(size, max_res)).astype(int)
+        values = data[name][idxs].values
         out["dims"][name] = {
             "real_size": size,
             "idxs": idxs.tolist(),
-            "values": data[name][idxs].values.tolist(),
+            "values": values.tolist(),
         }
     for name, var in data.data_vars.items():
         coords = list(var.coords)
