@@ -89,3 +89,11 @@ class CovariateAnalyserModuleEntryPointSchema(BaseModel):
         JointPlotAnalysisType.CORR,
         description="Type of covariate analysis to perform.",
     )
+
+
+class DatasetSummaryEntrypointSchema(BaseModel):
+    """Schema for the dataset summary module entry point."""
+
+    input_path: Path = Field(..., description="Path to the input timeseries .zarr file.")
+    output_path: Path = Field(..., description="Path to save the output .json file.")
+    max_res: int = Field(20, description="Maximum resolution for the dataset summary.")
