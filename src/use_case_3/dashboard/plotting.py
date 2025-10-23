@@ -1,5 +1,8 @@
 """Dashboard plotting functions."""
 
+from collections import defaultdict
+from datetime import datetime
+
 import numpy as np
 import plotly.graph_objects as go
 from plotly.colors import qualitative
@@ -407,12 +410,86 @@ def plot_dataset_summary(plot_data: dict) -> go.Figure:
         A Plotly figure containing the dataset summary plot.
     """
     fig = go.Figure()
+    trace_i = 0
+    timeless_trace_ids = set()
+    trace_ids_by_time = defaultdict(list)
     for name, var in plot_data["vars"].items():
         values = np.array(var["values"])
         if "x" not in var["coords"] or "y" not in var["coords"]:
             continue
         xi = var["coords"].index("x")
         yi = var["coords"].index("y")
-        mean_vals = values.mean(axis=tuple(i for i in range(values.ndim) if i not in (xi, yi)), keepdims=False)
-        fig.add_trace(go.Heatmap(z=mean_vals, name=name))
+
+        if "time" not in var["coords"]:
+            timeless_trace_ids.add(trace_i)
+            mean_vals = np.nanmean(
+                values,
+                axis=tuple(i for i in range(values.ndim) if i not in (xi, yi)),
+                keepdims=False,
+            )
+            fig.add_trace(
+                go.Heatmap(
+                    z=mean_vals,
+                    name=name,
+                    showlegend=True,
+                )
+            )
+            trace_i += 1
+            continue
+
+        ti = var["coords"].index("time")
+        removed_axes = tuple(i for i in range(values.ndim) if i not in (xi, yi, ti))
+        mean_vals = np.nanmean(
+            values,
+            axis=removed_axes,
+            keepdims=False,
+        )
+        valmin, valmax = np.nanmin(mean_vals), np.nanmax(mean_vals)
+
+        # Need to update ti after mean calculation
+        ti -= len([ra for ra in removed_axes if ra < ti])
+
+        for t in range(values.shape[ti]):
+            trace_ids_by_time[t].append(trace_i)
+            fig.add_trace(
+                go.Heatmap(
+                    z=np.take(mean_vals, t, axis=ti),
+                    zmin=valmin,
+                    zmax=valmax,
+                    name=name,
+                    visible=(t == 0),
+                    legendgroup=name,
+                )
+            )
+            trace_i += 1
+
+        if len(trace_ids_by_time) > 1:
+            fig.update_layout(
+                sliders=[
+                    {
+                        "active": 0,
+                        "currentvalue": {"prefix": "Time: "},
+                        "pad": {"t": 50},
+                        "steps": [
+                            {
+                                "label": datetime.fromtimestamp(t).strftime("%Y-%m-%d"),
+                                "method": "update",
+                                "args": [
+                                    {
+                                        "visible": [
+                                            (trace_id in trace_ids_by_time[i]) or (trace_id in timeless_trace_ids)
+                                            for trace_id in range(trace_i)
+                                        ]
+                                    },
+                                ],
+                            }
+                            for i, t in enumerate(plot_data["dims"]["time"]["values"])
+                        ],
+                    }
+                ],
+                xaxis={"title": "X Coordinate"},
+                yaxis={"title": "Y Coordinate"},
+                width=800,
+                height=800,
+            )
     return fig
