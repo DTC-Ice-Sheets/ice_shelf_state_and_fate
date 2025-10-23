@@ -5,8 +5,11 @@ from datetime import datetime
 
 import numpy as np
 import plotly.graph_objects as go
+import pyproj
 from plotly.colors import qualitative
 from plotly.subplots import make_subplots
+from shapely import MultiPolygon
+from shapely.ops import transform
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
@@ -396,13 +399,15 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     return fig
 
 
-def plot_dataset_summary(plot_data: dict) -> go.Figure:
+def plot_dataset_summary(plot_data: dict, geom: MultiPolygon) -> go.Figure:
     """Plot the output of the dataset summary module.
 
     Parameters
     ----------
     plot_data : dict
         The dataset summary data to plot. See `dataset_summary_module.py` for details.
+    geom : MultiPolygon
+        The geometry to overlay on the plot, showing the dataset query extent.
 
     Returns
     -------
@@ -413,6 +418,29 @@ def plot_dataset_summary(plot_data: dict) -> go.Figure:
     trace_i = 0
     timeless_trace_ids = set()
     trace_ids_by_time = defaultdict(list)
+
+    wsg84 = pyproj.CRS("epsg:4326")
+    crs = pyproj.CRS("epsg:3031")
+    project = pyproj.Transformer.from_crs(wsg84, crs, always_xy=True).transform
+    geom = transform(project, geom)
+    for i, g in enumerate(geom.geoms):
+        fig.add_trace(
+            go.Scatter(
+                x=[point[0] for point in g.exterior.coords],
+                y=[point[1] for point in g.exterior.coords],
+                line=go.Line(width=1, color="black"),
+                mode="lines",
+                name="Query Extent",
+                showlegend=(i == 0),
+                legendgroup="Query Extent",
+            )
+        )
+        timeless_trace_ids.add(trace_i)
+        trace_i += 1
+
+    xs = plot_data["dims"].get("x", {}).get("values", [])
+    ys = plot_data["dims"].get("y", {}).get("values", [])
+
     for name, var in plot_data["vars"].items():
         values = np.array(var["values"])
         if "x" not in var["coords"] or "y" not in var["coords"]:
@@ -421,7 +449,6 @@ def plot_dataset_summary(plot_data: dict) -> go.Figure:
         yi = var["coords"].index("y")
 
         if "time" not in var["coords"]:
-            timeless_trace_ids.add(trace_i)
             mean_vals = np.nanmean(
                 values,
                 axis=tuple(i for i in range(values.ndim) if i not in (xi, yi)),
@@ -429,11 +456,14 @@ def plot_dataset_summary(plot_data: dict) -> go.Figure:
             )
             fig.add_trace(
                 go.Heatmap(
+                    x=xs,
+                    y=ys,
                     z=mean_vals,
                     name=name,
                     showlegend=True,
                 )
             )
+            timeless_trace_ids.add(trace_i)
             trace_i += 1
             continue
 
@@ -450,9 +480,10 @@ def plot_dataset_summary(plot_data: dict) -> go.Figure:
         ti -= len([ra for ra in removed_axes if ra < ti])
 
         for t in range(values.shape[ti]):
-            trace_ids_by_time[t].append(trace_i)
             fig.add_trace(
                 go.Heatmap(
+                    x=xs,
+                    y=ys,
                     z=np.take(mean_vals, t, axis=ti),
                     zmin=valmin,
                     zmax=valmax,
@@ -461,35 +492,36 @@ def plot_dataset_summary(plot_data: dict) -> go.Figure:
                     legendgroup=name,
                 )
             )
+            trace_ids_by_time[t].append(trace_i)
             trace_i += 1
 
-        if len(trace_ids_by_time) > 1:
-            fig.update_layout(
-                sliders=[
-                    {
-                        "active": 0,
-                        "currentvalue": {"prefix": "Time: "},
-                        "pad": {"t": 50},
-                        "steps": [
-                            {
-                                "label": datetime.fromtimestamp(t).strftime("%Y-%m-%d"),
-                                "method": "update",
-                                "args": [
-                                    {
-                                        "visible": [
-                                            (trace_id in trace_ids_by_time[i]) or (trace_id in timeless_trace_ids)
-                                            for trace_id in range(trace_i)
-                                        ]
-                                    },
-                                ],
-                            }
-                            for i, t in enumerate(plot_data["dims"]["time"]["values"])
-                        ],
-                    }
-                ],
-                xaxis={"title": "X Coordinate"},
-                yaxis={"title": "Y Coordinate"},
-                width=800,
-                height=800,
-            )
+    if len(trace_ids_by_time) > 1:
+        fig.update_layout(
+            sliders=[
+                {
+                    "active": 0,
+                    "currentvalue": {"prefix": "Time: "},
+                    "pad": {"t": 50},
+                    "steps": [
+                        {
+                            "label": datetime.fromtimestamp(t).strftime("%Y-%m-%d"),
+                            "method": "update",
+                            "args": [
+                                {
+                                    "visible": [
+                                        (trace_id in trace_ids_by_time[i]) or (trace_id in timeless_trace_ids)
+                                        for trace_id in range(trace_i)
+                                    ]
+                                },
+                            ],
+                        }
+                        for i, t in enumerate(plot_data["dims"]["time"]["values"])
+                    ],
+                }
+            ],
+            xaxis={"title": "X Coordinate"},
+            yaxis={"title": "Y Coordinate"},
+            width=800,
+            height=800,
+        )
     return fig
