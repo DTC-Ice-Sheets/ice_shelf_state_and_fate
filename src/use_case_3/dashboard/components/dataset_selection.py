@@ -118,10 +118,30 @@ def create_dataset_selection() -> html.Div:
                 backdrop="static",
             ),
             html.H4("Select Datasets", style={"text-align": "center"}),
+            html.Span("0 datasets selected", id="dataset-selection-count", style={"text-align": "center"}),
             dbc.Input(
                 id="dataset-search-input",
                 placeholder="Search datasets",
                 type="search",
+            ),
+            html.Div(
+                [
+                    html.Span("Region filter:"),
+                    *[
+                        dbc.Card(
+                            dbc.Checkbox(
+                                id={"type": "region-filter", "index": key},
+                                label=region["name"],
+                                value=True,
+                                label_style={"margin": "0"},
+                            ),
+                            color=region["color"],
+                            style={"padding": "0 0.5em"},
+                        )
+                        for key, region in REGIONS.items()
+                    ],
+                ],
+                style={"display": "flex", "align-items": "center", "gap": "1em"},
             ),
             html.Div(
                 [_create_dataset_entry(dataset_id) for dataset_id in config_dict],
@@ -129,11 +149,13 @@ def create_dataset_selection() -> html.Div:
                     "display": "flex",
                     "flex-direction": "column",
                     "gap": "1em",
-                    "max-height": "80vh",
+                    "margin-top": "1em",
+                    "max-height": "75vh",
                     "overflow-y": "auto",
                 },
             ),
         ],
+        style={"display": "flex", "flex-direction": "column"},
     )
 
 
@@ -189,37 +211,41 @@ def _dataset_summary_tables(plot_data: dict) -> html.Div:
 @callback(
     Output({"type": "data-selector-group", "index": ALL}, "style"),
     Output({"type": "data-selector-container", "index": ALL}, "style"),
+    Output("dataset-selection-count", "children"),
     Input("dataset-search-input", "value"),
+    Input({"type": "region-filter", "index": ALL}, "value"),
+    Input({"type": "data-selector", "index": ALL}, "value"),
     State({"type": "data-selector-group", "index": ALL}, "id"),
     State({"type": "data-selector", "index": ALL}, "id"),
-    State({"type": "data-selector", "index": ALL}, "value"),
 )
 def filter_datasets(
     search_value: str,
+    region_filter_values: list[bool],
+    variables_selected: list[bool],
     dataset_ids: list[dict[str, str]],
     variable_ids: list[dict[str, str]],
-    variables_selected: list[bool],
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+) -> tuple[list[dict[str, str]], list[dict[str, str]], str]:
     """Apply search filtering to visibility of datasets and variables."""
-    if not search_value:
-        return (
-            [{"display": "block"} for _ in dataset_ids],
-            [{"display": "block"} for _ in variable_ids],
-        )
+    selected_regions = {key for key, selected in zip(REGIONS.keys(), region_filter_values, strict=True) if selected}
 
     variable_styles = []
     seen_datasets = set()
     for variable_id, selected in zip(variable_ids, variables_selected, strict=True):
-        if selected or search_value.lower() in variable_id["index"].lower():
+        dataset_id = variable_id["index"].split(".", maxsplit=1)[0]
+        # Show items that are selected...
+        if selected or (
+            # ...and any items that pass both the search and region filter
+            (not search_value or search_value.lower() in variable_id["index"].lower())
+            and config_dict[dataset_id]["region"] in selected_regions
+        ):
             variable_styles.append({"display": "block"})
-            seen_datasets.add(variable_id["index"].split(".", maxsplit=1)[0])
+            seen_datasets.add(dataset_id)
         else:
             variable_styles.append({"display": "none"})
-    dataset_styles = [
-        {"display": "block"} if dataset_id["index"] in seen_datasets else {"display": "none"}
-        for dataset_id in dataset_ids
-    ]
-    return dataset_styles, variable_styles
+    dataset_styles = [{"display": "block"} if d["index"] in seen_datasets else {"display": "none"} for d in dataset_ids]
+    count = sum(variables_selected)
+    count_text = f"{count} dataset{'s' if count != 1 else ''} selected"
+    return dataset_styles, variable_styles, count_text
 
 
 @callback(
