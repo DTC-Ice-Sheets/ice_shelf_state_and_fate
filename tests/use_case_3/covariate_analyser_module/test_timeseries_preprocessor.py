@@ -302,6 +302,14 @@ def test__init__(
             [pd.Timestamp(year=2020, month=1, day=1), pd.Timestamp(year=2021, month=1, day=1)],
             AggregationPeriod.YEAR,
         ),
+        (
+            [
+                pd.Timestamp(year=2020, month=1, day=1),
+                pd.Timestamp(year=2020, month=3, day=31),
+                pd.Timestamp(year=2020, month=4, day=1),
+            ],
+            AggregationPeriod.QUARTER,
+        ),
     ],
 )
 def test_default_time_period(times, expected_period):
