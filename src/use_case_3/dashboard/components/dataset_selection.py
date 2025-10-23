@@ -23,6 +23,7 @@ from use_case_3.dashboard.plotting import plot_dataset_summary
 from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
+    get_ice_shelf_geometry,
     s3_client,
 )
 
@@ -289,7 +290,8 @@ async def generate_dataset_preview(
             plot_data = json.load(b)
 
             set_progress(("Plotting...", 95))
-            fig = plot_dataset_summary(plot_data)
+            geom = await get_ice_shelf_geometry(ice_shelf, config_dict[dataset_id]["region"])
+            fig = plot_dataset_summary(plot_data, geom)
             out = [
                 _dataset_summary_tables(plot_data),
                 dcc.Graph(figure=fig, style={"align-self": "center"}),

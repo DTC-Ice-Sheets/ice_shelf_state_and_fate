@@ -59,7 +59,7 @@ async def get_ice_shelves() -> list[str]:
 
 
 @asyncstdlib.lru_cache(128)
-async def get_ice_shelf_geometry(ice_shelf: str, extent: IceShelfExtent) -> Polygon:
+async def get_ice_shelf_geometry(ice_shelf: str, extent: IceShelfExtent) -> MultiPolygon:
     """Query and parse the geometry for a given ice shelf and extent type."""
     async with ApiClient(api_config) as client:
         return shape((await IceShelvesApi(client).get_geometry(ice_shelf, extent)).to_dict())
