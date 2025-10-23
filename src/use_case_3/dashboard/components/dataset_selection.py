@@ -8,8 +8,8 @@ from typing import Callable
 
 import dash
 import dash_bootstrap_components as dbc
-import plotly.graph_objects as go
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
+from dash.development.base_component import Component
 from dtc_query_client import (
     ApiClient,
     DatasetSummaryRequest,
@@ -105,8 +105,16 @@ def create_dataset_selection() -> html.Div:
                 cancellable=True,
             ),
             dbc.Modal(
-                dcc.Graph(id="dataset-preview-graph"),
+                [
+                    dbc.ModalHeader(dbc.ModalTitle(id="dataset-preview-title")),
+                    dbc.ModalBody(
+                        id="dataset-preview-body",
+                        style={"display": "flex", "flex-direction": "column"},
+                    ),
+                ],
                 id="dataset-preview",
+                size="xl",
+                backdrop="static",
             ),
             html.H4("Select Datasets", style={"text-align": "center"}),
             dbc.Input(
@@ -123,6 +131,55 @@ def create_dataset_selection() -> html.Div:
                     "max-height": "80vh",
                     "overflow-y": "auto",
                 },
+            ),
+        ],
+    )
+
+
+def _dataset_summary_tables(plot_data: dict) -> html.Div:
+    return html.Div(
+        [
+            html.H3("Dimensions"),
+            dbc.Table(
+                [
+                    html.Tr(
+                        [
+                            html.Th("Dimension"),
+                            *[html.Td(name) for name in plot_data["dims"]],
+                        ]
+                    ),
+                    html.Tr(
+                        [
+                            html.Th("Size"),
+                            *[html.Td(dim["real_size"]) for dim in plot_data["dims"].values()],
+                        ]
+                    ),
+                ]
+            ),
+            html.H3("Variables"),
+            dbc.Table(
+                [
+                    html.Tr(
+                        [
+                            html.Th("Variable"),
+                            html.Th("Dimensions"),
+                        ]
+                    ),
+                    *[
+                        html.Tr(
+                            [
+                                html.Td(var_name),
+                                html.Td(", ".join(var_info["coords"])),
+                            ]
+                        )
+                        for var_name, var_info in plot_data["vars"].items()
+                    ],
+                ]
+            ),
+            *(
+                [dbc.Alert("Some dimensions have been downsampled for plotting purposes.", color="warning")]
+                if any(dim_info["real_size"] > len(dim_info["idxs"]) for dim_info in plot_data["dims"].values())
+                else []
             ),
         ],
     )
@@ -166,7 +223,8 @@ def filter_datasets(
 
 @callback(
     Output("dataset-preview", "is_open"),
-    Output("dataset-preview-graph", "figure"),
+    Output("dataset-preview-title", "children"),
+    Output("dataset-preview-body", "children"),
     Output("dataset-preview-error-message", "is_open"),
     Output("dataset-preview-error-message", "children"),
     Input({"type": "variable-preview-button", "index": ALL}, "n_clicks"),
@@ -194,9 +252,10 @@ async def generate_dataset_preview(
     _n_clicks: int,
     ice_shelf: str,
     year_range: tuple[int, int],
-) -> tuple[bool, go.Figure | None, bool, str]:
+) -> tuple[bool, str, list[Component], bool, str]:
     """Open the dataset preview generator dialog when a preview button is clicked."""
     dataset_id, variable_id = dash.ctx.triggered_id["index"].split(".", maxsplit=1)
+    name = f"{config_dict[dataset_id]['label']}: {config_dict[dataset_id]['variables'][variable_id]['label']}"
     try:
         async with ApiClient(api_config) as client:
             res = await IceShelvesApi(client).run_dataset_summary(
@@ -204,10 +263,7 @@ async def generate_dataset_preview(
                 dataset_summary_request=DatasetSummaryRequest(
                     start_time=datetime(year=year_range[0], month=1, day=1),
                     end_time=datetime(year=year_range[1], month=1, day=1),
-                    name=(
-                        f"{config_dict[dataset_id]['label']} "
-                        f"{config_dict[dataset_id]['variables'][variable_id]['label']}"
-                    ),
+                    name=name,
                     dataset=dataset_id,
                     variable=variable_id,
                     extent=config_dict[dataset_id]["region"],
@@ -234,10 +290,14 @@ async def generate_dataset_preview(
 
             set_progress(("Plotting...", 95))
             fig = plot_dataset_summary(plot_data)
+            out = [
+                _dataset_summary_tables(plot_data),
+                dcc.Graph(figure=fig, style={"align-self": "center"}),
+            ]
     except Exception as e:
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
             logger.error(res)
-        return False, None, True, str(e)
+        return False, "", [], True, str(e)
 
-    return True, fig, False, ""
+    return True, name, out, False, ""
