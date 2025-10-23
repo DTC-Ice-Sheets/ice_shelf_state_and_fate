@@ -33,10 +33,13 @@ def calculate_summary_grid(data: xr.Dataset, max_res: int = 50) -> dict:
                             This has dimensionality equal to the length of `coords`.
     """
     out = {
+        "crs": data.rio.crs.to_string() if data.rio.crs else None,
         "dims": {},
         "vars": {},
     }
     for name, size in data.dims.items():
+        if name == "spatial_ref":
+            continue
         idxs = np.linspace(0, size - 1, min(size, max_res)).astype(int)
         values = data[name][idxs].values
         out["dims"][name] = {
