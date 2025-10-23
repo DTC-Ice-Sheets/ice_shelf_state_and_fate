@@ -25,7 +25,7 @@ class TimeSeriesPreprocessor:
     timeseries : list[Timeseries]
             The list of timeseries objects.
     time_period : AggregationPeriod | None, optional
-        The aggregation period to apply. If None, the lowest frequency period from the input timeseries is used.
+        The aggregation period to apply. If None, the coarsest frequency from the input timeseries is used.
     aggregation : AggregationStrategy, optional
         The aggregation type to apply, by default AggregationStrategy.MEAN
     process_timeseries : bool, optional
@@ -40,17 +40,17 @@ class TimeSeriesPreprocessor:
         process_timeseries: bool = True,
     ) -> None:
         if time_period is None:
-            # Take the lowest period in the input timeseries
-            min_days = 365
+            # Take the largest period (i.e. lowest frequency) in the input timeseries
+            max_days = 1
             for ts in timeseries:
-                ts_min_days = ts.measurements.index.diff().min().ceil("D").days
-                if ts_min_days < min_days:
-                    min_days = ts_min_days
-            if min_days >= 365:
+                ts_max_days = ts.measurements.index.diff().max().ceil("D").days
+                if ts_max_days > max_days:
+                    max_days = ts_max_days
+            if max_days >= 365:
                 self.aggregation_period = AggregationPeriod.YEAR
-            elif min_days >= 90:
+            elif max_days >= 90:
                 self.aggregation_period = AggregationPeriod.QUARTER
-            elif min_days >= 28:
+            elif max_days >= 28:
                 self.aggregation_period = AggregationPeriod.MONTH
             else:
                 self.aggregation_period = AggregationPeriod.DAY
