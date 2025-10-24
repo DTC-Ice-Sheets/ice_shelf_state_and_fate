@@ -8,7 +8,7 @@ from use_case_3.dashboard.dashboard_layout import layout_navbar
 
 dash.register_page(__name__, path="/")
 
-navbar = layout_navbar(page_title="")
+navbar = layout_navbar()
 
 layout = html.Div(
     [

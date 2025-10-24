@@ -2,7 +2,7 @@
 
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, callback, dcc
 
 from use_case_3.dashboard.mapping import plot_ice_shelf_map
 from use_case_3.dashboard.query_api import (
@@ -11,38 +11,56 @@ from use_case_3.dashboard.query_api import (
 )
 
 
-def create_ice_shelf_selection() -> list[html.Div]:
+def create_ice_shelf_selection(show_map: bool = True) -> list[dbc.Row]:
     """Create the ice shelf selection dropdown and time range slider.
+
+    Parameters
+    ----------
+    show_map : bool, optional
+        Whether to show the ice shelf map under the dropdown, by default True.
+        Intended for pages that place the map elsewhere using `create_ice_shelf_map()`.
 
     Returns
     -------
-    list[html.Div]
-        A list of divs containing the dropdown and slider.
+    list[dbc.Row]
+        A list of rows intended to be placed inside a `dbc.Form`.
     """
     return [
-        html.Div(
-            dbc.Select(
-                options=["Loading..."],
-                value="Loading...",
-                id="ice-shelf-selection",
-                style={"textTransform": "capitalize"},
-            ),
-            style={"border": "0px black solid", "padding-top": "10px"},
+        dbc.Row(
+            [
+                dbc.Label("Ice Shelf:", html_for="ice-shelf-selection", width=3),
+                dbc.Col(
+                    [
+                        dbc.Select(
+                            options=["Loading..."],
+                            value="Loading...",
+                            id="ice-shelf-selection",
+                            style={"textTransform": "capitalize"},
+                        ),
+                    ]
+                ),
+            ]
         ),
-        html.Div(
-            dcc.RangeSlider(
-                0,
-                0,
-                1,
-                id="summary-year-selector",
-                marks=None,
-                tooltip={
-                    "placement": "bottom",
-                    "always_visible": True,
-                    "style": {"color": "White", "fontSize": "20px"},
-                },
-            ),
-            style={"border": "0px black solid", "padding-top": "10px"},
+        *([dbc.Row(create_ice_shelf_map())] if show_map else []),
+        dbc.Row(
+            [
+                dbc.Label("Year Range:", html_for="summary-year-selector", width=3),
+                dbc.Col(
+                    dcc.RangeSlider(
+                        0,
+                        0,
+                        1,
+                        id="summary-year-selector",
+                        marks=None,
+                        tooltip={
+                            "placement": "bottom",
+                            "always_visible": True,
+                            "style": {"font-size": "16px"},
+                        },
+                    ),
+                    style={"padding-bottom": "8px"},
+                ),
+            ]
         ),
     ]
 

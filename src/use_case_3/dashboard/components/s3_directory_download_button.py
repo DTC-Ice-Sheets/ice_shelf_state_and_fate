@@ -50,6 +50,7 @@ def create_s3_directory_download_button(
                 label,
                 id={"type": "s3-download-button", "index": index},
                 color="primary",
+                outline=True,
                 size="lg",
             ),
             dcc.Download(id={"type": "s3-download-download", "index": index}),

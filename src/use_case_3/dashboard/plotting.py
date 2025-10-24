@@ -15,6 +15,33 @@ from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSer
 from use_case_3.timeseries_module.timeseries import Timeseries
 
 
+def plot_placeholder() -> go.Figure:
+    """Create a clean placeholder for a figure that will be created later.
+
+    Returns
+    -------
+    go.Figure
+        The placeholder figure.
+    """
+    fig = go.Figure()
+    fig.update_layout(
+        xaxis={"visible": False},
+        yaxis={"visible": False},
+        annotations=[
+            {
+                "text": "No data to display",
+                "xref": "paper",
+                "yref": "paper",
+                "showarrow": False,
+                "font": {"size": 28},
+                "x": 0.5,
+                "y": 0.5,
+            }
+        ],
+    )
+    return fig
+
+
 def plot_gauge_indicator_timeseries(timeseries_container: TimeSeriesPreprocessor, variable: str) -> go.Figure:
     """
     Plot a gauge indicator for the total change in a timeseries variable.
