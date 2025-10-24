@@ -2,24 +2,21 @@
 
 import dash_bootstrap_components as dbc
 
-
-def get_navbar_pages() -> list[dbc.DropdownMenuItem]:
-    """Get the list of menu items for the navigation bar."""
-    return [
-        dbc.DropdownMenuItem("More pages", header=True),
-        dbc.DropdownMenuItem("Insights", href="/insights"),
-        dbc.DropdownMenuItem("Ice shelf summary", href="/ice-shelf-summary"),
-        dbc.DropdownMenuItem("Ice shelf analysis", href="/covariate-analysis"),
-    ]
+navbar_pages = {
+    "/insights": "Insights",
+    "/ice-shelf-summary": "Ice Shelf Summary",
+    "/covariate-analysis": "Covariate Analysis",
+}
 
 
-def layout_navbar(page_title: str) -> dbc.NavbarSimple:
+def layout_navbar(current_path: str | None = None) -> dbc.NavbarSimple:
     """Create a navigation bar for the dashboard.
 
     Parameters
     ----------
-    page_title : str
-        Title of the current page to display in the navbar.
+    current_path : str | None
+        The current path of the page, used to highlight the active link.
+        If None, no link will be highlighted.
 
     Returns
     -------
@@ -28,24 +25,25 @@ def layout_navbar(page_title: str) -> dbc.NavbarSimple:
     """
     return dbc.NavbarSimple(
         children=[
-            dbc.NavItem(dbc.NavLink(page_title, href="#")),
-            dbc.DropdownMenu(
-                children=get_navbar_pages(),
-                nav=True,
-                in_navbar=True,
-                label="More",
-            ),
+            *[
+                dbc.NavItem(
+                    dbc.NavLink(
+                        name,
+                        href=path,
+                        active=(path == current_path),
+                    )
+                )
+                for path, name in navbar_pages.items()
+            ]
         ],
-        brand=page_title,
-        brand_href="#",
-        color="black",
+        brand="DTC Ice Sheets: Use Case 3",
+        brand_href="/",
+        brand_style={"font-size": "2rem"},
+        color="#1c1c1c",
         dark=True,
-        brand_style={
-            "font-size": "2rem",
-            "text-align": "center",
-            "font-weight": "bold",
-            "margin": "auto",
+        sticky="top",
+        style={
+            "font-size": "1.5rem",
+            "margin-bottom": "1em",
         },
-        sticky="sticky",
-        fixed="sticky",
     )

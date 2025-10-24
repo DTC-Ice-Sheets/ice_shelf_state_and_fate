@@ -24,11 +24,11 @@ from dtc_wrapper.helpers import download_directory_from_s3, parse_s3_url
 
 from use_case_3.dashboard.components.dataset_selection import create_dataset_selection
 from use_case_3.dashboard.components.error_banner import create_error_banner
-from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
+from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_selection
 from use_case_3.dashboard.components.progress_dialog import create_progress_dialog
 from use_case_3.dashboard.components.s3_directory_download_button import create_s3_directory_download_button
 from use_case_3.dashboard.dashboard_layout import layout_navbar
-from use_case_3.dashboard.plotting import plot_covariate_analysis
+from use_case_3.dashboard.plotting import plot_covariate_analysis, plot_placeholder
 from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
@@ -40,7 +40,7 @@ dash.register_page(__name__)
 
 logger = logging.getLogger(__name__)
 
-navbar = layout_navbar(page_title="Covariate Analysis")
+navbar = layout_navbar("/covariate-analysis")
 
 
 layout = [
@@ -50,85 +50,86 @@ layout = [
             # Column for the analysis parameters
             dbc.Col(
                 [
-                    html.Div(
-                        [
-                            html.P(
-                                "This is the analysis module of the digital twin. "
-                                "You can use the tools provided to conduct detailed analyses on the Antarctic "
-                                "ice shelves of your choice using both earth observation, in-situ and reanalysis "
-                                "datasets. Select from the ice, ocean and climate datasets provided to discover "
-                                "significant variables and interactions between variables which could have "
-                                "contributed to the current state of the ice shelves.",
-                                className="analysis_intro",
-                            ),
-                            html.P(
-                                "If you prefer to conduct the analysis offline, you can select the datasets of "
-                                "interest and use the download function to retrieve them within the specified "
-                                "spatial and temporal extents.",
-                                className="analysis_intro",
-                            ),
-                            html.Div(
-                                [
-                                    dbc.InputGroup(
-                                        [
-                                            dbc.Select(
-                                                id="select-analysis-type",
-                                                value="corr",
-                                                options=[
-                                                    {"label": "Correlation", "value": "corr"},
-                                                    {"label": "Cross-correlation", "value": "cross_corr"},
-                                                    {"label": "Granger Causality", "value": "causal"},
-                                                ],
-                                            ),
-                                            dbc.Button("Run Analysis", id="run-analysis-button"),
-                                        ]
-                                    ),
-                                    *create_ice_shelf_selection(),
-                                    create_ice_shelf_map(),
-                                ],
-                                id="analysis_parameters",
-                            ),
-                        ],
-                        style={"padding-top": "25px"},
-                    ),
-                ],
-                width=4,
-            ),
-            # Column for the datasets
-            dbc.Col(
-                [
                     create_error_banner(id="job-runner-error-message"),
                     create_progress_dialog(
                         title="Running Workflow",
                         index="job-runner",
                         cancellable=True,
                     ),
-                    create_dataset_selection(),
+                    html.H1("Perform Covariate Analysis", style={"text-align": "center"}),
+                    html.P(
+                        "This is the analysis module of the digital twin. "
+                        "You can use the tools provided to conduct detailed analyses on the Antarctic "
+                        "ice shelves of your choice using both earth observation, in-situ and reanalysis "
+                        "datasets. Select from the ice, ocean and climate datasets provided to discover "
+                        "significant variables and interactions between variables which could have "
+                        "contributed to the current state of the ice shelves.",
+                        className="analysis_intro",
+                    ),
+                    html.P(
+                        "If you prefer to conduct the analysis offline, you can select the datasets of "
+                        "interest and use the download function to retrieve them within the specified "
+                        "spatial and temporal extents.",
+                        className="analysis_intro",
+                    ),
+                    dbc.Form(
+                        [
+                            *create_ice_shelf_selection(),
+                            create_dataset_selection(),
+                            dbc.Row(
+                                [
+                                    dbc.Label("Analysis Type:", html_for="select-analysis-type", width=3),
+                                    dbc.Col(
+                                        dbc.Select(
+                                            id="select-analysis-type",
+                                            value="corr",
+                                            options=[
+                                                {"label": "Correlation", "value": "corr"},
+                                                {"label": "Cross-correlation", "value": "cross_corr"},
+                                                {"label": "Granger Causality", "value": "causal"},
+                                            ],
+                                        )
+                                    ),
+                                ]
+                            ),
+                            dbc.Row(
+                                dbc.Button("Run Analysis", id="run-analysis-button", size="lg", color="primary"),
+                            ),
+                        ],
+                        id="analysis_parameters",
+                        style={"display": "flex", "flex-direction": "column", "gap": "0.5em"},
+                    ),
                 ],
-                width=3,
+                width=4,
             ),
             # Column for the results
             dbc.Col(
                 [
-                    html.Div(
-                        style={"padding-top": "25px"},
-                        id="analysis_results_div",
-                    ),
                     dcc.Loading(
                         [
-                            create_s3_directory_download_button(
-                                "Download Raw Data",
-                                index="download-raw-data",
-                            ),
-                            dcc.Graph(id="results-plot"),
+                            html.Div(
+                                [
+                                    dcc.Graph(id="results-plot", figure=plot_placeholder()),
+                                    create_s3_directory_download_button(
+                                        "Download Raw Data",
+                                        index="download-raw-data",
+                                    ),
+                                ],
+                                style={
+                                    "display": "flex",
+                                    "flex-direction": "column",
+                                    "align-items": "center",
+                                },
+                            )
                         ],
                         id="loading",
                         type="default",
                     ),
                 ],
-                width=5,
+                width=6,
             ),
-        ]
+        ],
+        style={"margin": "0"},
     ),
 ]
 

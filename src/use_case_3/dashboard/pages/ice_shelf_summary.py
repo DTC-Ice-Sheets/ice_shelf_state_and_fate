@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 import numpy as np
 from dash import Input, Output, State, callback, dcc, html
 
-from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_map, create_ice_shelf_selection
+from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_selection
 from use_case_3.dashboard.dashboard_layout import layout_navbar
 from use_case_3.dashboard.plotting import plot_gauge_indicator_timeseries, plot_summary_timeseries
 from use_case_3.dashboard.process_data import generate_statistic, generate_statistic_cummulative_difference
@@ -15,7 +15,7 @@ from use_case_3.dashboard.query_api import (
 
 dash.register_page(__name__)
 
-navbar = layout_navbar(page_title="Ice Shelf Summary")
+navbar = layout_navbar("/ice-shelf-summary")
 
 layout = html.Div(
     [
@@ -148,10 +148,7 @@ layout = html.Div(
                                 ),
                                 # This column is for the map, ice shelf selector and time range selector.
                                 dbc.Col(
-                                    [
-                                        *create_ice_shelf_selection(),
-                                        create_ice_shelf_map(),
-                                    ],
+                                    create_ice_shelf_selection(),
                                     width=8,
                                 ),
                             ]
@@ -536,7 +533,8 @@ layout = html.Div(
                         ),
                     ]
                 ),
-            ]
+            ],
+            style={"margin": "0"},
         ),
     ]
 )

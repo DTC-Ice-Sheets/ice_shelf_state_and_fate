@@ -89,6 +89,56 @@ def _create_dataset_entry(dataset_id: str) -> dbc.Card:
     )
 
 
+def _create_dataset_selection_modal() -> dbc.Modal:
+    return dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("Select Datasets")),
+            dbc.ModalBody(
+                [
+                    create_error_banner("dataset-preview-error-message"),
+                    dbc.Input(
+                        id="dataset-search-input",
+                        placeholder="Search datasets",
+                        type="search",
+                    ),
+                    html.Div(
+                        [
+                            html.Span("Region filter:"),
+                            *[
+                                dbc.Card(
+                                    dbc.Checkbox(
+                                        id={"type": "region-filter", "index": key},
+                                        label=region["name"],
+                                        value=True,
+                                        label_style={"margin": "0"},
+                                    ),
+                                    color=region["color"],
+                                    style={"padding": "0 0.5em"},
+                                )
+                                for key, region in REGIONS.items()
+                            ],
+                        ],
+                        style={"display": "flex", "align-items": "center", "gap": "1em", "margin": "0.5em 0"},
+                    ),
+                    html.Div(
+                        [_create_dataset_entry(dataset_id) for dataset_id in config_dict],
+                        style={
+                            "display": "flex",
+                            "flex-direction": "column",
+                            "gap": "1em",
+                            "max-height": "75vh",
+                            "overflow-y": "auto",
+                        },
+                    ),
+                ],
+                style={"display": "flex", "flex-direction": "column"},
+            ),
+        ],
+        id="dataset-selection-modal",
+        size="lg",
+    )
+
+
 def create_dataset_selection() -> html.Div:
     """Create a dataset selection component with search functionality.
 
@@ -99,7 +149,6 @@ def create_dataset_selection() -> html.Div:
     """
     return html.Div(
         [
-            create_error_banner("dataset-preview-error-message"),
             create_progress_dialog(
                 title="Generating Dataset Preview",
                 index="dataset-preview-generator",
@@ -117,45 +166,23 @@ def create_dataset_selection() -> html.Div:
                 size="xl",
                 backdrop="static",
             ),
-            html.H4("Select Datasets", style={"text-align": "center"}),
-            html.Span("0 datasets selected", id="dataset-selection-count", style={"text-align": "center"}),
-            dbc.Input(
-                id="dataset-search-input",
-                placeholder="Search datasets",
-                type="search",
-            ),
-            html.Div(
+            dbc.Row(
                 [
-                    html.Span("Region filter:"),
-                    *[
-                        dbc.Card(
-                            dbc.Checkbox(
-                                id={"type": "region-filter", "index": key},
-                                label=region["name"],
-                                value=True,
-                                label_style={"margin": "0"},
+                    dbc.Label("Datasets:", html_for="open-dataset-selection", width=3),
+                    dbc.Col(
+                        [
+                            dbc.Button("Select Datasets", id="open-dataset-selection", color="primary", outline=True),
+                            html.Span(
+                                "0 datasets selected",
+                                id="dataset-selection-count",
+                                style={"margin-left": "1em"},
                             ),
-                            color=region["color"],
-                            style={"padding": "0 0.5em"},
-                        )
-                        for key, region in REGIONS.items()
-                    ],
-                ],
-                style={"display": "flex", "align-items": "center", "gap": "1em"},
+                        ]
+                    ),
+                ]
             ),
-            html.Div(
-                [_create_dataset_entry(dataset_id) for dataset_id in config_dict],
-                style={
-                    "display": "flex",
-                    "flex-direction": "column",
-                    "gap": "1em",
-                    "margin-top": "1em",
-                    "max-height": "75vh",
-                    "overflow-y": "auto",
-                },
-            ),
+            _create_dataset_selection_modal(),
         ],
-        style={"display": "flex", "flex-direction": "column"},
     )
 
 
@@ -206,6 +233,16 @@ def _dataset_summary_tables(plot_data: dict) -> html.Div:
             ),
         ],
     )
+
+
+@callback(
+    Output("dataset-selection-modal", "is_open"),
+    Input("open-dataset-selection", "n_clicks"),
+    prevent_initial_call=True,
+)
+def open_dataset_selection(_n_clicks: int) -> bool:
+    """Open the dataset selection modal when the button is clicked."""
+    return True
 
 
 @callback(

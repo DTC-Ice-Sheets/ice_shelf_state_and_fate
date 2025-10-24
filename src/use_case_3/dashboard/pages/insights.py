@@ -24,7 +24,7 @@ register_page(__name__)
 
 ice_shelf_inital = None
 
-navbar = layout_navbar(page_title="Insights")
+navbar = layout_navbar("/insights")
 
 layout = html.Div(
     [
@@ -49,7 +49,7 @@ layout = html.Div(
                             ),
                             className="insights_intro_text",
                         ),
-                        *create_ice_shelf_selection(),
+                        *create_ice_shelf_selection(show_map=False),
                         # Insights mass balance
                         dbc.Row(
                             [
@@ -224,7 +224,8 @@ layout = html.Div(
                     [create_ice_shelf_map()],
                     width=4,
                 ),
-            ]
+            ],
+            style={"margin": "0"},
         ),
     ]
 )
