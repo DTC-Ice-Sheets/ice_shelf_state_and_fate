@@ -818,8 +818,8 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
                 strong_corr_text_ul.append(
                     html.P(
                         (
-                            f"{' '.join(' '.join(corr_vars[0][:-1].lower().capitalize().split('-')[:-1]).split('_')[:-1])} "
-                            f"and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
+                            " ".join(" ".join(corr_vars[0][:-1].lower().capitalize().split("-")[:-1]).split("_")[:-1])
+                            + f" and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
                             f"(correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, "
                             f"p-value = {strong_correlation[corr_vars][1]: .3f})"
                         ),
@@ -838,8 +838,8 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
                 medium_corr_text_ul.append(
                     html.P(
                         (
-                            f"{' '.join(' '.join(corr_vars[0][:-1].lower().capitalize().split('-')[:-1]).split('_')[:-1])} "
-                            f"and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
+                            " ".join(" ".join(corr_vars[0][:-1].lower().capitalize().split("-")[:-1]).split("_")[:-1])
+                            + f" and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
                             f"(correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, "
                             f"p-value = {medium_correlation[corr_vars][1]: .3f})"
                         ),
@@ -858,8 +858,8 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
                 weak_corr_text_ul.append(
                     html.P(
                         (
-                            f"{' '.join(' '.join(corr_vars[0][:-1].lower().capitalize().split('-')[:-1]).split('_')[:-1])} "
-                            f"and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
+                            " ".join(" ".join(corr_vars[0][:-1].lower().capitalize().split("-")[:-1]).split("_")[:-1])
+                            + f" and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
                             f"(correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, "
                             f"p-value = {weak_correlation[corr_vars][1]: .3f})"
                         ),
@@ -886,7 +886,7 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
     Output("cov_analysis_graph_div", "style"),
     Input("insights_btn_show_cov_analysis", "n_clicks"),
 )
-def button_detailed_cov_analysis(n_clicks):
+def button_detailed_cov_analysis(n_clicks):  # noqa: ANN001, ANN201, D103
     if n_clicks and n_clicks % 2 == 1:
         return {"display": "block"}, {"text-align": "center", "display": "block"}
     return {"display": "none"}, {"text-align": "center", "display": "none"}

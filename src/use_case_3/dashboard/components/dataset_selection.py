@@ -44,50 +44,6 @@ REGIONS = {
     },
 }
 
-# # To be removed after demo
-# def _create_variable_entry_demo_data(dataset_id: str, variable_id: str) -> html.Div:
-#     dataset = config_dict_demo_data[dataset_id]
-#     variable = dataset["variables"][variable_id]
-#     return html.Div(
-#         [
-#             html.Div(
-#                 [
-#                     dbc.Checkbox(
-#                         id={
-#                             "type": "data-selector",
-#                             "index": f"{dataset_id}.{variable_id}",
-#                         },
-#                         label=variable["label"],
-#                         value=False,
-#                     ),
-#                     dbc.Button(
-#                         "Preview...",
-#                         color="link",
-#                         id={"type": "variable-preview-button", "index": f"{dataset_id}.{variable_id}"},
-#                     ),
-#                 ],
-#                 style={"display": "flex", "justify-content": "space-between", "align-items": "center"},
-#             )
-#         ],
-#         id={
-#             "type": "data-selector-container",
-#             "index": f"{dataset_id}.{variable_id}",
-#         },
-#     )
-
-# # To be removed after demo
-# def _create_dataset_entry_demo_data(dataset_id: str) -> dbc.Card:
-#     dataset = config_dict_demo_data[dataset_id]
-#     return dbc.Card(
-#         [
-#             html.H5(dataset["label"]),
-#             *[_create_variable_entry_demo_data(dataset_id, variable_id) for variable_id in config_dict_demo_data[dataset_id]["variables"]],
-#         ],
-#         id={"type": "data-selector-group", "index": dataset_id},
-#         body=True,
-#         color=REGIONS[dataset["region"]]["color"],
-#     )
-
 
 def _create_variable_entry(dataset_id: str, variable_id: str) -> html.Div:
     dataset = config_dict[dataset_id]
