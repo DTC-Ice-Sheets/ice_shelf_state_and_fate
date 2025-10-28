@@ -420,11 +420,7 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     colors = qualitative.Plotly
     labels = list(plot_data["variables"].keys())
     datas = [plot_data["variables"][label] for label in labels]
-    # print(plot_data.keys())
-    # print(plot_data["covariate_stats"])
-    # print(datas)
     titles = [customwrap(s=d["title"], width=12) for d in datas] + ["Frequency"]
-    # titles = [customwrap(s=d["title"], width=16) + "<br>(" + d["units"] + ")" for d in datas] + ["Frequency"]
     fig = make_subplots(
         len(labels) + 1,
         len(labels) + 1,
