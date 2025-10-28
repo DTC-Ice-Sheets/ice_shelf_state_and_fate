@@ -188,7 +188,7 @@ layout = html.Div(
                             id="sg_lakes_graph_rate_vol_change_div",
                         ),
                         dbc.Row(
-                            html.Div(html.H1("Correlated Variables: ")),
+                            html.Div(html.H1("Correlated Variables: "), id="insights_correlated_variables_title_div"),
                             style={"padding-top": "20px"},
                         ),
                         # Insights Covariate Analysis
@@ -237,6 +237,16 @@ layout = html.Div(
         ),
     ]
 )
+
+
+@callback(
+    Output("insights_correlated_variables_title_div", "style"),
+    Input("ice-shelf-selection", "value"),
+)
+def hide_insights_correlated_vars_title(ice_shelf_selection):  # noqa: ANN001, ANN201, D103
+    if ice_shelf_selection == "thwaites":
+        return {"display": "block"}
+    return {"display": "none"}
 
 
 @callback(

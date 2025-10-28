@@ -45,5 +45,8 @@ layout = html.Div(
             ],
             className="website_text",
         ),
+        html.Div(
+            html.Img(src="assets/logos.png", className="center"),
+        ),
     ]
 )
