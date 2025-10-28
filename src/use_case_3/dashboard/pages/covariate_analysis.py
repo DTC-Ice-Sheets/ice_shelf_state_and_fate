@@ -189,7 +189,11 @@ async def conduct_covariate_analysis_integrated(
 
     variables = [
         VariableItem(
-            name=f"{config_dict[dataset_id]['label']}: {config_dict[dataset_id]['variables'][variable_id]['label']}",
+            name=(
+                f"{config_dict[dataset_id]['label']}: "
+                f"{config_dict[dataset_id]['variables'][variable_id]['label']} "
+                f"[{config_dict[dataset_id]['variables'][variable_id]['units']}]"
+            ),
             dataset=dataset_id,
             variable=variable_id,
             extent=config_dict[dataset_id]["region"],

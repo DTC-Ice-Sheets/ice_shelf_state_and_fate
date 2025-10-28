@@ -644,10 +644,9 @@ class CovariateAnalyser:
         }
 
         for ts in self.timeseries_container.timeseries.values():
-            title = ts.measurement_name.replace("_", " ").title()
             hist, bin_edges = np.histogram(ts.measurements)
             out["variables"][ts.label] = {
-                "title": title,
+                "measurement_name": ts.measurement_name,
                 "values": ts.measurements.to_list(),
                 "hist_values": hist.tolist(),
                 "hist_edges": bin_edges.tolist(),

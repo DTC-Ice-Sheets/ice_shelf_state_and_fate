@@ -1,17 +1,17 @@
 """Dashboard plotting functions."""
 
+import textwrap
 from collections import defaultdict
 from datetime import datetime
 
-from dash import html
 import numpy as np
 import plotly.graph_objects as go
 import pyproj
+from dash import html
 from plotly.colors import qualitative
 from plotly.subplots import make_subplots
 from shapely import MultiPolygon
 from shapely.ops import transform
-import textwrap
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
@@ -310,6 +310,21 @@ def plot_summary_timeseries_multiple(
 
 
 def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrcoef") -> tuple[dict, dict, dict]:
+    """
+    Analyse the strength of correlations in the plot data.
+
+    Parameters
+    ----------
+    plot_data : dict
+        Dictionary containing the data for plotting.
+    correlation_type : str, optional
+        The type of correlation to analyse, by default "corrcoef".
+
+    Returns
+    -------
+    tuple[dict, dict, dict]
+        Three dictionaries containing strong, medium, and weak correlations.
+    """
     strong_correlation = 0.8
     medium_correlation = 0.5
     weak_correlation = 0.2
@@ -334,6 +349,19 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
 
 
 def text_covariate_analysis(plot_data: dict) -> html.Div:
+    """
+    Create a textual summary of the covariate analysis.
+
+    Parameters
+    ----------
+    plot_data : dict
+        Dictionary containing the data for plotting.
+
+    Returns
+    -------
+    html.Div
+        A div containing the textual summary of the covariate analysis.
+    """
     strong_correlation, medium_correlation, weak_correlation = analyse_correlation_strength(
         plot_data, correlation_type="corrcoef"
     )
@@ -349,7 +377,9 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
         for corr_vars in strong_correlation:
             strong_corr_text_ul.append(
                 html.P(
-                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} (correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, p-value = {strong_correlation[corr_vars][1]: .3f})",
+                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} "
+                    f"(correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, "
+                    f"p-value = {strong_correlation[corr_vars][1]: .3f})",
                     className="insights_calving_summary_text_no_just_indent",
                 )
             )
@@ -364,7 +394,9 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
         for corr_vars in medium_correlation:
             medium_corr_text_ul.append(
                 html.P(
-                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} (correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, p-value = {medium_correlation[corr_vars][1]: .3f})",
+                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} "
+                    f"(correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, "
+                    f"p-value = {medium_correlation[corr_vars][1]: .3f})",
                     className="insights_calving_summary_text_no_just_indent",
                 )
             )
@@ -381,26 +413,45 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
         for corr_vars in weak_correlation:
             weak_corr_text_ul.append(
                 html.P(
-                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} (correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, p-value = {weak_correlation[corr_vars][1]: .3f})",
+                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} "
+                    f"(correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, "
+                    f"p-value = {weak_correlation[corr_vars][1]: .3f})",
                     className="insights_calving_summary_text_no_just_indent",
                 )
             )
     else:
         weak_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
 
-    text = (
-        [strong_corr_text]
-        + strong_corr_text_ul
-        + [medium_corr_text]
-        + medium_corr_text_ul
-        + [weak_corr_text]
-        + weak_corr_text_ul
-    )
+    text = [
+        strong_corr_text,
+        *strong_corr_text_ul,
+        medium_corr_text,
+        *medium_corr_text_ul,
+        weak_corr_text,
+        *weak_corr_text_ul,
+    ]
     return html.Div(text)
 
 
-def customwrap(s, width=16):
-    return "<br>".join(textwrap.wrap(s, width=width))
+def customwrap(s: str, width: int = 16, separator: str = "<br>") -> str:
+    """
+    Wrap text to fit within a specified width.
+
+    Parameters
+    ----------
+    s : str
+        The string to wrap.
+    width : int, optional
+        The maximum line width, by default 16
+    separator : str, optional
+        The separator to use for line breaks, by default "<br>"
+
+    Returns
+    -------
+    str
+        The wrapped string.
+    """
+    return separator.join(textwrap.wrap(s, width=width))
 
 
 def plot_covariate_analysis(plot_data: dict) -> go.Figure:
@@ -420,7 +471,7 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     colors = qualitative.Plotly
     labels = list(plot_data["variables"].keys())
     datas = [plot_data["variables"][label] for label in labels]
-    titles = [customwrap(s=d["title"], width=12) for d in datas] + ["Frequency"]
+    titles = [customwrap(label, width=16).replace(" [", "<br>[") for label in labels] + ["Frequency"]
     fig = make_subplots(
         len(labels) + 1,
         len(labels) + 1,
@@ -515,8 +566,8 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
         fig.add_trace(go.Scatter(), row=i + 1, col=i + 1)
 
     fig.update_layout(
-        height=900,
-        width=900,
+        height=1000,
+        width=1000,
         showlegend=False,
     )
     return fig
