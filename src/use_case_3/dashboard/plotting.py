@@ -471,7 +471,20 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     colors = qualitative.Plotly
     labels = list(plot_data["variables"].keys())
     datas = [plot_data["variables"][label] for label in labels]
-    titles = [customwrap(label, width=16).replace(" [", "<br>[") for label in labels] + ["Frequency"]
+
+    # The labels have form "dataset name: variable name [units]".
+    # Separate the units to a separate list for later reattachment.
+    split = list(zip(*[label.rsplit(" [", 1) for label in labels], strict=True))
+    titles = split[0]
+    units = ["[" + x for x in split[1]]
+
+    # Remove the dataset name, unless it would cause duplicate labels.
+    labels_without_prefix = [title.split(": ", 1)[1] for title in titles]
+    titles = labels_without_prefix if len(set(labels_without_prefix)) == len(labels) else labels
+
+    # Wrap titles to a fixed width, and then reattach units on a newline.
+    titles = [customwrap(title, width=16) + "<br>" + unit for title, unit in zip(titles, units, strict=True)]
+
     fig = make_subplots(
         len(labels) + 1,
         len(labels) + 1,
