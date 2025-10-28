@@ -49,19 +49,20 @@ def main() -> None:
 
     timeseries = []
     ds = xr.open_zarr(model.input_path)
-    for name, attr in ds.attrs["timeseries"].items():
-        label, measurement_name = name.split(".", 1)
+    for key, attr in ds.attrs["timeseries"].items():
+        label = attr["label"]
+        measurement_name = attr["measurement_name"]
         timeseries.append(
             Timeseries(
                 label=label,
                 timeseries_type=TimeseriesType(attr["timeseries_type"]),
                 measurement_name=measurement_name,
-                measurements=ds[name].to_series(),
+                measurements=ds[key].to_series(),
                 **(
                     {
-                        "measurement_uncertainties": ds[attr["uncertainty_name"]].to_series(),
+                        "measurement_uncertainties": ds[attr["uncertainty"]].to_series(),
                     }
-                    if "uncertainty_name" in attr
+                    if "uncertainty" in attr
                     else {}
                 ),
             )

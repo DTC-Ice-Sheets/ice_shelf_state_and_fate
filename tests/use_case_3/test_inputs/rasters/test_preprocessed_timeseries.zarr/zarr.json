@@ -4,14 +4,16 @@
     "aggregation": "mean",
     "timeseries": {
       "test_label_A.measurement": {
+        "label": "test_label_A",
+        "measurement_name": "measurement",
         "timeseries_type": "cumulative",
-        "timeseries_region": "ice_shelf",
-        "uncertainty_name": "test_label_A.measurement_uncertainties"
+        "uncertainty": "test_label_A.measurement_uncertainties"
       },
       "test_label_B.measurement": {
+        "label": "test_label_B",
+        "measurement_name": "measurement",
         "timeseries_type": "cumulative",
-        "timeseries_region": "ice_shelf",
-        "uncertainty_name": "test_label_B.measurement_uncertainties"
+        "uncertainty": "test_label_B.measurement_uncertainties"
       }
     }
   },
