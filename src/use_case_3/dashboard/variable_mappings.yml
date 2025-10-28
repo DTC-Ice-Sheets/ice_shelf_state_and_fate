@@ -353,7 +353,7 @@ EOLIS_GRID:
 
 moorings_1d:
   description: "Processed time series from the Thwaites paper."
-  label: "Thwaites Paper Moorings:"
+  label: "Thwaites Paper Moorings"
   region: "ocean"
   variables:
     depth_PIG_N_and_S_combined:
@@ -366,7 +366,7 @@ moorings_1d:
 
 basal_melt_anomalies_pine_island_1d:
   description: "Processed time series from the Thwaites paper."
-  label: "Thwaites Paper Basal Melt Anoms - Pine Island:"
+  label: "Thwaites Paper Basal Melt Anoms - Pine Island"
   region: "ice_shelf"
   variables:
     basal_melt_anomalies:
@@ -379,7 +379,7 @@ basal_melt_anomalies_pine_island_1d:
 
 subglacial_lake_discharge_1d:
   description: "Processed time series from the Thwaites paper."
-  label: "Thwaites Paper Subglacial Lake Discharge:"
+  label: "Thwaites Paper Subglacial Lake Discharge"
   region: "ice_shelf"
   variables:
     lake_discharge:
@@ -392,7 +392,7 @@ subglacial_lake_discharge_1d:
 
 basal_melt_anomalies_thwaites_1d:
   description: "Processed time series from the Thwaites paper."
-  label: "Thwaites Paper Basal Melt Anoms - Thwaites:"
+  label: "Thwaites Paper Basal Melt Anoms - Thwaites"
   region: "ice_shelf"
   variables:
     basal_melt_anomalies:
