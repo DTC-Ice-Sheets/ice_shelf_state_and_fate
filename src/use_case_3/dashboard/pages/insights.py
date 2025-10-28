@@ -50,6 +50,10 @@ layout = html.Div(
                             className="insights_intro_text",
                         ),
                         *create_ice_shelf_selection(show_map=False),
+                        dbc.Row(
+                            html.Div(html.H1("Individual Variables: ")),
+                            style={"padding-top": "20px"},
+                        ),
                         # Insights mass balance
                         dbc.Row(
                             [
@@ -183,6 +187,10 @@ layout = html.Div(
                             style={"display": "none"},
                             id="sg_lakes_graph_rate_vol_change_div",
                         ),
+                        dbc.Row(
+                            html.Div(html.H1("Correlated Variables: ")),
+                            style={"padding-top": "20px"},
+                        ),
                         # Insights Covariate Analysis
                         dbc.Row(
                             [
@@ -254,7 +262,7 @@ async def insight_update_massbalance_headline(ice_shelf, year_range):  # noqa: A
             html.Div(
                 html.P(
                     (
-                        f"In the past {year_range[1] - year_range[0]} years, {ice_shelf.replace('_', ' ').title()} "
+                        f"In this {year_range[1] - year_range[0]} year period, {ice_shelf.replace('_', ' ').title()} "
                         f"ice shelf has {gained_lost} {np.abs(mass_balance_events[0]): .0f} Gt of ice."
                     ),
                     className="insights_headline_text",
@@ -800,8 +808,8 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
                 strong_corr_text_ul.append(
                     html.P(
                         (
-                            f"{' '.join(corr_vars[0].lower().capitalize().split('_')[:-1])} "
-                            f"and {' '.join(corr_vars[1].lower().split('_')[:-1])} "
+                            f"{' '.join(' '.join(corr_vars[0][:-1].lower().capitalize().split('-')[:-1]).split('_')[:-1])} "
+                            f"and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
                             f"(correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, "
                             f"p-value = {strong_correlation[corr_vars][1]: .3f})"
                         ),
@@ -820,8 +828,8 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
                 medium_corr_text_ul.append(
                     html.P(
                         (
-                            f"{' '.join(corr_vars[0].lower().capitalize().split('_')[:-1])} "
-                            f"and {' '.join(corr_vars[1].lower().split('_')[:-1])} "
+                            f"{' '.join(' '.join(corr_vars[0][:-1].lower().capitalize().split('-')[:-1]).split('_')[:-1])} "
+                            f"and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
                             f"(correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, "
                             f"p-value = {medium_correlation[corr_vars][1]: .3f})"
                         ),
@@ -840,8 +848,8 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
                 weak_corr_text_ul.append(
                     html.P(
                         (
-                            f"{' '.join(corr_vars[0].lower().capitalize().split('_')[:-1])} "
-                            f"and {' '.join(corr_vars[1].lower().split('_')[:-1])} "
+                            f"{' '.join(' '.join(corr_vars[0][:-1].lower().capitalize().split('-')[:-1]).split('_')[:-1])} "
+                            f"and {' '.join(' '.join(corr_vars[1][:-1].lower().split('-')[:-1]).split('_')[:-1])} "
                             f"(correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, "
                             f"p-value = {weak_correlation[corr_vars][1]: .3f})"
                         ),
@@ -861,3 +869,14 @@ async def insight_update_cov_analysis_detail(ice_shelf, year_range):  # noqa: AN
         ]
         return html.Div(text)
     return html.Div()
+
+
+@callback(
+    Output("insights_cov_analysis_detail_div", "style"),
+    Output("cov_analysis_graph_div", "style"),
+    Input("insights_btn_show_cov_analysis", "n_clicks"),
+)
+def button_detailed_cov_analysis(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:
+        return {"display": "block"}, {"text-align": "center", "display": "block"}
+    return {"display": "none"}, {"text-align": "center", "display": "none"}
