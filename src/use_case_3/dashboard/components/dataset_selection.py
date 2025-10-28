@@ -44,6 +44,50 @@ REGIONS = {
     },
 }
 
+# # To be removed after demo
+# def _create_variable_entry_demo_data(dataset_id: str, variable_id: str) -> html.Div:
+#     dataset = config_dict_demo_data[dataset_id]
+#     variable = dataset["variables"][variable_id]
+#     return html.Div(
+#         [
+#             html.Div(
+#                 [
+#                     dbc.Checkbox(
+#                         id={
+#                             "type": "data-selector",
+#                             "index": f"{dataset_id}.{variable_id}",
+#                         },
+#                         label=variable["label"],
+#                         value=False,
+#                     ),
+#                     dbc.Button(
+#                         "Preview...",
+#                         color="link",
+#                         id={"type": "variable-preview-button", "index": f"{dataset_id}.{variable_id}"},
+#                     ),
+#                 ],
+#                 style={"display": "flex", "justify-content": "space-between", "align-items": "center"},
+#             )
+#         ],
+#         id={
+#             "type": "data-selector-container",
+#             "index": f"{dataset_id}.{variable_id}",
+#         },
+#     )
+
+# # To be removed after demo
+# def _create_dataset_entry_demo_data(dataset_id: str) -> dbc.Card:
+#     dataset = config_dict_demo_data[dataset_id]
+#     return dbc.Card(
+#         [
+#             html.H5(dataset["label"]),
+#             *[_create_variable_entry_demo_data(dataset_id, variable_id) for variable_id in config_dict_demo_data[dataset_id]["variables"]],
+#         ],
+#         id={"type": "data-selector-group", "index": dataset_id},
+#         body=True,
+#         color=REGIONS[dataset["region"]]["color"],
+#     )
+
 
 def _create_variable_entry(dataset_id: str, variable_id: str) -> html.Div:
     dataset = config_dict[dataset_id]
@@ -87,6 +131,57 @@ def _create_dataset_entry(dataset_id: str) -> dbc.Card:
         body=True,
         color=REGIONS[dataset["region"]]["color"],
     )
+
+
+# def _create_dataset_selection_modal() -> dbc.Modal:
+#     return dbc.Modal(
+#         [
+#             dbc.ModalHeader(dbc.ModalTitle("Select Datasets")),
+#             dbc.ModalBody(
+#                 [
+#                     create_error_banner("dataset-preview-error-message"),
+#                     dbc.Input(
+#                         id="dataset-search-input",
+#                         placeholder="Search datasets",
+#                         type="search",
+#                     ),
+#                     html.Div(
+#                         [
+#                             html.Span("Region filter:"),
+#                             *[
+#                                 dbc.Card(
+#                                     dbc.Checkbox(
+#                                         id={"type": "region-filter", "index": key},
+#                                         label=region["name"],
+#                                         value=True,
+#                                         label_style={"margin": "0"},
+#                                     ),
+#                                     color=region["color"],
+#                                     style={"padding": "0 0.5em"},
+#                                 )
+#                                 for key, region in REGIONS.items()
+#                             ],
+#                         ],
+#                         style={"display": "flex", "align-items": "center", "gap": "1em", "margin": "0.5em 0"},
+#                     ),
+#                     html.Div(
+#                         [_create_dataset_entry(dataset_id) for dataset_id in config_dict]
+#                         + [_create_dataset_entry_demo_data(dataset_id) for dataset_id in config_dict_demo_data],
+#                         style={
+#                             "display": "flex",
+#                             "flex-direction": "column",
+#                             "gap": "1em",
+#                             "max-height": "75vh",
+#                             "overflow-y": "auto",
+#                         },
+#                     ),
+#                 ],
+#                 style={"display": "flex", "flex-direction": "column"},
+#             ),
+#         ],
+#         id="dataset-selection-modal",
+#         size="lg",
+#     )
 
 
 def _create_dataset_selection_modal() -> dbc.Modal:

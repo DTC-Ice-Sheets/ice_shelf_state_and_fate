@@ -28,7 +28,7 @@ from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf
 from use_case_3.dashboard.components.progress_dialog import create_progress_dialog
 from use_case_3.dashboard.components.s3_directory_download_button import create_s3_directory_download_button
 from use_case_3.dashboard.dashboard_layout import layout_navbar
-from use_case_3.dashboard.plotting import plot_covariate_analysis, plot_placeholder
+from use_case_3.dashboard.plotting import plot_covariate_analysis, plot_placeholder, text_covariate_analysis
 from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
@@ -108,6 +108,10 @@ layout = [
                     dcc.Loading(
                         [
                             html.Div(
+                                style={"padding-top": "25px"},
+                                id="analysis_results_div",
+                            ),
+                            html.Div(
                                 [
                                     dcc.Graph(id="results-plot", figure=plot_placeholder()),
                                     create_s3_directory_download_button(
@@ -120,7 +124,7 @@ layout = [
                                     "flex-direction": "column",
                                     "align-items": "center",
                                 },
-                            )
+                            ),
                         ],
                         id="loading",
                         type="default",
@@ -136,6 +140,7 @@ layout = [
 
 @callback(
     Output("results-plot", "figure"),
+    Output("analysis_results_div", "children"),
     Output({"type": "s3-download-url", "index": "download-raw-data"}, "data"),
     Output("job-runner-error-message", "is_open"),
     Output("job-runner-error-message", "children"),
@@ -223,12 +228,13 @@ async def conduct_covariate_analysis_integrated(
             b.seek(0)
             plot_data = json.load(b)
             fig = plot_covariate_analysis(plot_data)
+            summary_div = text_covariate_analysis(plot_data)
     except Exception as e:
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
             logger.error(res)
-        return None, None, True, str(e)
-    return fig, raw_data_url, False, ""
+        return None, None, None, True, str(e)
+    return fig, summary_div, raw_data_url, False, ""
 
 
 @callback(

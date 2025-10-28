@@ -186,7 +186,7 @@ layout = html.Div(
                                             ),
                                             dbc.Switch(
                                                 id="switch-cumulative-SBM-anomolies",
-                                                label="Cumulative SBM anomolies",
+                                                label="Cumulative SMB anomalies",
                                                 value=False,
                                             ),
                                         ],

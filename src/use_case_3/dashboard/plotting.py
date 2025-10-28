@@ -3,6 +3,7 @@
 from collections import defaultdict
 from datetime import datetime
 
+from dash import html
 import numpy as np
 import plotly.graph_objects as go
 import pyproj
@@ -10,6 +11,7 @@ from plotly.colors import qualitative
 from plotly.subplots import make_subplots
 from shapely import MultiPolygon
 from shapely.ops import transform
+import textwrap
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
@@ -307,6 +309,100 @@ def plot_summary_timeseries_multiple(
     return fig
 
 
+def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrcoef") -> tuple[dict, dict, dict]:
+    strong_correlation = 0.8
+    medium_correlation = 0.5
+    weak_correlation = 0.2
+
+    strong_correlations = {}
+    medium_correlations = {}
+    weak_correlations = {}
+    for variables in plot_data["covariate_stats"]:
+        if correlation_type == "corrcoef":
+            corr_coeff = plot_data["covariate_stats"][variables]["Correlation Coefficient"]
+            p_value = plot_data["covariate_stats"][variables]["P-Value"]
+            # print(variables)
+            # print(corr_coeff)
+            if abs(corr_coeff) >= strong_correlation and p_value <= 0.05:
+                strong_correlations[variables] = corr_coeff, p_value
+            elif abs(corr_coeff) >= medium_correlation and p_value <= 0.05:
+                medium_correlations[variables] = corr_coeff, p_value
+            elif abs(corr_coeff) >= weak_correlation and p_value <= 0.05:
+                weak_correlations[variables] = corr_coeff, p_value
+
+    return strong_correlations, medium_correlations, weak_correlations
+
+
+def text_covariate_analysis(plot_data: dict) -> html.Div:
+    strong_correlation, medium_correlation, weak_correlation = analyse_correlation_strength(
+        plot_data, correlation_type="corrcoef"
+    )
+    strong_corr_text_ul = []
+    medium_corr_text_ul = []
+    weak_corr_text_ul = []
+
+    if len(strong_correlation) > 0:
+        strong_corr_text = html.P(
+            " The following strong correlations have been observed: ",
+            className="insights_calving_summary_text_no_just",
+        )
+        for corr_vars in strong_correlation:
+            strong_corr_text_ul.append(
+                html.P(
+                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} (correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, p-value = {strong_correlation[corr_vars][1]: .3f})",
+                    className="insights_calving_summary_text_no_just_indent",
+                )
+            )
+    else:
+        strong_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
+
+    if len(medium_correlation) > 0:
+        medium_corr_text = html.P(
+            " The following medium correlations have been observed: ",
+            className="insights_calving_summary_text_no_just",
+        )
+        for corr_vars in medium_correlation:
+            medium_corr_text_ul.append(
+                html.P(
+                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} (correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, p-value = {medium_correlation[corr_vars][1]: .3f})",
+                    className="insights_calving_summary_text_no_just_indent",
+                )
+            )
+    else:
+        medium_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
+
+    # medium_corr_text = html.P(medium_corr_text, className="insights_calving_summary_text_no_just")
+
+    if len(weak_correlation) > 0:
+        weak_corr_text = html.P(
+            " The following weak correlations have been observed: ",
+            className="insights_calving_summary_text_no_just",
+        )
+        for corr_vars in weak_correlation:
+            weak_corr_text_ul.append(
+                html.P(
+                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} (correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, p-value = {weak_correlation[corr_vars][1]: .3f})",
+                    className="insights_calving_summary_text_no_just_indent",
+                )
+            )
+    else:
+        weak_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
+
+    text = (
+        [strong_corr_text]
+        + strong_corr_text_ul
+        + [medium_corr_text]
+        + medium_corr_text_ul
+        + [weak_corr_text]
+        + weak_corr_text_ul
+    )
+    return html.Div(text)
+
+
+def customwrap(s, width=16):
+    return "<br>".join(textwrap.wrap(s, width=width))
+
+
 def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     """
     Plot the results of a covariate analysis.
@@ -324,7 +420,11 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     colors = qualitative.Plotly
     labels = list(plot_data["variables"].keys())
     datas = [plot_data["variables"][label] for label in labels]
-    titles = [d["title"] for d in datas] + ["Frequency"]
+    # print(plot_data.keys())
+    # print(plot_data["covariate_stats"])
+    # print(datas)
+    titles = [customwrap(s=d["title"], width=12) for d in datas] + ["Frequency"]
+    # titles = [customwrap(s=d["title"], width=16) + "<br>(" + d["units"] + ")" for d in datas] + ["Frequency"]
     fig = make_subplots(
         len(labels) + 1,
         len(labels) + 1,
@@ -402,7 +502,7 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
             axes_name = str(axes_id) if axes_id > 0 else ""
             fig.add_annotation(
                 text="<br>".join(
-                    [f"<b>{k}:</b> {round(v, 2) if isinstance(v, float) else v}" for k, v in stats.items()]
+                    [f"<b>{customwrap(k)}:</b> {round(v, 2) if isinstance(v, float) else v}" for k, v in stats.items()]
                 ),
                 xref=f"x{axes_name} domain",
                 yref=f"y{axes_name} domain",
@@ -419,8 +519,8 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
         fig.add_trace(go.Scatter(), row=i + 1, col=i + 1)
 
     fig.update_layout(
-        height=1024,
-        width=1024,
+        height=900,
+        width=900,
         showlegend=False,
     )
     return fig
