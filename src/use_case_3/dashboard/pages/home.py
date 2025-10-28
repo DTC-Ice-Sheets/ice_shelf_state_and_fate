@@ -14,21 +14,26 @@ layout = html.Div(
     [
         navbar,
         html.Div(
-            html.Img(src="assets/DigitalTwinLogoBlueFINAL13052025.png", className="center"),
+            html.Img(src="assets/DigitalTwinLogoBlueFINAL13052025_cropped.png", className="center"),
         ),
         html.Div(
             [
-                html.P(
-                    "Welcome to Digital Twin of Antarctic Ice Shelves. "
-                    "The twin is based on Earth Observation, In-situ, re-analysis, and simulation data, to "
-                    "provide a reconstruction of the state of Antarctic Ice Shelves, and of their interactions "
-                    "with the ice sheet, atmosphere, and ocean. The twin makes use of these data to forecast "
-                    "ice shelves evolution."
-                ),
-                html.P(
-                    "The DTC Ice Sheets Project is part of the European Space Agency's Digital Twin Earth (DTE) "
-                    "initiative, developed under the Lead Digital Twin Components (DTC) Development Actions for "
-                    "the Ice Sheets."
+                html.Div(
+                    [
+                        html.P(
+                            "Welcome to Digital Twin of Antarctic Ice Shelves. "
+                            "The twin is based on Earth Observation, In-situ, re-analysis, and simulation data, to "
+                            "provide a reconstruction of the state of Antarctic Ice Shelves, and of their interactions "
+                            "with the ice sheet, atmosphere, and ocean. The twin makes use of these data to forecast "
+                            "ice shelves evolution."
+                        ),
+                        html.P(
+                            "The DTC Ice Sheets Project is part of the European Space Agency's Digital Twin Earth "
+                            "(DTE) initiative, developed under the Lead Digital Twin Components (DTC) Development "
+                            "Actions for the Ice Sheets."
+                        ),
+                    ],
+                    className="homepage_text",
                 ),
                 html.Div(
                     [
@@ -46,7 +51,7 @@ layout = html.Div(
             className="website_text",
         ),
         html.Div(
-            html.Img(src="assets/logos.png", className="center"),
+            html.Img(src="assets/logos.png", className="logos"),
         ),
     ]
 )
