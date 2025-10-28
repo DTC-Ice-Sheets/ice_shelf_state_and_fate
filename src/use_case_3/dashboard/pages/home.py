@@ -51,7 +51,7 @@ layout = html.Div(
             className="website_text",
         ),
         html.Div(
-            html.Img(src="assets/logos.png", className="logos"),
+            html.Img(src="assets/logos_round.png", className="logos"),
         ),
     ]
 )
