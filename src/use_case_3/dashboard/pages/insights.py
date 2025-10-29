@@ -330,7 +330,7 @@ async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN
                 main = html.P(
                     (
                         f"There was one significant event on {ice_shelf.replace('_', ' ').title()} "
-                        f"Ice Shelf between {year_range[0]} and {year_range[1]}. "
+                        f"Ice shelf between {year_range[0]} and {year_range[1]}. "
                         f"This event occured in {mass_balance_events[4][-1]}, and resulted an overall ice loss of "
                         f"{mass_balance_events[2][-1]: .0f}+/-{mass_balance_events[3][-1]: .0f}Gt."
                     ),
@@ -340,7 +340,7 @@ async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN
                 main = html.P(
                     (
                         f"There were {num2words(len(mass_balance_events[2]))} significant events "
-                        f"impacting {ice_shelf.replace('_', ' ').title()} Ice Shelf mass balance "
+                        f"impacting {ice_shelf.replace('_', ' ').title()} ice shelf mass balance "
                         f"between {year_range[0]} and {year_range[1]}." + calving_matched_text,
                     ),
                     className="insights_calving_summary_text",
@@ -461,7 +461,7 @@ async def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001,
             main = html.P(
                 (
                     f"There was one significant calving event on {ice_shelf.replace('_', ' ').title()} "
-                    f"Ice Shelf between {year_range[0]} and {year_range[1]}. "
+                    f"Ice shelf between {year_range[0]} and {year_range[1]}. "
                     f"This calving event occured in {time_events[0]}, and resulted an overall ice loss "
                     f"of {calving_events[0]: .0f}+/-{calving_unc_events[0]: .0f}Gt."
                 ),
@@ -471,7 +471,7 @@ async def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001,
             main = html.P(
                 (
                     f"There were {num2words(len(calving_events))} significant calving events on "
-                    f"{ice_shelf.replace('_', ' ').title()} Ice Shelf between {year_range[0]} and {year_range[1]}. "
+                    f"{ice_shelf.replace('_', ' ').title()} Ice shelf between {year_range[0]} and {year_range[1]}. "
                     f"These calving events have resulted in an overal ice loss of approximately "
                     f"{total: .0f}+/-{total_unc: .0f}Gt. The largest calving event was "
                     f"{calving_events[-1]: .0f}+/-{calving_unc_events[-1]: .0f}Gt and occured in {time_events[-1]}."
@@ -706,7 +706,7 @@ async def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa:
                 (
                     f"There have been {num2words(len(bm_change_brackets) - 1)} "
                     "periods where the basal melt flux has changed in the selected time span "
-                    f"over {ice_shelf} Ice Shelf. The most recent was in {last_change}."
+                    f"over {ice_shelf} Ice shelf. The most recent was in {last_change}."
                 ),
                 className="insights_calving_summary_text",
             )
