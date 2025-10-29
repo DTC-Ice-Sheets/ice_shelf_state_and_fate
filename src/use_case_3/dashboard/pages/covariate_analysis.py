@@ -15,8 +15,8 @@ from dtc_query_client import (
     ApiClient,
     CovariateAnalysisRequest,
     CovariateAnalysisType,
-    IceShelvesApi,
     JobsApi,
+    StateAndFateApi,
     VariableItem,
 )
 from dtc_query_client.helpers import iterate_job
@@ -194,7 +194,7 @@ async def conduct_covariate_analysis_integrated(
 
     try:
         async with ApiClient(api_config) as client:
-            res = await IceShelvesApi(client).run_covariate_analysis(
+            res = await StateAndFateApi(client).run_covariate_analysis(
                 ice_shelf_id=ice_shelf,
                 covariate_analysis_request=CovariateAnalysisRequest(
                     start_time=datetime(year=year_range[0], month=1, day=1),
