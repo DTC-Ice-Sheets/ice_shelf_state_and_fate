@@ -377,27 +377,27 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
         for corr_vars in strong_correlation:
             strong_corr_text_ul.append(
                 html.P(
-                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} "
+                    f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
                     f"(correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, "
                     f"p-value = {strong_correlation[corr_vars][1]: .3f})",
-                    className="insights_calving_summary_text_no_just_indent",
+                    className="cov_analysis_summary_text_no_just_indent",
                 )
             )
     else:
-        strong_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
+        strong_corr_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
 
     if len(medium_correlation) > 0:
         medium_corr_text = html.P(
             " The following medium correlations have been observed: ",
-            className="insights_calving_summary_text_no_just",
+            className="cov_analysis_summary_text_no_just",
         )
         for corr_vars in medium_correlation:
             medium_corr_text_ul.append(
                 html.P(
-                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} "
+                    f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
                     f"(correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, "
                     f"p-value = {medium_correlation[corr_vars][1]: .3f})",
-                    className="insights_calving_summary_text_no_just_indent",
+                    className="cov_analysis_summary_text_no_just_indent",
                 )
             )
     else:
@@ -408,19 +408,19 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
     if len(weak_correlation) > 0:
         weak_corr_text = html.P(
             " The following weak correlations have been observed: ",
-            className="insights_calving_summary_text_no_just",
+            className="cov_analysis_summary_text_no_just",
         )
         for corr_vars in weak_correlation:
             weak_corr_text_ul.append(
                 html.P(
-                    f"{corr_vars.split('/')[0]} and {corr_vars.split('/')[1]} "
+                    f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
                     f"(correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, "
                     f"p-value = {weak_correlation[corr_vars][1]: .3f})",
-                    className="insights_calving_summary_text_no_just_indent",
+                    className="cov_analysis_summary_text_no_just_indent",
                 )
             )
     else:
-        weak_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
+        weak_corr_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
 
     text = [
         strong_corr_text,
@@ -483,7 +483,7 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     titles = labels_without_prefix if len(set(labels_without_prefix)) == len(labels) else labels
 
     # Wrap titles to a fixed width, and then reattach units on a newline.
-    titles = [customwrap(title, width=16) + "<br>" + unit for title, unit in zip(titles, units, strict=True)]
+    titles = [customwrap(title, width=14) + "<br>" + unit for title, unit in zip(titles, units, strict=True)]
 
     fig = make_subplots(
         len(labels) + 1,
@@ -579,8 +579,8 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
         fig.add_trace(go.Scatter(), row=i + 1, col=i + 1)
 
     fig.update_layout(
-        height=1000,
-        width=1000,
+        height=800,
+        width=800,
         showlegend=False,
     )
     return fig
