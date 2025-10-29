@@ -15,7 +15,7 @@ import xarray as xr
 import yaml
 from data_download_module.main import download_data
 from data_download_module.schemas import DataDownloadRequest
-from dtc_query_client import ApiClient, Configuration, IceShelfExtent, IceShelvesApi
+from dtc_query_client import ApiClient, Configuration, IceShelfExtent, StateAndFateApi
 from shapely import MultiPolygon, Polygon
 from shapely.geometry import shape
 
@@ -28,7 +28,10 @@ from use_case_3.timeseries_module.timeseries_enums import (
     UncertaintyType,
 )
 
-api_config = Configuration(host="http://localhost:8000")
+api_config = Configuration(
+    host="http://localhost:8000",
+    access_token=os.environ["DTC_API_KEY"],
+)
 
 s3_client = boto3.client(
     "s3",
@@ -55,20 +58,20 @@ with config_dict_local_path.open("r", encoding="utf-8") as f:
 async def get_ice_shelves() -> list[str]:
     """List the available ice shelves."""
     async with ApiClient(api_config) as client:
-        return await IceShelvesApi(client).list_ice_shelves()
+        return await StateAndFateApi(client).list_ice_shelves()
 
 
 @asyncstdlib.lru_cache(128)
 async def get_ice_shelf_geometry(ice_shelf: str, extent: IceShelfExtent) -> MultiPolygon:
     """Query and parse the geometry for a given ice shelf and extent type."""
     async with ApiClient(api_config) as client:
-        return shape((await IceShelvesApi(client).get_geometry(ice_shelf, extent)).to_dict())
+        return shape((await StateAndFateApi(client).get_geometry(ice_shelf, extent)).to_dict())
 
 
 @asyncstdlib.cache
 async def _get_summary_zarr_url(ice_shelf: str) -> str:
     async with ApiClient(api_config) as client:
-        return (await IceShelvesApi(client).get_summary_url(ice_shelf_id=ice_shelf)).url
+        return (await StateAndFateApi(client).get_summary_url(ice_shelf_id=ice_shelf)).url
 
 
 def _open_s3_zarr(s3_url: str) -> xr.Dataset:

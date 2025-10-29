@@ -13,7 +13,7 @@ from dash.development.base_component import Component
 from dtc_query_client import (
     ApiClient,
     DatasetSummaryRequest,
-    IceShelvesApi,
+    StateAndFateApi,
 )
 from dtc_query_client.helpers import iterate_job
 
@@ -322,7 +322,7 @@ async def generate_dataset_preview(
     name = f"{config_dict[dataset_id]['label']}: {config_dict[dataset_id]['variables'][variable_id]['label']}"
     try:
         async with ApiClient(api_config) as client:
-            res = await IceShelvesApi(client).run_dataset_summary(
+            res = await StateAndFateApi(client).run_dataset_summary(
                 ice_shelf_id=ice_shelf,
                 dataset_summary_request=DatasetSummaryRequest(
                     start_time=datetime(year=year_range[0], month=1, day=1),
