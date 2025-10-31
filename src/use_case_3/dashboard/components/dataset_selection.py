@@ -89,57 +89,6 @@ def _create_dataset_entry(dataset_id: str) -> dbc.Card:
     )
 
 
-# def _create_dataset_selection_modal() -> dbc.Modal:
-#     return dbc.Modal(
-#         [
-#             dbc.ModalHeader(dbc.ModalTitle("Select Datasets")),
-#             dbc.ModalBody(
-#                 [
-#                     create_error_banner("dataset-preview-error-message"),
-#                     dbc.Input(
-#                         id="dataset-search-input",
-#                         placeholder="Search datasets",
-#                         type="search",
-#                     ),
-#                     html.Div(
-#                         [
-#                             html.Span("Region filter:"),
-#                             *[
-#                                 dbc.Card(
-#                                     dbc.Checkbox(
-#                                         id={"type": "region-filter", "index": key},
-#                                         label=region["name"],
-#                                         value=True,
-#                                         label_style={"margin": "0"},
-#                                     ),
-#                                     color=region["color"],
-#                                     style={"padding": "0 0.5em"},
-#                                 )
-#                                 for key, region in REGIONS.items()
-#                             ],
-#                         ],
-#                         style={"display": "flex", "align-items": "center", "gap": "1em", "margin": "0.5em 0"},
-#                     ),
-#                     html.Div(
-#                         [_create_dataset_entry(dataset_id) for dataset_id in config_dict]
-#                         + [_create_dataset_entry_demo_data(dataset_id) for dataset_id in config_dict_demo_data],
-#                         style={
-#                             "display": "flex",
-#                             "flex-direction": "column",
-#                             "gap": "1em",
-#                             "max-height": "75vh",
-#                             "overflow-y": "auto",
-#                         },
-#                     ),
-#                 ],
-#                 style={"display": "flex", "flex-direction": "column"},
-#             ),
-#         ],
-#         id="dataset-selection-modal",
-#         size="lg",
-#     )
-
-
 def _create_dataset_selection_modal() -> dbc.Modal:
     return dbc.Modal(
         [

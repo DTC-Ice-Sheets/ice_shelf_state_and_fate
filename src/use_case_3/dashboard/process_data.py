@@ -194,7 +194,6 @@ def detect_outlier_events(
         total_unc = 0
         for i in range(variable_unc.shape[0]):
             total_unc = np.sqrt(total_unc**2 + variable_unc[i] ** 2)
-        # total_unc = np.sqrt(np.sum(np.square(variable_unc))) / variable_unc.shape[0]
     else:
         total_unc = 0
 
@@ -250,27 +249,12 @@ def calculate_mass_balance(
         timeseries_container=timeseries_container, variable="mass_balance", outlier_remove=True, change_detection=True
     )
 
-    # check calving for large changes
-    bm_flux_events = detect_outlier_events(
-        timeseries_container=timeseries_container, variable="basal_melt_flux", stationary_check=True
-    )
-
     # check discharge rate for large changes
     calving_events = detect_outlier_events(
         timeseries_container=timeseries_container, variable="calving", stationary_check=True
     )
 
     calving_matched_years = find_matching_events(mass_balance_events, calving_events)
-
-    # check basal_melt_flux rate for large changes
-    discharge_events = detect_outlier_events(
-        timeseries_container=timeseries_container, variable="discharge", stationary_check=True
-    )
-
-    # check smb rate for large changes
-    smb_events = detect_outlier_events(
-        timeseries_container=timeseries_container, variable="surface_mass_balance", stationary_check=True
-    )
 
     return mass_balance_events, mass_balance_rate, calving_matched_years
 

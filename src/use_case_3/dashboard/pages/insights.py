@@ -31,14 +31,7 @@ layout = html.Div(
         navbar,
         dbc.Row(
             [
-                dbc.Col(
-                    [
-                        # html.Div(
-                        #     html.Img(src="assets/DigitalTwinLogoBlueFINAL13052025.png", className="insights_picture"),
-                        # ),
-                    ],
-                    width=2,
-                ),
+                dbc.Col(width=2),
                 dbc.Col(
                     [
                         html.P(
@@ -312,8 +305,6 @@ async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN
             )
         else:
             calving_matched_text = " Currently there are no obvious causes of these events"
-        # title = html.H6("Mass Balance:", className="insights_h6")
-        # intro = html.P(
         intro = dcc.Markdown(
             (
                 f"In the past {year_range[1] - year_range[0]} years, {ice_shelf.replace('_', ' ').title()} "
@@ -347,7 +338,6 @@ async def insight_update_massbalance_detail(ice_shelf, year_range):  # noqa: ANN
                 )
 
         text = [
-            # title,
             intro,
             main,
         ]
@@ -427,13 +417,10 @@ async def insight_update_calving_headline(ice_shelf, year_range):  # noqa: ANN00
                         className="insights_headline_text",
                     )
                 ),
-                # {"display": "block"},
                 {
                     "display": "flex",
                     "align-items": "center",
                     "justify-content": "center",
-                    # "display": "block",
-                    # "width": "100%",
                 },
             )
     return html.Div(), html.Div(), {"display": "none"}
@@ -455,9 +442,10 @@ async def insight_update_calving_detail(ice_shelf, year_range):  # noqa: ANN001,
         total, total_unc, calving_events, calving_unc_events, time_events = detect_outlier_events(
             timeseries_container=timeseries_container
         )
-        if len(calving_events) == 0:
+        num_calving_events = len(calving_events)
+        if num_calving_events == 0:
             return html.Div()
-        if len(calving_events) == 1:
+        if num_calving_events == 1:
             main = html.P(
                 (
                     f"There was one significant calving event on {ice_shelf.replace('_', ' ').title()} "
@@ -588,32 +576,23 @@ async def plot_sg_lake(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
         datetime(year_range[1], 1, 1),
     )
 
-    var = "volume_change"
-
-    variables = [
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW70-" + var,
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW124-" + var,
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW142-" + var,
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170-" + var,
+    lake_ids = [
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW70",
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW124",
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW142",
+        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170",
     ]
+
     fig_vol_change = plot_summary_timeseries_multiple(
         timeseries_container,
-        variables=variables,
+        variables=[f"{lake_id}-volume_change" for lake_id in lake_ids],
         margin={"t": 0, "l": 150, "b": 25, "r": 50},
         y_label="Volume Change (#)",
     )
 
-    var = "rate_of_volume_change"
-
-    variables = [
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW70-" + var,
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW124-" + var,
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW142-" + var,
-        "SUGLACIAL_LAKE_SUBGLACIAL_LAKES_THW170-" + var,
-    ]
     fig_rate_vol_change = plot_summary_timeseries_multiple(
         timeseries_container,
-        variables=variables,
+        variables=[f"{lake_id}-rate_of_volume_change" for lake_id in lake_ids],
         outliers=None,
         margin={"t": 0, "l": 150, "b": 25, "r": 50},
         y_label="Rate of Volume Change (#)",
@@ -724,9 +703,6 @@ async def insight_update_basal_melt_flux_detail(ice_shelf, year_range):  # noqa:
     Input("summary-year-selector", "value"),
 )
 async def plot_basal_melt_flux(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
-    if ice_shelf is None:
-        ice_shelf = "thwaites"
-
     _, timeseries_container = await query_summary_data(
         ice_shelf=ice_shelf,
         start_year=year_range[0],
