@@ -5340,14 +5340,14 @@ crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 
 [[package]]
 name = "schema"
-version = "0.7.7"
+version = "0.7.8"
 description = "Simple data validation library"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "schema-0.7.7-py2.py3-none-any.whl", hash = "sha256:5d976a5b50f36e74e2157b47097b60002bd4d42e65425fcc9c9befadb4255dde"},
-    {file = "schema-0.7.7.tar.gz", hash = "sha256:7da553abd2958a19dc2547c388cde53398b39196175a9be59ea1caf5ab0a1807"},
+    {file = "schema-0.7.8-py2.py3-none-any.whl", hash = "sha256:00bd977fadc7d9521bf289850cd8a8aa5f4948f575476b8daaa5c1b57af2dce1"},
+    {file = "schema-0.7.8.tar.gz", hash = "sha256:e86cc08edd6fe6e2522648f4e47e3a31920a76e82cce8937535422e310862ab5"},
 ]
 
 [[package]]
@@ -6631,4 +6631,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "4a5132676cdc060c37030bf313f1cb7825181efd4a71f2304d489c21cfdbb905"
+content-hash = "48e9968aecba65c3551517f5bee2e02ee05c1a8d95cd03b2869e9b239ca77d26"
