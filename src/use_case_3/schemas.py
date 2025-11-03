@@ -11,8 +11,8 @@ from pydantic import BaseModel, Field
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
+    JointPlotAnalysisType,
     NormalisationType,
-    TimeseriesRegion,
     TimeseriesType,
     UncertaintyType,
 )
@@ -36,7 +36,7 @@ class TimeseriesModuleEntryPointSchema(BaseModel):
     measurement_uncertainty_name: str | None = Field(
         None, description="Name of the uncertainty to extract from the dataset."
     )
-    masks_json_path: Path | None = Field(None, description="Path to the masks JSON file.")
+    mask_json_path: Path | None = Field(None, description="Path to the mask geometry GeoJSON file.")
     apply_mask: bool = Field(
         True,
         description=(
@@ -46,10 +46,6 @@ class TimeseriesModuleEntryPointSchema(BaseModel):
     timeseries_type: TimeseriesType = Field(
         TimeseriesType.CUMULATIVE,
         description="Type of timeseries to compute (cumulative or derivative).",
-    )
-    timeseries_region: TimeseriesRegion = Field(
-        TimeseriesRegion.ICE_SHELF,
-        description="Region type for the timeseries (iceshelf, ocean, or climate).",
     )
     aggregate: AggregationStrategy = Field(
         AggregationStrategy.MEAN,
@@ -74,11 +70,9 @@ class TimeseriesPreprocessorModuleEntryPointSchema(BaseModel):
         description="List of paths to the input timeseries .zarr files",
     )
     output_path: Path = Field(..., description="Path to save the output .zarr file.")
-    time_period: AggregationPeriod = Field(
-        AggregationPeriod.MONTH,
-        description=(
-            "Time period for aggregation. If None, a single value will be computed for the entire timeseries."
-        ),
+    time_period: AggregationPeriod | None = Field(
+        None,
+        description="Time period for aggregation. If None, the lowest frequency from the input timeseries is used.",
     )
     aggregation: AggregationStrategy = Field(
         AggregationStrategy.MEAN,
@@ -90,6 +84,16 @@ class CovariateAnalyserModuleEntryPointSchema(BaseModel):
     """Schema for the covariate analyser module entry point."""
 
     input_path: Path = Field(..., description="Path to the input .zarr file containing pre-processed timeseries.")
-    output_path: Path = Field(
-        ..., description="Path to save the output plot image file. Can use any filetype supported by matplotlib."
+    output_path: Path = Field(..., description="Path to save the output .json file.")
+    analysis_type: JointPlotAnalysisType = Field(
+        JointPlotAnalysisType.CORR,
+        description="Type of covariate analysis to perform.",
     )
+
+
+class DatasetSummaryEntrypointSchema(BaseModel):
+    """Schema for the dataset summary module entry point."""
+
+    input_path: Path = Field(..., description="Path to the input timeseries .zarr file.")
+    output_path: Path = Field(..., description="Path to save the output .json file.")
+    max_res: int = Field(20, description="Maximum resolution for the dataset summary.")

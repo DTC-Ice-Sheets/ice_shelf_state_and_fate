@@ -18,7 +18,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,
-    TimeseriesRegion,
     TimeseriesType,
     UncertaintyType,
 )
@@ -26,11 +25,10 @@ from use_case_3.timeseries_module.timeseries_enums import (
 
 @dataclass
 class Timeseries:
-    """The timeseries data class. A wrapped to maintain metadata with the timeseries."""
+    """The timeseries data class. A wrapper to maintain metadata with the timeseries."""
 
     label: str
     timeseries_type: TimeseriesType
-    timeseries_region: TimeseriesRegion
     measurement_name: str | None = None
     measurements: pd.Series | None = None
     measurement_std: pd.Series | None = None
@@ -49,7 +47,7 @@ class Timeseries:
         data: xr.Dataset,
         measurement_name: str,
         measurement_uncertainty_name: str | None,
-        mask_geometries: dict[str, Polygon | MultiPolygon | None],
+        mask_geometry: Polygon | MultiPolygon | None,
         apply_mask: bool,
         aggregate: AggregationStrategy = AggregationStrategy.MEAN,
         period: AggregationPeriod | None = AggregationPeriod.MONTH,
@@ -76,9 +74,8 @@ class Timeseries:
         measurement_uncertainty_name: str | None
             The specific name of the uncertainty associated with the measurement. If None, it is assumed that the
             measurement will have no associated uncertainty.
-        mask_geometries : dict[str, Polygon | MultiPolygon | None]
-            The mask geometries. This is provided as a dictionary with three available masks. 1) The ice shelf, 2) the
-            ocean and 3) The climate.
+        mask_geometry : Polygon | MultiPolygon | None
+            The mask geometry
         apply_mask : bool
             Boolean flag whereby if True the mask supplied to the data will be used to mask the data. If False then the
             mask is only used to calculate the coverage.
@@ -107,17 +104,10 @@ class Timeseries:
 
         dimension_names = list(data[measurement_name].dims)
 
-        # TODO: These will need to be better defined and formalised.
-        if self.timeseries_region == TimeseriesRegion.ICE_SHELF:
-            mask_geometry = mask_geometries["ice_shelf"]
-        elif self.timeseries_region == TimeseriesRegion.OCEAN:
-            mask_geometry = mask_geometries["ocean"] - mask_geometries["ice_shelf"]
-        elif self.timeseries_region == TimeseriesRegion.CLIMATE:
-            mask_geometry = mask_geometries["climate"]
-
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
-        if data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
+        # print(self.label, data_observations.shape)
+        if len(data_observations.shape) > 1 and data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
             self._process_timeseries_nd(
                 data_observations=data_observations,
                 data_uncertainties=data_uncertainties,
@@ -1113,7 +1103,7 @@ class Timeseries:
         return n_observations / n_raster
 
     @staticmethod
-    def _count_pixels(data: np.ndarray) -> float | int:
+    def _count_pixels(data: np.ndarray) -> np.int64:
         """
         Count the number of valid pixels.
 
@@ -1127,7 +1117,7 @@ class Timeseries:
 
         Returns
         -------
-        float | int
+        np.int64
             The number of elements which are False or non-NaN.
         """
         # Assumes that False in mask are included pixels.
@@ -1545,12 +1535,20 @@ class Timeseries:
         percentile_50 = np.percentile(self.measurements, 50)
         percentile_25 = np.percentile(self.measurements, 25)
         percentile_10 = np.percentile(self.measurements, 10)
-        coverage_maximum = self.measurement_coverage.max()
-        coverage_minimum = self.measurement_coverage.min()
-        coverage_range = coverage_maximum - coverage_minimum
-        coverage_mean = self.measurement_coverage.mean()
-        coverage_std = self.measurement_coverage.std()
-        coverage_median = self.measurement_coverage.median()
+        if self.measurement_coverage is not None:
+            coverage_maximum = self.measurement_coverage.max()
+            coverage_minimum = self.measurement_coverage.min()
+            coverage_range = coverage_maximum - coverage_minimum
+            coverage_mean = self.measurement_coverage.mean()
+            coverage_std = self.measurement_coverage.std()
+            coverage_median = self.measurement_coverage.median()
+        else:
+            coverage_maximum = np.nan
+            coverage_minimum = np.nan
+            coverage_range = np.nan
+            coverage_mean = np.nan
+            coverage_std = np.nan
+            coverage_median = np.nan
 
         observation_uncertainty_corr = np.corrcoef(
             self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten()
@@ -1559,7 +1557,16 @@ class Timeseries:
             0, -1
         ]
 
-        data = np.zeros((18, 3))
+        rate_of_change = (
+            LinearRegression()
+            .fit(self.measurements.index.to_numpy().reshape(-1, 1), self.measurements.to_numpy().flatten())
+            .coef_[0]
+        )
+
+        mean = self.measurements.mean()
+        total = self.measurements.sum()
+
+        data = np.zeros((21, 3))
 
         # Start
         data[0, 0] = start
@@ -1647,17 +1654,32 @@ class Timeseries:
         data[17, 1] = np.nan
         data[17, 2] = np.nan
 
+        # rate_of_change
+        data[18, 0] = rate_of_change
+        data[18, 1] = np.nan
+        data[18, 2] = np.nan
+
+        # mean
+        data[19, 0] = mean
+        data[19, 1] = np.nan
+        data[19, 2] = np.nan
+
+        # total
+        data[20, 0] = total
+        data[20, 1] = np.nan
+        data[20, 2] = np.nan
+
         indexes = [
-            f"{self.label} - Initial Value ({self.unit})",
-            f"{self.label} - Final Value ({self.unit})",
-            f"{self.label} - Difference ({self.unit})",
-            f"{self.label} - Maximum Value ({self.unit})",
-            f"{self.label} - Minimum Value ({self.unit})",
-            f"{self.label} - 10th Percentile Value ({self.unit})",
-            f"{self.label} - 25th Percentile Value ({self.unit})",
-            f"{self.label} - 50th Percentile Value ({self.unit})",
-            f"{self.label} - 75th Percentile Value ({self.unit})",
-            f"{self.label} - 90th Percentile Value ({self.unit})",
+            "Initial Value",
+            "Final Value",
+            "Difference",
+            "Maximum Value",
+            "Minimum Value",
+            "10th Percentile Value",
+            "25th Percentile Value",
+            "50th Percentile Value",
+            "75th Percentile Value",
+            "90th Percentile Value",
             "Coverage Maximum (%)",
             "Coverage Minimum (%)",
             "Coverage Range (%)",
@@ -1666,6 +1688,9 @@ class Timeseries:
             "Coverage Standard Deviation (%)",
             "Observation/Uncertainty Correlation",
             "Observation Linearity (correlation coef.)",
+            "rate of change",
+            "Mean",
+            "Total",
         ]
 
         summary_statistics = pd.DataFrame(

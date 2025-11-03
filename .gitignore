@@ -32,3 +32,6 @@ build/
 # Secrets
 /.env
 /.gh_token
+
+# Dash background callbacks cache
+/cache

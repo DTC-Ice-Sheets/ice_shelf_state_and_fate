@@ -1,6 +1,7 @@
 """Entrypoint for the covariate analyser module."""
 
 import argparse
+import json
 from types import UnionType
 from typing import get_args
 
@@ -13,7 +14,6 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesRegion,
     TimeseriesType,
 )
 
@@ -49,20 +49,20 @@ def main() -> None:
 
     timeseries = []
     ds = xr.open_zarr(model.input_path)
-    for name, attr in ds.attrs["timeseries"].items():
-        label, measurement_name = name.split(".", 1)
+    for key, attr in ds.attrs["timeseries"].items():
+        label = attr["label"]
+        measurement_name = attr["measurement_name"]
         timeseries.append(
             Timeseries(
                 label=label,
                 timeseries_type=TimeseriesType(attr["timeseries_type"]),
-                timeseries_region=TimeseriesRegion(attr["timeseries_region"]),
                 measurement_name=measurement_name,
-                measurements=ds[name].to_series(),
+                measurements=ds[key].to_series(),
                 **(
                     {
-                        "measurement_uncertainties": ds[attr["uncertainty_name"]].to_series(),
+                        "measurement_uncertainties": ds[attr["uncertainty"]].to_series(),
                     }
-                    if "uncertainty_name" in attr
+                    if "uncertainty" in attr
                     else {}
                 ),
             )
@@ -76,9 +76,12 @@ def main() -> None:
     )
     analyser = CovariateAnalyser(preprocessor)
 
-    fig, _ = analyser.jointplot_grid()
+    results = analyser.run_analysis(
+        analysis_type=model.analysis_type,
+    )
 
-    fig.savefig(model.output_path)
+    with model.output_path.open("w") as f:
+        json.dump(results, f)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,6 @@ from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSer
 from use_case_3.schemas import TimeseriesPreprocessorModuleEntryPointSchema
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
-    TimeseriesRegion,
     TimeseriesType,
 )
 
@@ -61,7 +60,6 @@ def main() -> None:
         ts = Timeseries(
             label=ds.attrs["label"],
             timeseries_type=TimeseriesType(ds.attrs["timeseries_type"]),
-            timeseries_region=TimeseriesRegion(ds.attrs["timeseries_region"]),
             measurement_name=ds.attrs["measurement_name"],
             measurements=ds["measurement"].to_series(),
             measurement_std=ds["std"].to_series(),
@@ -88,17 +86,18 @@ def main() -> None:
     data_vars = {}
     timeseries_attrs = {}
     for label, ts in preprocessor.timeseries.items():
-        name = f"{label}.{ts.measurement_name}"
-        data_vars[name] = (["time"], ts.measurements.values)
-        timeseries_attrs[name] = {
+        key = f"{label}.{ts.measurement_name}"
+        data_vars[key] = (["time"], ts.measurements.values)
+        timeseries_attrs[key] = {
+            "label": ts.label,
+            "measurement_name": ts.measurement_name,
             "timeseries_type": ts.timeseries_type,
-            "timeseries_region": ts.timeseries_region,
         }
 
         if ts.measurement_uncertainties is not None:
-            uncertainty_name = f"{label}.{xarrays[label].attrs['measurement_uncertainty_name']}"
-            data_vars[uncertainty_name] = (["time"], ts.measurement_uncertainties.values)
-            timeseries_attrs[name]["uncertainty_name"] = uncertainty_name
+            uncertainty_key = f"{label}.{xarrays[label].attrs['measurement_uncertainty_name']}"
+            data_vars[uncertainty_key] = (["time"], ts.measurement_uncertainties.values)
+            timeseries_attrs[key]["uncertainty"] = uncertainty_key
 
     output = xr.Dataset(
         data_vars=data_vars,
@@ -106,8 +105,8 @@ def main() -> None:
             "time": next(iter(preprocessor.timeseries.values())).measurements.index.values,
         },
         attrs={
-            "time_period": model.time_period,
-            "aggregation": model.aggregation,
+            "time_period": preprocessor.aggregation_period,
+            "aggregation": preprocessor.aggregation,
             "timeseries": timeseries_attrs,
         },
     )

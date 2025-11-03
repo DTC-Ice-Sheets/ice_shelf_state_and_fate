@@ -6,7 +6,7 @@ from types import UnionType
 from typing import get_args
 
 import xarray as xr
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Polygon, shape
 
 from use_case_3.schemas import TimeseriesModuleEntryPointSchema
 from use_case_3.timeseries_module.timeseries import Timeseries
@@ -46,22 +46,23 @@ def main() -> None:
     timeseries = Timeseries(
         label=model.label,
         timeseries_type=model.timeseries_type,
-        timeseries_region=model.timeseries_region,
     )
 
     data = xr.open_zarr(model.dataset_path)
-    mask_geometries: dict[str, Polygon | MultiPolygon | None]
-    if model.masks_json_path is not None:
-        with model.masks_json_path.open("r") as f:
-            mask_geometries = json.load(f)
+    mask_geometry: Polygon | MultiPolygon | None
+    if model.mask_json_path is not None:
+        with model.mask_json_path.open("r") as f:
+            geom = shape(json.load(f))
+            assert isinstance(geom, (Polygon, MultiPolygon)), f"Invalid geometry {geom}"
+            mask_geometry = geom
     else:
-        mask_geometries = {"ice_shelf": None, "ocean": None, "climate": None}
+        mask_geometry = None
 
     timeseries.process_timeseries(
         data=data,
         measurement_name=model.measurement_name,
         measurement_uncertainty_name=model.measurement_uncertainty_name,
-        mask_geometries=mask_geometries,
+        mask_geometry=mask_geometry,
         apply_mask=model.apply_mask,
         aggregate=model.aggregate,
         period=model.period,
@@ -91,7 +92,6 @@ def main() -> None:
         attrs={
             "label": timeseries.label,
             "timeseries_type": timeseries.timeseries_type.value,
-            "timeseries_region": timeseries.timeseries_region.value,
             "measurement_name": model.measurement_name,
             "measurement_uncertainty_name": model.measurement_uncertainty_name,
         },

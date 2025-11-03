@@ -16,7 +16,6 @@ from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
-    TimeseriesRegion,
     TimeseriesType,
 )
 
@@ -40,7 +39,6 @@ def timeseries_1_fixture():
         unit="unit 1",
         measurement_name="measurement 1",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -70,7 +68,6 @@ def timeseries_2_fixture():
         unit="unit 2",
         measurement_name="measurement 2",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -101,7 +98,6 @@ def timeseries_3_fixture():
         unit="unit 3",
         measurement_name="measurement 3",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -124,7 +120,6 @@ def timeseries_4_fixture():
         unit="unit 4",
         measurement_name="measurement 4",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -146,7 +141,6 @@ def timeseries_5_fixture():
         unit="unit 5",
         measurement_name="measurement 5",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -169,7 +163,6 @@ def timeseries_1_inv_fixture():
         unit="unit 1 inv",
         measurement_name="measurement 1 inv",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -192,7 +185,6 @@ def timeseries_6_fixture():
         unit="unit 6",
         measurement_name="measurement 6",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -215,7 +207,6 @@ def timeseries_7_fixture():
         unit="unit 7",
         measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
@@ -237,43 +228,51 @@ def timeseries_7_lag_fixture():
         unit="unit 7 inv",
         measurement_name="measurement 7",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ice_shelf"),
     )
 
 
 @pytest.fixture
 def fixture_series_x():
     return Timeseries(
-        measurements=pd.Series([-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0], name="x"),
+        measurements=pd.Series(
+            [-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0],
+            name="x",
+            index=pd.date_range(start="2020-01-01", periods=11, freq="MS"),
+        ),
         measurement_name="x",
         label="x",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 
 @pytest.fixture
 def fixture_series_y():
     return Timeseries(
-        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1], name="y"),
+        measurements=pd.Series(
+            [-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1],
+            name="y",
+            index=pd.date_range(start="2020-01-01", periods=11, freq="MS"),
+        ),
         measurement_name="y",
         label="y",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 
 @pytest.fixture
 def fixture_series_y2():
     return Timeseries(
-        measurements=pd.Series([-1, -2, -1, 0, 1, 2, 1, 0, -1, -1, -1], name="y"),
+        measurements=pd.Series(
+            [-1, -2, -1, 0, 1, 2, 1, 0, -1, -1, -1],
+            name="y",
+            index=pd.date_range(start="2020-01-01", periods=11, freq="MS"),
+        ),
         measurement_name="y",
         label="y",
         unit="",
         timeseries_type=TimeseriesType("cumulative"),
-        timeseries_region=TimeseriesRegion("ocean"),
     )
 
 
@@ -352,7 +351,7 @@ def test_find_causal_vars(fixture_series_x, fixture_series_y2):
         ],
         time_period=AggregationPeriod.MONTH,
         aggregation=AggregationStrategy.MEAN,
-        process_timeseries=False,
+        process_timeseries=True,
     )
 
     covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
@@ -459,7 +458,7 @@ def test_max_crosscorrelation(
     assert lag == -1
 
 
-def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
+def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[
             timeseries_7_fixture,
@@ -472,7 +471,7 @@ def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
 
     covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
 
-    freq, corr_lag = covariate_analyser._align_timeseries(
+    corr_lag, corr_lag_units = covariate_analyser._align_timeseries(
         timeseries_label_1=timeseries_7_fixture.label, timeseries_label_2=timeseries_7_lag_fixture.label, max_lag=1
     )
 
@@ -503,8 +502,8 @@ def test__align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
         covariate_analyser._timeseries_altered[timeseries_7_lag_fixture.label].measurements.values,
         timeseries_2_gt.values,
     )
-    assert freq == AggregationPeriod.MONTH
     assert corr_lag == -1
+    assert corr_lag_units == AggregationPeriod.MONTH
 
 
 def test_temporal_offset(timeseries_1_fixture, timeseries_6_fixture):
@@ -601,7 +600,32 @@ def test_jointplotanalysistype__init():
     assert JointPlotAnalysisType("causal") == JointPlotAnalysisType.CAUSAL
 
 
-def test__granger_causality_test_bestlag(fixture_data):
+@pytest.mark.parametrize(
+    "analysis_type",
+    [
+        JointPlotAnalysisType.CORR,
+        JointPlotAnalysisType.CROSS_CORR,
+        JointPlotAnalysisType.CAUSAL,
+    ],
+)
+def test_covariate_analysis_run_analysis(fixture_series_x, fixture_series_y, analysis_type):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[
+            fixture_series_x,
+            fixture_series_y,
+        ],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=True,
+    )
+
+    covariate_analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    result = covariate_analyser.run_analysis(analysis_type=analysis_type)
+    assert isinstance(result, dict)
+
+
+def test_granger_causality_test_bestlag(fixture_data):
     best_lag, best_bic = CovariateAnalyser._granger_causality_test_bestlag(
         data=fixture_data, max_lags=3, metric=ModelEvaluationMetric("bic")
     )
@@ -610,7 +634,7 @@ def test__granger_causality_test_bestlag(fixture_data):
     np.testing.assert_almost_equal(best_bic, -501.16420633063353)
 
 
-def test__granger_causality_test(fixture_series_x, fixture_series_y):
+def test_granger_causality_test(fixture_series_x, fixture_series_y):
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[
             fixture_series_x,

@@ -13,6 +13,8 @@ from use_case_3.timeseries_module.timeseries_enums import (
     AggregationStrategy,
 )
 
+Timestamp = pd.Timestamp | np.datetime64 | int
+
 
 class TimeSeriesPreprocessor:
     """
@@ -22,8 +24,8 @@ class TimeSeriesPreprocessor:
     ----------
     timeseries : list[Timeseries]
             The list of timeseries objects.
-    time_period : AggregationPeriod
-        The aggregation period to apply.
+    time_period : AggregationPeriod | None, optional
+        The aggregation period to apply. If None, the coarsest frequency from the input timeseries is used.
     aggregation : AggregationStrategy, optional
         The aggregation type to apply, by default AggregationStrategy.MEAN
     process_timeseries : bool, optional
@@ -33,12 +35,29 @@ class TimeSeriesPreprocessor:
     def __init__(
         self: TimeSeriesPreprocessor,
         timeseries: list[Timeseries],
-        time_period: AggregationPeriod,
+        time_period: AggregationPeriod | None = None,
         aggregation: AggregationStrategy = AggregationStrategy.MEAN,
         process_timeseries: bool = True,
     ) -> None:
+        if time_period is None:
+            # Take the largest period (i.e. lowest frequency) in the input timeseries
+            max_days = 1
+            for ts in timeseries:
+                ts_max_days = ts.measurements.index.diff().max().ceil("D").days
+                if ts_max_days > max_days:
+                    max_days = ts_max_days
+            if max_days >= 365:
+                self.aggregation_period = AggregationPeriod.YEAR
+            elif max_days >= 90:
+                self.aggregation_period = AggregationPeriod.QUARTER
+            elif max_days >= 28:
+                self.aggregation_period = AggregationPeriod.MONTH
+            else:
+                self.aggregation_period = AggregationPeriod.DAY
+        else:
+            self.aggregation_period = time_period
+
         self.timeseries = {}
-        self.aggregation_period = time_period
         self.aggregation = aggregation
         self.add_timeseries(timeseries=timeseries)
         self.start_date = None
@@ -61,9 +80,9 @@ class TimeSeriesPreprocessor:
 
         self._resample_timeseries()
 
-        start_date, end_date = self._find_start_end_dates()
+        start_date, end_date = self.find_start_end_dates()
 
-        self._trim_timeseries_date(start_date=start_date, end_date=end_date)
+        self.trim_start_end_dates(start_date=start_date, end_date=end_date)
 
         self._interpolate_timeseries()
 
@@ -75,13 +94,13 @@ class TimeSeriesPreprocessor:
 
         If both input parameters are None then it will check all of the timeseries in the container.
         """
-        start_datetime, end_datetime = self._find_start_end_dates()
+        start_datetime, end_datetime = self.find_start_end_dates()
 
         return end_datetime >= start_datetime
 
-    def _find_start_end_dates(
+    def find_start_end_dates(
         self: TimeSeriesPreprocessor,
-    ) -> tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]:
+    ) -> tuple[Timestamp, Timestamp]:
         """
         Return the greatest common start and the smallest common end time for a set of time series.
 
@@ -89,7 +108,7 @@ class TimeSeriesPreprocessor:
 
         Returns
         -------
-        tuple[pd.Timestamp | np.datetime64, pd.Timestamp | np.datetime64]
+        tuple[Timestamp, Timestamp]
             The start and end datetime. Note it is possible for the end time to be less than the start time in cases
             where the time series do not intersect in time
         """
@@ -100,10 +119,10 @@ class TimeSeriesPreprocessor:
 
         return start_date, end_date
 
-    def _trim_timeseries_date(
+    def trim_start_end_dates(
         self: TimeSeriesPreprocessor,
-        start_date: pd.Timestamp,
-        end_date: pd.Timestamp,
+        start_date: Timestamp,
+        end_date: Timestamp,
     ) -> None:
         """
         Trim a time series using a start and end date time.
@@ -112,22 +131,19 @@ class TimeSeriesPreprocessor:
 
         Parameters
         ----------
-        start_date : pd.Timestamp
+        start_date : Timestamp
             The start date to trim.
-        end_date : pd.Timestamp
+        end_date : Timestamp
             The end date to trim.
         """
-        for ts_label in self.timeseries:
-            self.timeseries[ts_label].measurements = self.timeseries[ts_label].measurements[
-                (self.timeseries[ts_label].measurements.index >= start_date)
-                & (self.timeseries[ts_label].measurements.index <= end_date)
+        for ts in self.timeseries.values():
+            ts.measurements = ts.measurements[
+                (ts.measurements.index >= start_date) & (ts.measurements.index <= end_date)
             ]
-            if self.timeseries[ts_label].measurement_uncertainties is not None:
-                self.timeseries[ts_label].measurement_uncertainties = self.timeseries[
-                    ts_label
-                ].measurement_uncertainties[
-                    (self.timeseries[ts_label].measurement_uncertainties.index >= start_date)
-                    & (self.timeseries[ts_label].measurement_uncertainties.index <= end_date)
+            if ts.measurement_uncertainties is not None:
+                ts.measurement_uncertainties = ts.measurement_uncertainties[
+                    (ts.measurement_uncertainties.index >= start_date)
+                    & (ts.measurement_uncertainties.index <= end_date)
                 ]
 
     def _resample_timeseries(
@@ -139,29 +155,21 @@ class TimeSeriesPreprocessor:
         TODO: This method is to complex with the nested if statements. Not sure if there is a better way fo doing this
         though.
         """
-        for ts_label in self.timeseries:
-            timeseries_agg = deepcopy(self.timeseries[ts_label])
-            timeseries_agg.measurements = (
-                self.timeseries[ts_label]
-                .measurements.groupby(
+        for ts_label, ts in self.timeseries.items():
+            timeseries_agg = deepcopy(ts)
+            timeseries_agg.measurements = ts.measurements.groupby(
+                pd.PeriodIndex(
+                    ts.measurements.index,
+                    freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
+                )
+            ).agg(self.aggregation.aggregation)
+            if timeseries_agg.measurement_uncertainties is not None:
+                timeseries_agg.measurement_uncertainties = ts.measurement_uncertainties.groupby(
                     pd.PeriodIndex(
-                        self.timeseries[ts_label].measurements.index,
+                        ts.measurement_uncertainties.index,
                         freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
                     )
-                )
-                .agg(self.aggregation.aggregation)
-            )
-            if timeseries_agg.measurement_uncertainties is not None:
-                timeseries_agg.measurement_uncertainties = (
-                    self.timeseries[ts_label]
-                    .measurement_uncertainties.groupby(
-                        pd.PeriodIndex(
-                            self.timeseries[ts_label].measurement_uncertainties.index,
-                            freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
-                        )
-                    )
-                    .agg(self.aggregation.aggregation)
-                )
+                ).agg(self.aggregation.aggregation)
             timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
             if timeseries_agg.measurement_uncertainties is not None:
                 timeseries_agg.measurement_uncertainties.index = (
@@ -173,8 +181,8 @@ class TimeSeriesPreprocessor:
         self: TimeSeriesPreprocessor,
     ) -> None:
         """Resamples any missing data and then linearly interpolates a timeseries according to a specified period."""
-        for ts_label in self.timeseries:
-            timeseries_interp = deepcopy(self.timeseries[ts_label])
+        for ts_label, ts in self.timeseries.items():
+            timeseries_interp = deepcopy(ts)
             # Generate the list of date idx
             date_idx = pd.date_range(
                 start=timeseries_interp.measurements.index[0],

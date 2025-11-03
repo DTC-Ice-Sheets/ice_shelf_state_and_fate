@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+import numpy as np
+
 
 class AggregationStrategy(StrEnum):
     """The available aggregation types."""
@@ -48,6 +50,23 @@ class AggregationPeriod(StrEnum):
             AggregationPeriod.DAY: "D",
         }[period]
 
+    @staticmethod
+    def format_with_units(
+        value: np.int64 | int | float,
+        period: AggregationPeriod,
+        max_decimal_places: int = 2,
+    ) -> str:
+        """Format a value with its corresponding time unit as a human-readable string."""
+        unit = {
+            AggregationPeriod.YEAR: "year",
+            AggregationPeriod.QUARTER: "quarter",
+            AggregationPeriod.MONTH: "month",
+            AggregationPeriod.DAY: "day",
+        }[period]
+        if abs(value) != 1:
+            unit += "s"
+        return f"{value:.{max_decimal_places}g} {unit}"
+
 
 class UncertaintyType(StrEnum):
     """The available uncertainty types."""
@@ -56,6 +75,7 @@ class UncertaintyType(StrEnum):
     IQR = "IQR"
     MAX = "max"
     MIN = "min"
+    PVALUE = "p_value"
 
     def __init__(self, uncertainty_type: str) -> None:
         self.uncertainty_types = uncertainty_type
@@ -76,19 +96,6 @@ class TimeseriesType(StrEnum):
 
     CUMULATIVE = "cumulative"
     DERIVATIVE = "derivative"
-
-
-class TimeseriesRegion(StrEnum):
-    """
-    Define the region type of the timeseries.
-
-    This can be iceshelf, ocean or climate. This defines how the mask is
-    calculated and applied.
-    """
-
-    ICE_SHELF = "ice_shelf"
-    OCEAN = "ocean"
-    CLIMATE = "climate"
 
 
 class ModelEvaluationMetric(StrEnum):

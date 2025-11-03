@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import textwrap
 from copy import deepcopy
 from textwrap import wrap
 
@@ -170,7 +169,7 @@ class CovariateAnalyser:
                     and (timeseries_label_2, timeseries_label_1) not in correlated_vars
                 ):
                     # First we allign the timeseries in time using the cross-correlation.
-                    _, lag = self._align_timeseries(
+                    lag, _ = self._align_timeseries(
                         timeseries_label_1,
                         timeseries_label_2,
                         max_lag=max_lag,
@@ -382,7 +381,7 @@ class CovariateAnalyser:
 
     def _align_timeseries(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, max_lag: int | None = None
-    ) -> tuple[str, int | np.int64]:
+    ) -> tuple[int | np.int64, AggregationPeriod]:
         """
         Align two timeseries according to the maximum cross correlation.
 
@@ -398,8 +397,8 @@ class CovariateAnalyser:
 
         Returns
         -------
-        tuple[str, int | np.int64]
-            The time aligned series according to the maximum cross correlation.
+        tuple[int | np.int64, AggregationPeriod]
+            The lag as an integer, and its units as an AggregationPeriod enum string.
         """
         _, corr_lag = self.max_crosscorrelation(
             timeseries_label_1=timeseries_label_1,
@@ -419,7 +418,7 @@ class CovariateAnalyser:
             AggregationPeriod.DAY: pd.offsets.Day,
         }
 
-        offset_func = offset_map[self.timeseries_container.aggregation_period]
+        offset_func = offset_map[freq]
 
         timeseries_2.measurements.index = timeseries_2.measurements.index + offset_func(corr_lag)
         if timeseries_2.measurement_uncertainties is not None:
@@ -445,8 +444,8 @@ class CovariateAnalyser:
             self._timeseries_altered[ts.label] = ts
 
         return (
-            freq,
             corr_lag,
+            freq,
         )
 
     def temporal_offset(
@@ -619,150 +618,85 @@ class CovariateAnalyser:
 
         return joint
 
-    def jointplot_grid(  # noqa C901
+    def run_analysis(
         self: CovariateAnalyser,
-        axis_labels: list | None = None,
         max_lag: int | None = None,
         analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
-    ) -> tuple[plt.figure, plt.axes]:
+    ) -> dict:
         """
-        Plot a gridded jointplot for the given set of timeseries.
-
-        Note that you can pass crosscorr True if the maximum
-        cross-correlation is desired. This method returns a matplotlib figure and associated axes.
-
-        TODO: This is currently a fairly horrible method, but not sure how to simplify currently.
+        Perform an analysis of the covariate relationships between the timeseries.
 
         Parameters
         ----------
-        axis_labels : list | None
-            A list of labels which can be used to customise the axis labels if required, by default None.
-        max_lag : int | None
-            The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
-            default None.
-        analysis_type : JointPlotAnalysisType
-            Define the analysis type to be conducted.
+        max_lag : int | None, optional
+            The maximum lag to consider for the analysis, by default None.
+        analysis_type : JointPlotAnalysisType, optional
+            The type of analysis to perform, by default JointPlotAnalysisType.CORR.
 
         Returns
         -------
-        tuple[plt.figure, plt.axes]
-            The figure and axes.
+        dict
+            A dictionary containing the results of the analysis.
         """
-        timeseries = list(self.timeseries_container.timeseries.values())
+        out = {
+            "variables": {},
+            "covariate_stats": {},
+        }
 
-        width_ratios = [3] * len(timeseries) + [1]
-        height_ratios = [3] * len(timeseries) + [1]
+        for ts in self.timeseries_container.timeseries.values():
+            hist, bin_edges = np.histogram(ts.measurements)
+            out["variables"][ts.label] = {
+                "measurement_name": ts.measurement_name,
+                "values": ts.measurements.to_list(),
+                "hist_values": hist.tolist(),
+                "hist_edges": bin_edges.tolist(),
+            }
 
-        f, axes = plt.subplots(
-            len(height_ratios),
-            len(width_ratios),
-            gridspec_kw={"width_ratios": width_ratios, "height_ratios": height_ratios},
-            figsize=(10, 10),
-            sharex="col",
-            sharey="row",
-        )
+        for ts_a in self.timeseries_container.timeseries.values():
+            for ts_b in self.timeseries_container.timeseries.values():
+                if ts_a.label == ts_b.label:
+                    continue
+                if f"{ts_b.label}/{ts_a.label}" in out["covariate_stats"]:
+                    continue
+                key = f"{ts_a.label}/{ts_b.label}"
 
-        axes[len(timeseries), len(timeseries)].axis("off")
-
-        for row in range(len(timeseries)):
-            for col in range(len(timeseries)):
-                if row != col:
-                    if analysis_type == JointPlotAnalysisType.CROSS_CORR:
-                        freq, lag = self._align_timeseries(
-                            timeseries[col].label,
-                            timeseries[row].label,
-                            max_lag=max_lag,
-                        )
-                        timeseries_col = deepcopy(self._timeseries_altered[timeseries[col].label])
-                        timeseries_row = deepcopy(self._timeseries_altered[timeseries[row].label])
-                        altered = True
-                    elif analysis_type == JointPlotAnalysisType.CORR:
-                        timeseries_col = deepcopy(timeseries[col])
-                        timeseries_row = deepcopy(timeseries[row])
-                        lag = 0
-                        freq = self.timeseries_container.aggregation_period
-                        altered = False
-                    elif analysis_type == JointPlotAnalysisType.CAUSAL:
-                        timeseries_col = deepcopy(timeseries[col])
-                        timeseries_row = deepcopy(timeseries[row])
-                        lag = 0
-                        freq = self.timeseries_container.aggregation_period
-                        altered = False
-                        _, p_value = self._granger_causality_test(
-                            timeseries_label_1=timeseries_col.label,
-                            timeseries_label_2=timeseries_row.label,
-                            max_lags=max_lag,
-                            metric=ModelEvaluationMetric.BIC,
-                        )
-                    if np.abs(lag) != 1:
-                        freq = freq + "s"
-
-                    sns.regplot(x=timeseries_col.measurements, y=timeseries_row.measurements, ax=axes[row, col])
-                    axes[row, col].set_xlabel("")
-                    axes[row, col].set_ylabel("")
-                    axes[row, col].grid()
-
-                    if analysis_type in [JointPlotAnalysisType.CORR, JointPlotAnalysisType.CROSS_CORR]:
-                        corr, p_value = self.correlation_coefficient(
-                            timeseries_label_1=timeseries_col.label,
-                            timeseries_label_2=timeseries_row.label,
-                            altered=altered,
-                        )
-                        title = f"corr:{corr:.2f},\n p:{p_value:.2f}"
-                        y_offset = 0.6
-                    elif analysis_type == JointPlotAnalysisType.CAUSAL:
-                        title = f"p:{p_value:.2f}"
-                        y_offset = 0.80
-                    if p_value > self.alpha:
-                        axes[row, col].set_facecolor("mistyrose")
-                    if analysis_type == JointPlotAnalysisType.CROSS_CORR:
-                        title += f", \n lag:{lag} {freq}"
-                        y_offset = 0.45
-                    axes[row, col].set_title(title, y=y_offset)
-                else:
-                    axes[row, col].set_facecolor("lightgrey")
-
-            # plot the histograms
-            timeseries_col.measurements.to_frame().columns[0]
-            sns.histplot(
-                data=timeseries_row.measurements.to_frame(),
-                y=timeseries_row.measurements.to_frame().columns[0],
-                ax=axes[row, -1],
-            )
-            axes[row, -1].spines["top"].set_visible(False)
-            axes[row, -1].spines["right"].set_visible(False)
-            axes[row, -1].spines["bottom"].set_visible(False)
-            axes[row, -1].set_xlabel("")
-            axes[row, -1].get_xaxis().set_ticks([])
-
-            sns.histplot(
-                data=timeseries_row.measurements.to_frame(),
-                x=timeseries_row.measurements.to_frame().columns[0],
-                ax=axes[-1, row],
-            )
-            axes[-1, row].spines["top"].set_visible(False)
-            axes[-1, row].spines["right"].set_visible(False)
-            axes[row, -1].spines["bottom"].set_visible(False)
-            axes[-1, row].spines["left"].set_visible(False)
-            axes[-1, row].set_ylabel("")
-            axes[-1, row].get_yaxis().set_ticks([])
-
-            # Add the correct axis labels
-            if axis_labels is None:
-                axis_label = f"{timeseries_row.label} {timeseries_row.measurement_name}".replace("_", " ").title()
-            else:
-                axis_label = axis_labels[row]
-            label = textwrap.fill(
-                " ".join([axis_label, "(" + timeseries_row.unit + ")"]),
-                width=18,
-                break_long_words=True,
-            )
-            axes[row, 0].set_ylabel(label)
-            axes[-1, row].set_xlabel(label)
-
-        plt.tight_layout()
-        plt.plot()
-        return f, axes
+                stats = {}
+                if analysis_type == JointPlotAnalysisType.CROSS_CORR:
+                    lag, lag_units = self._align_timeseries(
+                        timeseries_label_1=ts_a.label, timeseries_label_2=ts_b.label, max_lag=max_lag
+                    )
+                    corr, p_value = self.correlation_coefficient(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                        altered=True,
+                    )
+                    stats |= {
+                        "Aligned Lag": AggregationPeriod.format_with_units(lag, lag_units),
+                        "Correlation Coefficient": corr,
+                        "P-Value": p_value,
+                    }
+                elif analysis_type == JointPlotAnalysisType.CORR:
+                    corr, p_value = self.correlation_coefficient(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                    )
+                    stats |= {
+                        "Correlation Coefficient": corr,
+                        "P-Value": p_value,
+                    }
+                elif analysis_type == JointPlotAnalysisType.CAUSAL:
+                    f_score, p_value = self._granger_causality_test(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                        max_lags=max_lag or 20,
+                        metric=ModelEvaluationMetric.BIC,
+                    )
+                    stats |= {
+                        "F-Score": f_score,
+                        "P-Value": p_value,
+                    }
+                out["covariate_stats"][key] = stats
+        return out
 
     def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list | None = None) -> tuple[plt.figure, plt.axes]:
         """
@@ -867,7 +801,7 @@ class CovariateAnalyser:
         """
         # Set some arbritrary values for the best model fits
         best_lag = None
-        best_bic = 1e99
+        best_bic = np.inf
 
         # Loop through each lag and assess the model
         for lag in range(1, max_lags + 1):
@@ -932,6 +866,9 @@ class CovariateAnalyser:
 
         data = pd.concat([timeseries_1, timeseries_2], axis=1)
         max_lags_total = int((data.shape[0] - 1) / 3) - 1
+
+        if max_lags_total < 1:
+            raise ValueError("Data length is too short to perform Granger Causality test")
 
         if max_lags > max_lags_total:
             max_lags = max_lags_total
