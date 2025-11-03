@@ -619,7 +619,7 @@ version = "1.40.61"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
-groups = ["deployment"]
+groups = ["main", "deployment"]
 files = [
     {file = "boto3-1.40.61-py3-none-any.whl", hash = "sha256:6b9c57b2a922b5d8c17766e29ed792586a818098efe84def27c8f582b33f898c"},
     {file = "boto3-1.40.61.tar.gz", hash = "sha256:d6c56277251adf6c2bdd25249feae625abe4966831676689ff23b4694dea5b12"},
@@ -1532,7 +1532,7 @@ rioxarray = ">=0.19.0"
 shapely = ">=2.0.7"
 specklia = ">=1.9.2"
 tenacity = "^9.1.2"
-virtualenv = "<20.35"
+virtualenv = "<20.36"
 xarray = ">=2025.3.1"
 zarr = ">=3.0.6"
 
@@ -1540,7 +1540,7 @@ zarr = ">=3.0.6"
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/data_download_module.git"
 reference = "use-case-3-dashboard-local-datasets"
-resolved_reference = "ae3cf4a7f24fa799750fb40485ca08511c158b38"
+resolved_reference = "2548e0f063d75262efbd609d25b57de87b04a5bc"
 
 [[package]]
 name = "debugpy"
@@ -1772,7 +1772,7 @@ subdirectory = "dtc_query_client"
 
 [[package]]
 name = "dtc-wrapper"
-version = "0.0.29"
+version = "0.0.31"
 description = "Deployment wrapper for DTC Ice Sheets modules."
 optional = false
 python-versions = ">=3.11,<4.0"
@@ -1788,8 +1788,8 @@ pydantic = "^2.12.3"
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git"
-reference = "main"
-resolved_reference = "3738e7322ae12ddb11fe29705fd2265770ab6fe5"
+reference = "0.0.31"
+resolved_reference = "b945aab6249366c729e9be942cabef38055dca42"
 
 [[package]]
 name = "executing"
@@ -2137,14 +2137,14 @@ files = [
 
 [[package]]
 name = "fsspec"
-version = "2025.9.0"
+version = "2025.10.0"
 description = "File-system specification"
 optional = false
 python-versions = ">=3.9"
 groups = ["dashboard"]
 files = [
-    {file = "fsspec-2025.9.0-py3-none-any.whl", hash = "sha256:530dc2a2af60a414a832059574df4a6e10cce927f6f4a78209390fe38955cfb7"},
-    {file = "fsspec-2025.9.0.tar.gz", hash = "sha256:19fd429483d25d28b65ec68f9f4adc16c17ea2c7c7bf54ec61360d478fb19c19"},
+    {file = "fsspec-2025.10.0-py3-none-any.whl", hash = "sha256:7c7712353ae7d875407f97715f0e1ffcc21e33d5b24556cb1e090ae9409ec61d"},
+    {file = "fsspec-2025.10.0.tar.gz", hash = "sha256:b6789427626f068f9a83ca4e8a3cc050850b6c0f71f99ddb4f542b8266a26a59"},
 ]
 
 [package.extras]
@@ -5695,20 +5695,20 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "s3fs"
-version = "2025.9.0"
+version = "2025.10.0"
 description = "Convenient Filesystem interface over S3"
 optional = false
 python-versions = ">=3.9"
 groups = ["dashboard"]
 files = [
-    {file = "s3fs-2025.9.0-py3-none-any.whl", hash = "sha256:c33c93d48f66ed440dbaf6600be149cdf8beae4b6f8f0201a209c5801aeb7e30"},
-    {file = "s3fs-2025.9.0.tar.gz", hash = "sha256:6d44257ef19ea64968d0720744c4af7a063a05f5c1be0e17ce943bef7302bc30"},
+    {file = "s3fs-2025.10.0-py3-none-any.whl", hash = "sha256:da7ef25efc1541f5fca8e1116361e49ea1081f83f4e8001fbd77347c625da28a"},
+    {file = "s3fs-2025.10.0.tar.gz", hash = "sha256:e8be6cddc77aceea1681ece0f472c3a7f8ef71a0d2acddb1cc92bb6afa3e9e4f"},
 ]
 
 [package.dependencies]
 aiobotocore = ">=2.5.4,<3.0.0"
 aiohttp = "<4.0.0a0 || >4.0.0a0,<4.0.0a1 || >4.0.0a1"
-fsspec = "2025.9.0"
+fsspec = "2025.10.0"
 
 [package.extras]
 awscli = ["aiobotocore[awscli] (>=2.5.4,<3.0.0)"]
@@ -5720,7 +5720,7 @@ version = "0.14.0"
 description = "An Amazon S3 Transfer Manager"
 optional = false
 python-versions = ">=3.9"
-groups = ["deployment"]
+groups = ["main", "deployment"]
 files = [
     {file = "s3transfer-0.14.0-py3-none-any.whl", hash = "sha256:ea3b790c7077558ed1f02a3072fb3cb992bbbd253392f4b6e9e8976941c7d456"},
     {file = "s3transfer-0.14.0.tar.gz", hash = "sha256:eff12264e7c8b4985074ccce27a3b38a485bb7f7422cc8046fee9be4983e4125"},
@@ -7035,4 +7035,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "32ae1fce99ef71da4ad7467955ee4fa05cf3f60a098e81a64d39aaa4df6c44cf"
+content-hash = "198dadc925b457c9d7e91c1be68f2f18435d82647238b35d99c7780426a4aab0"
