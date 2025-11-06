@@ -44,13 +44,14 @@ async def plot_ice_shelf_map(ice_shelf: str) -> go.Figure:
         crs="EPSG:4326",
     )
 
+    minx, miny, maxx, maxy = gdf.total_bounds
+
     fig = px.choropleth(
         gdf,
         geojson=gdf.geometry,
         locations=gdf.index,
         color="name",
         color_discrete_map={"Climate": "lightgreen", "Ocean": "lightskyblue", "Ice Shelf": "salmon"},
-        projection="stereographic",
         basemap_visible=False,
         hover_name="name",
         hover_data={"index": (False, gdf.index), "name": False},
@@ -73,13 +74,18 @@ async def plot_ice_shelf_map(ice_shelf: str) -> go.Figure:
         ]
     )
 
-    minx, miny, maxx, maxy = gdf.total_bounds
     fig.update_geos(
-        lonaxis={"range": [minx, maxx]},
-        lataxis={"range": [miny, maxy]},
+        projection={
+            "type": "stereographic",
+            "rotation": {
+                "lon": (minx + maxx) / 2,
+                "lat": (miny + maxy) / 2,
+                "roll": 0,
+            },
+            "scale": 40,
+        },
     )
     fig.update_layout(
-        height=300,
         margin={"r": 0, "t": 20, "l": 0, "b": 0},
         showlegend=True,
         legend_title=None,

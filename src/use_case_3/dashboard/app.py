@@ -1,8 +1,10 @@
 """Dashboard entrypoint."""
 
 import logging
+import os
 
 import dash
+import dash_auth
 import dash_bootstrap_components as dbc
 import diskcache
 import dotenv
@@ -19,6 +21,11 @@ app = Dash(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     use_pages=True,
     background_callback_manager=background_callback_manager,
+)
+
+auth = dash_auth.BasicAuth(
+    app,
+    {"": os.environ["DASHBOARD_PASSWORD"]},
 )
 
 app.layout = html.Div(

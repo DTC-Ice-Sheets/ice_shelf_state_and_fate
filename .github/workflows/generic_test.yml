@@ -115,29 +115,18 @@ jobs:
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_PASSWORD }}
 
-      - name: Define container name
+      - name: Define container names
         id: name_container
         run: |
           echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_production" >> $GITHUB_OUTPUT
+          echo "dashboard_image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_dashboard" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v5
         with:
           fetch-depth: '2'
 
       - name: Configure runtime environment variable secrets
-        run: |
-          cat <<EOT > .env
-          SPECKLIA_TOKEN="${{ secrets.SPECKLIA_TOKEN }}"
-          EDH_TOKEN="${{ secrets.EDH_TOKEN }}"
-          EODS_USERNAME="${{ secrets.EODS_USERNAME }}"
-          EODS_PASSWORD="${{ secrets.EODS_PASSWORD }}"
-          AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
-          AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          AWS_DEFAULT_REGION="${{ secrets.AWS_DEFAULT_REGION }}"
-          AWS_S3_ENDPOINT="${{ secrets.AWS_S3_ENDPOINT }}"
-          EOT
-
-          echo "${{ secrets.GH_ADMIN_PAT }}" > .gh_token.txt
+        run: echo "${{ secrets.GH_ADMIN_PAT }}" > .gh_token.txt
 
       - name: Build and push this package's production image
       # We use Docker BuildKit to ensure the GitHub token remains a secret and is not shown in plaintext in build logs
@@ -145,8 +134,19 @@ jobs:
           DOCKER_BUILDKIT=1 docker build \
             --cache-from ${{ steps.name_container.outputs.image_name }} \
             --secret id=github_token,src=.gh_token.txt \
-            --tag ${{ steps.name_container.outputs.image_name }} -f Dockerfile .
+            --tag ${{ steps.name_container.outputs.image_name }} \
+            -f Dockerfile .
           docker push "${{ steps.name_container.outputs.image_name }}"
+
+      - name: Build and push this package's dashboard image
+      # We use Docker BuildKit to ensure the GitHub token remains a secret and is not shown in plaintext in build logs
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            --cache-from ${{ steps.name_container.outputs.dashboard_image_name }} \
+            --secret id=github_token,src=.gh_token.txt \
+            --tag ${{ steps.name_container.outputs.dashboard_image_name }} \
+            -f dashboard.dockerfile .
+          docker push "${{ steps.name_container.outputs.dashboard_image_name }}"
 
       - name: Clean up secrets
         run: |

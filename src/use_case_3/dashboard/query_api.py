@@ -29,7 +29,7 @@ from use_case_3.timeseries_module.timeseries_enums import (
 )
 
 api_config = Configuration(
-    host="http://localhost:8000",
+    host=os.environ.get("DTC_API_URL", "https://query.dtc-ice-sheets.org"),
     access_token=os.environ["DTC_API_KEY"],
 )
 
