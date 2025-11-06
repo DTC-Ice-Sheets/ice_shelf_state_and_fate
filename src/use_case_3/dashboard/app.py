@@ -21,6 +21,7 @@ app = Dash(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     use_pages=True,
     background_callback_manager=background_callback_manager,
+    url_base_pathname="/state-and-fate/",
 )
 
 auth = dash_auth.BasicAuth(
