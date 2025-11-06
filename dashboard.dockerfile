@@ -27,4 +27,4 @@ RUN poetry install --only-root
 # Remove GitHub token after install
 RUN rm /root/.netrc
 
-CMD ["poetry", "run", "uvicorn", "--timeout-keep-alive", "1800", "--host", "0.0.0.0", "--port", "$PORT", "use_case_3.dashboard.app:app"]
+CMD poetry run uvicorn --timeout-keep-alive 1800 --host 0.0.0.0 --port $PORT use_case_3.dashboard.app:app
