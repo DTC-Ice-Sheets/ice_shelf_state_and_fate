@@ -27,4 +27,4 @@ RUN poetry install --only-root
 # Remove GitHub token after install
 RUN rm /root/.netrc
 
-CMD poetry run gunicorn --bind 0.0.0.0:$PORT use_case_3.dashboard.app:app
+CMD poetry run gunicorn --bind 0.0.0.0:$PORT use_case_3.dashboard.app:server
