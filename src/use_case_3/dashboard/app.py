@@ -26,6 +26,7 @@ app = Dash(
 auth = dash_auth.BasicAuth(
     app,
     {"": os.environ["DASHBOARD_PASSWORD"]},
+    secret_key=os.environ["DASHBOARD_PASSWORD"],
 )
 
 app.layout = html.Div(
