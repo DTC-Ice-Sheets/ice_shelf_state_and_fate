@@ -4,7 +4,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import html
 
-from use_case_3.dashboard.dashboard_layout import layout_navbar
+from use_case_3.dashboard.dashboard_layout import layout_navbar, url_base_pathname
 
 dash.register_page(__name__, path="/")
 
@@ -41,7 +41,7 @@ layout = html.Div(
                             "Enter the Digital Twin",
                             color="primary",
                             id="btn-homepage",
-                            href="/insights",
+                            href=url_base_pathname + "insights",
                         ),
                     ],
                     className="d-grid gap-2 col-6 mx-auto",

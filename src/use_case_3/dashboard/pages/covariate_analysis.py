@@ -40,7 +40,7 @@ dash.register_page(__name__)
 
 logger = logging.getLogger(__name__)
 
-navbar = layout_navbar("/covariate-analysis")
+navbar = layout_navbar("covariate-analysis")
 
 
 layout = [
