@@ -1786,8 +1786,8 @@ urllib3 = ">=2.1.0,<3.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_query_api.git"
-reference = "0.0.39"
-resolved_reference = "f47d2559a2698530f44d791f92df555a859414f4"
+reference = "0.0.40"
+resolved_reference = "9a014445f7ca9776c18b8c2232dfab3600ec3586"
 subdirectory = "dtc_query_client"
 
 [[package]]
@@ -7077,4 +7077,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "73823f763532063142e926053daaec997c15e646e62c67419aa7974057ab203d"
+content-hash = "838d49315dc64e219e905b9a36c12088bea4c7c8e0fbbd75d750363f0d05d007"
