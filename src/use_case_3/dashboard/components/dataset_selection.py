@@ -1,13 +1,12 @@
 """Component for selecting from the available datasets and variables."""
 
-import json
 import logging
 from datetime import datetime
-from io import BytesIO
 from typing import Callable
 
 import dash
 import dash_bootstrap_components as dbc
+import requests
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
 from dash.development.base_component import Component
 from dtc_query_client import (
@@ -24,7 +23,6 @@ from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
     get_ice_shelf_geometry,
-    s3_client,
 )
 
 logger = logging.getLogger(__name__)
@@ -346,11 +344,9 @@ async def generate_dataset_preview(
             set_progress(("Downloading result...", 90))
 
             output_url = res.outputs["dataset-summary-module"]["output_json"]
-            bucket, key = output_url.removeprefix("s3://").removeprefix("S3://").split("/", 1)
-            b = BytesIO()
-            s3_client.download_fileobj(Bucket=bucket, Key=key, Fileobj=b)
-            b.seek(0)
-            plot_data = json.load(b)
+            r = requests.get(output_url)
+            r.raise_for_status()
+            plot_data = r.json()
 
             set_progress(("Plotting...", 95))
             geom = await get_ice_shelf_geometry(ice_shelf, config_dict[dataset_id]["region"])
