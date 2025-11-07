@@ -1786,13 +1786,13 @@ urllib3 = ">=2.1.0,<3.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_query_api.git"
-reference = "main"
-resolved_reference = "2f838ff9e3bab6ba73d627c5474e6dd71bd8bbd5"
+reference = "0.0.39"
+resolved_reference = "f47d2559a2698530f44d791f92df555a859414f4"
 subdirectory = "dtc_query_client"
 
 [[package]]
 name = "dtc-wrapper"
-version = "0.0.31"
+version = "0.0.34"
 description = "Deployment wrapper for DTC Ice Sheets modules."
 optional = false
 python-versions = ">=3.11,<4.0"
@@ -1801,15 +1801,15 @@ files = []
 develop = false
 
 [package.dependencies]
-boto3 = "^1.40.59"
+boto3 = "^1.40.61"
 numpy = "^2.3"
 pydantic = "^2.12.3"
 
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git"
-reference = "0.0.31"
-resolved_reference = "b945aab6249366c729e9be942cabef38055dca42"
+reference = "0.0.34"
+resolved_reference = "40158bf46438e244098bb5265f595d78a07482e8"
 
 [[package]]
 name = "executing"
@@ -7077,4 +7077,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "7b352d7a32dbee617be431f45ab7da1e340b1af7e9d544928c34a4ce9c975a9a"
+content-hash = "73823f763532063142e926053daaec997c15e646e62c67419aa7974057ab203d"

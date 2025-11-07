@@ -74,17 +74,22 @@ async def _get_summary_zarr_url(ice_shelf: str) -> str:
         return (await StateAndFateApi(client).get_summary_url(ice_shelf_id=ice_shelf)).url
 
 
-def _open_s3_zarr(s3_url: str) -> xr.Dataset:
+def _open_zarr(url: str) -> xr.Dataset:
+    is_s3_url = url.lower().startswith("s3://")
     return xr.open_dataset(
-        s3_url,
+        url,
         engine="zarr",
-        backend_kwargs={
-            "storage_options": {
-                "key": os.environ["AWS_ACCESS_KEY_ID"],
-                "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
-                "client_kwargs": {"endpoint_url": os.environ["AWS_S3_ENDPOINT"]},
+        backend_kwargs=(
+            {
+                "storage_options": {
+                    "key": os.environ["AWS_ACCESS_KEY_ID"],
+                    "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
+                    "client_kwargs": {"endpoint_url": os.environ["AWS_S3_ENDPOINT"]},
+                }
             }
-        },
+            if is_s3_url
+            else {}
+        ),
         chunks={},
     )
 
@@ -92,7 +97,7 @@ def _open_s3_zarr(s3_url: str) -> xr.Dataset:
 @asyncstdlib.cache
 async def get_ice_shelf_time_range(ice_shelf: str) -> tuple[datetime, datetime]:
     """Get the time range of the summary data for a given ice shelf."""
-    summary_data = _open_s3_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
+    summary_data = _open_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
     min_time = summary_data["time"].min().item()
     max_time = summary_data["time"].max().item()
     return min_time, max_time
@@ -110,7 +115,7 @@ async def query_summary_data(
     end_year: int | None = None,
 ) -> tuple[xr.Dataset, TimeSeriesPreprocessor]:
     """Get the summary data for a given ice shelf."""
-    summary_data = _open_s3_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
+    summary_data = _open_zarr(await _get_summary_zarr_url(ice_shelf=ice_shelf))
     metadata = config_dict_local["timeseries_summary"]
 
     timeseries_list = []
