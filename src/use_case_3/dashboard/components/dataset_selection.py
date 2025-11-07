@@ -42,8 +42,17 @@ REGIONS = {
     },
 }
 
+NO_PREVIEW_DATASETS = {
+    "4D_ANTARCTICA_SUBGLACIAL_LAKES",
+    "SOUTHERN_ANNULAR_MODE",
+    "moorings_1d",
+    "basal_melt_anomalies_pine_island_1d",
+    "subglacial_lake_discharge_1d",
+    "basal_melt_anomalies_thwaites_1d",
+}
 
-def _create_variable_entry(dataset_id: str, variable_id: str) -> html.Div:
+
+def _create_variable_entry(dataset_id: str, variable_id: str, disabled: bool = False) -> html.Div:
     dataset = config_dict[dataset_id]
     variable = dataset["variables"][variable_id]
     return html.Div(
@@ -57,15 +66,36 @@ def _create_variable_entry(dataset_id: str, variable_id: str) -> html.Div:
                         },
                         label=variable["label"],
                         value=False,
+                        disabled=disabled,
                     ),
-                    dbc.Button(
-                        "Preview...",
-                        color="link",
-                        id={"type": "variable-preview-button", "index": f"{dataset_id}.{variable_id}"},
+                    *(
+                        []
+                        if dataset_id in NO_PREVIEW_DATASETS
+                        else [
+                            dbc.Button(
+                                "Preview...",
+                                color="link",
+                                id={"type": "variable-preview-button", "index": f"{dataset_id}.{variable_id}"},
+                            )
+                        ]
                     ),
                 ],
                 style={"display": "flex", "justify-content": "space-between", "align-items": "center"},
-            )
+            ),
+            *(
+                [
+                    dbc.Tooltip(
+                        "Not currently supported",
+                        target={
+                            "type": "data-selector-container",
+                            "index": f"{dataset_id}.{variable_id}",
+                        },
+                        placement="left",
+                    )
+                ]
+                if disabled
+                else []
+            ),
         ],
         id={
             "type": "data-selector-container",
@@ -74,12 +104,22 @@ def _create_variable_entry(dataset_id: str, variable_id: str) -> html.Div:
     )
 
 
-def _create_dataset_entry(dataset_id: str) -> dbc.Card:
+def _create_dataset_entry(dataset_id: str, disallowed_datasets: set[str] | None) -> dbc.Card:
     dataset = config_dict[dataset_id]
     return dbc.Card(
         [
             html.H5(dataset["label"]),
-            *[_create_variable_entry(dataset_id, variable_id) for variable_id in config_dict[dataset_id]["variables"]],
+            *[
+                _create_variable_entry(
+                    dataset_id,
+                    variable_id,
+                    disabled=(
+                        dataset_id in (disallowed_datasets or set())
+                        or f"{dataset_id}.{variable_id}" in (disallowed_datasets or set())
+                    ),
+                )
+                for variable_id in config_dict[dataset_id]["variables"]
+            ],
         ],
         id={"type": "data-selector-group", "index": dataset_id},
         body=True,
@@ -87,7 +127,7 @@ def _create_dataset_entry(dataset_id: str) -> dbc.Card:
     )
 
 
-def _create_dataset_selection_modal() -> dbc.Modal:
+def _create_dataset_selection_modal(disallowed_datasets: set[str] | None = None) -> dbc.Modal:
     return dbc.Modal(
         [
             dbc.ModalHeader(dbc.ModalTitle("Select Datasets")),
@@ -119,7 +159,7 @@ def _create_dataset_selection_modal() -> dbc.Modal:
                         style={"display": "flex", "align-items": "center", "gap": "1em", "margin": "0.5em 0"},
                     ),
                     html.Div(
-                        [_create_dataset_entry(dataset_id) for dataset_id in config_dict],
+                        [_create_dataset_entry(dataset_id, disallowed_datasets) for dataset_id in config_dict],
                         style={
                             "display": "flex",
                             "flex-direction": "column",
@@ -137,8 +177,14 @@ def _create_dataset_selection_modal() -> dbc.Modal:
     )
 
 
-def create_dataset_selection() -> html.Div:
+def create_dataset_selection(disallowed_datasets: set[str] | None = None) -> html.Div:
     """Create a dataset selection component with search functionality.
+
+    Parameters
+    ----------
+    disallowed_datasets : set[str] | None
+        A set of dataset IDs or variable IDs (in the form of "dataset_id" or "dataset_id.variable_id") that should not
+       be selectable. If None, all variables are selectable.
 
     Returns
     -------
@@ -179,7 +225,7 @@ def create_dataset_selection() -> html.Div:
                     ),
                 ]
             ),
-            _create_dataset_selection_modal(),
+            _create_dataset_selection_modal(disallowed_datasets),
         ],
     )
 

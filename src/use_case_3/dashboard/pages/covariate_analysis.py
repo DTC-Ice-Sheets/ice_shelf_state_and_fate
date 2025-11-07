@@ -36,12 +36,22 @@ from use_case_3.dashboard.query_api import (
     s3_client,
 )
 
+DISALLOWED_DATASETS = {
+    "4D_ANTARCTICA_SUBGLACIAL_LAKES",
+    "BAS_OCEAN_MOORINGS",
+    "BED_MACHINE",
+    "POLAR_PLUS_ICE_SHELVES_BASAL_MELT",
+    "REMA_MOSAIC_1000",
+    "REMA_MOSAIC_100",
+    "REMA_GAPLESS_100",
+    "SOUTHERN_ANNULAR_MODE",
+}
+
 dash.register_page(__name__)
 
 logger = logging.getLogger(__name__)
 
 navbar = layout_navbar("covariate-analysis")
-
 
 layout = [
     navbar,
@@ -75,7 +85,7 @@ layout = [
                     dbc.Form(
                         [
                             *create_ice_shelf_selection(),
-                            create_dataset_selection(),
+                            create_dataset_selection(disallowed_datasets=DISALLOWED_DATASETS),
                             dbc.Row(
                                 [
                                     dbc.Label("Analysis Type:", html_for="select-analysis-type", width=3),
