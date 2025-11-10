@@ -187,11 +187,20 @@ layout = html.Div(
                         # Insights Covariate Analysis
                         dbc.Row(
                             [
-                                dbc.Col([html.Div(id="insights_headline_title_cov_analysis_div")], width=3),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            id="insights_headline_title_cov_analysis_div",
+                                            style={"display": "none"},
+                                        )
+                                    ],
+                                    width=3,
+                                ),
                                 dbc.Col(
                                     [
                                         html.Div(
                                             id="insights_headline_text_cov_analysis_div",
+                                            style={"display": "none"},
                                         ),
                                     ],
                                     width=9,
@@ -213,6 +222,7 @@ layout = html.Div(
                         ),
                         html.Div(
                             id="insights_cov_analysis_detail_div",
+                            style={"display": "none"},
                         ),
                         html.Div(
                             id="cov_analysis_graph_div",
