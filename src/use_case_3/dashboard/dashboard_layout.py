@@ -2,10 +2,12 @@
 
 import dash_bootstrap_components as dbc
 
+url_base_pathname = "/state-and-fate/"
+
 navbar_pages = {
-    "/insights": "Insights",
-    "/ice-shelf-summary": "Ice Shelf Summary",
-    "/covariate-analysis": "Covariate Analysis",
+    "insights": "Insights",
+    "ice-shelf-summary": "Ice Shelf Summary",
+    "covariate-analysis": "Covariate Analysis",
 }
 
 
@@ -29,7 +31,7 @@ def layout_navbar(current_path: str | None = None) -> dbc.NavbarSimple:
                 dbc.NavItem(
                     dbc.NavLink(
                         name,
-                        href=path,
+                        href=url_base_pathname + path,
                         active=(path == current_path),
                     )
                 )
@@ -37,7 +39,7 @@ def layout_navbar(current_path: str | None = None) -> dbc.NavbarSimple:
             ]
         ],
         brand="DTC Ice Sheets: Use Case 3",
-        brand_href="/",
+        brand_href=url_base_pathname,
         brand_style={"font-size": "2rem"},
         color="#1c1c1c",
         dark=True,

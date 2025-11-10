@@ -602,6 +602,40 @@ def plot_dataset_summary(plot_data: dict, geom: MultiPolygon) -> go.Figure:
         A Plotly figure containing the dataset summary plot.
     """
     fig = go.Figure()
+
+    if "time" in plot_data["dims"] and (
+        "x" not in plot_data["dims"]
+        or "y" not in plot_data["dims"]
+        or (len(plot_data["dims"]["x"]["values"]) < 2 and len(plot_data["dims"]["y"]["values"]) < 2)
+    ):
+        # 1D timeseries
+        for name, var in plot_data["vars"].items():
+            values = np.array(var["values"])
+            if "time" not in var["coords"]:
+                continue
+            ti = var["coords"].index("time")
+            mean_vals = np.nanmean(
+                values,
+                axis=tuple(i for i in range(values.ndim) if i != ti),
+                keepdims=False,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=plot_data["dims"]["time"]["values"],
+                    y=mean_vals,
+                    mode="lines",
+                    name=name,
+                    showlegend=True,
+                )
+            )
+        fig.update_layout(
+            xaxis={"title": "Time"},
+            yaxis={"title": "Mean Value"},
+            width=800,
+            height=400,
+        )
+        return fig
+
     trace_i = 0
     timeless_trace_ids = set()
     trace_ids_by_time = defaultdict(list)

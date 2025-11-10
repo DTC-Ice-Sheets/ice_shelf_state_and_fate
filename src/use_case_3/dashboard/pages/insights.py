@@ -24,7 +24,7 @@ register_page(__name__)
 
 ice_shelf_inital = None
 
-navbar = layout_navbar("/insights")
+navbar = layout_navbar("insights")
 
 layout = html.Div(
     [

@@ -15,7 +15,7 @@ from use_case_3.dashboard.query_api import (
 
 dash.register_page(__name__)
 
-navbar = layout_navbar("/ice-shelf-summary")
+navbar = layout_navbar("ice-shelf-summary")
 
 layout = html.Div(
     [

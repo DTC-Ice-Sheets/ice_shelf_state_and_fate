@@ -1,15 +1,15 @@
 """Perform covariate analysis on selected variables."""
 
-import json
 import logging
 from datetime import datetime
-from io import BytesIO
 from shutil import make_archive, rmtree
 from typing import Callable
+from urllib.parse import urlparse
 
 import dash
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+import requests
 from dash import ALL, Input, Output, State, callback, dcc, html, set_props
 from dtc_query_client import (
     ApiClient,
@@ -36,12 +36,22 @@ from use_case_3.dashboard.query_api import (
     s3_client,
 )
 
+DISALLOWED_DATASETS = {
+    "4D_ANTARCTICA_SUBGLACIAL_LAKES",
+    "BAS_OCEAN_MOORINGS",
+    "BED_MACHINE",
+    "POLAR_PLUS_ICE_SHELVES_BASAL_MELT",
+    "REMA_MOSAIC_1000",
+    "REMA_MOSAIC_100",
+    "REMA_GAPLESS_100",
+    "SOUTHERN_ANNULAR_MODE",
+}
+
 dash.register_page(__name__)
 
 logger = logging.getLogger(__name__)
 
-navbar = layout_navbar("/covariate-analysis")
-
+navbar = layout_navbar("covariate-analysis")
 
 layout = [
     navbar,
@@ -75,7 +85,7 @@ layout = [
                     dbc.Form(
                         [
                             *create_ice_shelf_selection(),
-                            create_dataset_selection(),
+                            create_dataset_selection(disallowed_datasets=DISALLOWED_DATASETS),
                             dbc.Row(
                                 [
                                     dbc.Label("Analysis Type:", html_for="select-analysis-type", width=3),
@@ -224,21 +234,24 @@ async def conduct_covariate_analysis_integrated(
 
             set_progress(("Downloading result...", 95))
 
-            raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
             output_url = res.outputs["use-case-3-covariate-analyser"]["output_json"]
-            bucket, key = output_url.removeprefix("s3://").removeprefix("S3://").split("/", 1)
-            b = BytesIO()
-            s3_client.download_fileobj(Bucket=bucket, Key=key, Fileobj=b)
-            b.seek(0)
-            plot_data = json.load(b)
+            r = requests.get(output_url)
+            r.raise_for_status()
+            plot_data = r.json()
             fig = plot_covariate_analysis(plot_data)
             summary_div = text_covariate_analysis(plot_data)
+
+            raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
+            parsed_url = urlparse(raw_data_url)
+            bucket_name = parsed_url.netloc if parsed_url.scheme == "s3" else parsed_url.netloc.split(".")[0]
+            s3_prefix = parsed_url.path.lstrip("/")
+            raw_data_s3_url = f"s3://{bucket_name}/{s3_prefix}"
     except Exception as e:
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
             logger.error(res)
         return None, None, None, True, str(e)
-    return fig, summary_div, raw_data_url, False, ""
+    return fig, summary_div, raw_data_s3_url, False, ""
 
 
 @callback(
