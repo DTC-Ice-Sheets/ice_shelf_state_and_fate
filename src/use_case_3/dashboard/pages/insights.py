@@ -735,39 +735,40 @@ def button_detailed_basal_melt_flux(n_clicks):  # noqa: ANN001, ANN201, D103
     return {"display": "none"}, {"display": "none"}
 
 
-@callback(
-    Output("insights_headline_title_cov_analysis_div", "children"),
-    Output("insights_headline_text_cov_analysis_div", "children"),
-    Output("insights_btn_show_cov_analysis_div", "style"),
-    Input("ice-shelf-selection", "value"),
-    Input("summary-year-selector", "value"),
-)
-async def insight_update_cov_analysis_headline(ice_shelf, year_range):  # noqa: ANN001, ANN201, D103
-    if ice_shelf == "thwaites":
-        strong_correlation, medium_correlation, weak_correlation = await example_covariate_analysis_thwaites(
-            date_start=datetime(year_range[0], 1, 1),
-            date_end=datetime(year_range[1], 1, 1),
-        )
+# Re-enable this callback when the Thwaites data is available in the EO datastore #####
+# @callback(
+#     Output("insights_headline_title_cov_analysis_div", "children"),
+#     Output("insights_headline_text_cov_analysis_div", "children"),
+#     Output("insights_btn_show_cov_analysis_div", "style"),
+#     Input("ice-shelf-selection", "value"),
+#     Input("summary-year-selector", "value"),
+# )
+# async def insight_update_cov_analysis_headline(ice_shelf, year_range):
+#     if ice_shelf == "thwaites":
+#         strong_correlation, medium_correlation, weak_correlation = await example_covariate_analysis_thwaites(
+#             date_start=datetime(year_range[0], 1, 1),
+#             date_end=datetime(year_range[1], 1, 1),
+#         )
 
-        total_correlations = len(strong_correlation) + len(medium_correlation) + len(weak_correlation)
+#         total_correlations = len(strong_correlation) + len(medium_correlation) + len(weak_correlation)
 
-        if total_correlations == 0:
-            return html.Div(), html.Div(), {"display": "none"}
-        return (
-            html.Div(html.P(html.Strong("Covariate Analysis:"), className="insights_headline_text")),
-            html.Div(
-                html.P(
-                    f"There have been {total_correlations} correlated variables detected.",
-                    className="insights_headline_text",
-                )
-            ),
-            {
-                "display": "flex",
-                "align-items": "center",
-                "justify-content": "center",
-            },
-        )
-    return html.Div(), html.Div(), {"display": "none"}
+#         if total_correlations == 0:
+#             return html.Div(), html.Div(), {"display": "none"}
+#         return (
+#             html.Div(html.P(html.Strong("Covariate Analysis:"), className="insights_headline_text")),
+#             html.Div(
+#                 html.P(
+#                     f"There have been {total_correlations} correlated variables detected.",
+#                     className="insights_headline_text",
+#                 )
+#             ),
+#             {
+#                 "display": "flex",
+#                 "align-items": "center",
+#                 "justify-content": "center",
+#             },
+#         )
+#     return html.Div(), html.Div(), {"display": "none"}
 
 
 @callback(
