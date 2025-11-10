@@ -182,7 +182,7 @@ layout = html.Div(
                         ),
                         dbc.Row(
                             html.Div(html.H1("Correlated Variables: "), id="insights_correlated_variables_title_div"),
-                            style={"padding-top": "20px"},
+                            style={"padding-top": "20px", "display": "none"},
                         ),
                         # Insights Covariate Analysis
                         dbc.Row(
