@@ -735,16 +735,7 @@ def button_detailed_basal_melt_flux(n_clicks):  # noqa: ANN001, ANN201, D103
     return {"display": "none"}, {"display": "none"}
 
 
-@callback(
-    Output("insights_headline_title_cov_analysis_div", "children"),
-    Output("insights_headline_text_cov_analysis_div", "children"),
-    Output("insights_btn_show_cov_analysis_div", "style"),
-)
-def insight_update_cov_analysis_headline():  # noqa: ANN201, D103
-    return html.Div(), html.Div(), {"display": "none"}
-
-
-# This will replace the above callback when the Thwaites data is available in the EO datastore #####
+# Re-enable this callback when the Thwaites data is available in the EO datastore #####
 # @callback(
 #     Output("insights_headline_title_cov_analysis_div", "children"),
 #     Output("insights_headline_text_cov_analysis_div", "children"),
