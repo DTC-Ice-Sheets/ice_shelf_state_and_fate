@@ -656,7 +656,10 @@ class CovariateAnalyser:
             for ts_b in self.timeseries_container.timeseries.values():
                 if ts_a.label == ts_b.label:
                     continue
-                if f"{ts_b.label}/{ts_a.label}" in out["covariate_stats"]:
+                if (
+                    f"{ts_b.label}/{ts_a.label}" in out["covariate_stats"]
+                    and analysis_type != JointPlotAnalysisType.CAUSAL
+                ):
                     continue
                 key = f"{ts_a.label}/{ts_b.label}"
 

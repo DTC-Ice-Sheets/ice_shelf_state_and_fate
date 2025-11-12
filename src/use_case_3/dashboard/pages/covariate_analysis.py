@@ -239,7 +239,7 @@ async def conduct_covariate_analysis_integrated(
             r = requests.get(output_url)
             r.raise_for_status()
             plot_data = r.json()
-            fig = plot_covariate_analysis(plot_data)
+            fig = plot_covariate_analysis(plot_data, analysis_type)
             summary_div = text_covariate_analysis(plot_data, analysis_type)
 
             raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
