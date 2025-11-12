@@ -15,6 +15,7 @@ from shapely.ops import transform
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
+from use_case_3.timeseries_module.timeseries_enums import JointPlotAnalysisType
 
 
 def plot_placeholder() -> go.Figure:
@@ -309,7 +310,7 @@ def plot_summary_timeseries_multiple(
     return fig
 
 
-def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrcoef") -> tuple[dict, dict, dict]:
+def analyse_correlation_strength(plot_data: dict, analysis_type: JointPlotAnalysisType) -> tuple[dict, dict, dict]:
     """
     Analyse the strength of correlations in the plot data.
 
@@ -317,8 +318,8 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
     ----------
     plot_data : dict
         Dictionary containing the data for plotting.
-    correlation_type : str, optional
-        The type of correlation to analyse, by default "corrcoef".
+    analysis_type : JointPlotAnalysisType
+        The type of correlation to analyse
 
     Returns
     -------
@@ -333,11 +334,9 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
     medium_correlations = {}
     weak_correlations = {}
     for variables in plot_data["covariate_stats"]:
-        if correlation_type == "corrcoef":
+        if analysis_type in [JointPlotAnalysisType.CORR, JointPlotAnalysisType.CROSS_CORR]:
             corr_coeff = plot_data["covariate_stats"][variables]["Correlation Coefficient"]
             p_value = plot_data["covariate_stats"][variables]["P-Value"]
-            # print(variables)
-            # print(corr_coeff)
             if abs(corr_coeff) >= strong_correlation and p_value <= 0.05:
                 strong_correlations[variables] = corr_coeff, p_value
             elif abs(corr_coeff) >= medium_correlation and p_value <= 0.05:
@@ -348,7 +347,7 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
     return strong_correlations, medium_correlations, weak_correlations
 
 
-def text_covariate_analysis(plot_data: dict) -> html.Div:
+def text_covariate_analysis(plot_data: dict, analysis_type: JointPlotAnalysisType) -> html.Div:
     """
     Create a textual summary of the covariate analysis.
 
@@ -356,15 +355,15 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
     ----------
     plot_data : dict
         Dictionary containing the data for plotting.
+    analysis_type : JointPlotAnalysisType
+        The type of correlation analysis performed.
 
     Returns
     -------
     html.Div
         A div containing the textual summary of the covariate analysis.
     """
-    strong_correlation, medium_correlation, weak_correlation = analyse_correlation_strength(
-        plot_data, correlation_type="corrcoef"
-    )
+    strong_correlation, medium_correlation, weak_correlation = analyse_correlation_strength(plot_data, analysis_type)
     strong_corr_text_ul = []
     medium_corr_text_ul = []
     weak_corr_text_ul = []
@@ -402,8 +401,6 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
             )
     else:
         medium_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
-
-    # medium_corr_text = html.P(medium_corr_text, className="insights_calving_summary_text_no_just")
 
     if len(weak_correlation) > 0:
         weak_corr_text = html.P(
