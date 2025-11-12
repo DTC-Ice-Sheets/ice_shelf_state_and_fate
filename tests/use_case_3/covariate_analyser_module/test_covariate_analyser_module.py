@@ -235,7 +235,7 @@ def timeseries_7_lag_fixture():
 def fixture_series_x():
     return Timeseries(
         measurements=pd.Series(
-            [-2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0],
+            [-2, -1, 0, 1.01, 2, 1, 0, -1, -2, -1, 0],
             name="x",
             index=pd.date_range(start="2020-01-01", periods=11, freq="MS"),
         ),
@@ -631,7 +631,7 @@ def test_granger_causality_test_bestlag(fixture_data):
     )
 
     assert best_lag == 3
-    np.testing.assert_almost_equal(best_bic, -501.16420633063353)
+    np.testing.assert_almost_equal(best_bic, -64.1297785796557)
 
 
 def test_granger_causality_test(fixture_series_x, fixture_series_y):
@@ -654,5 +654,5 @@ def test_granger_causality_test(fixture_series_x, fixture_series_y):
         metric=ModelEvaluationMetric.BIC,
     )
 
-    np.testing.assert_almost_equal(f_score, 2.203389830508475)
-    np.testing.assert_almost_equal(p_value, 0.2059788277233571)
+    np.testing.assert_almost_equal(f_score, 2.6001062494609055)
+    np.testing.assert_almost_equal(p_value, 0.18902718453358755)

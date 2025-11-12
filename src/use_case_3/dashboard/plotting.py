@@ -15,6 +15,7 @@ from shapely.ops import transform
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
 from use_case_3.timeseries_module.timeseries import Timeseries
+from use_case_3.timeseries_module.timeseries_enums import JointPlotAnalysisType
 
 
 def plot_placeholder() -> go.Figure:
@@ -309,7 +310,7 @@ def plot_summary_timeseries_multiple(
     return fig
 
 
-def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrcoef") -> tuple[dict, dict, dict]:
+def analyse_correlation_strength(plot_data: dict, analysis_type: JointPlotAnalysisType) -> tuple[dict, dict, dict]:
     """
     Analyse the strength of correlations in the plot data.
 
@@ -317,8 +318,8 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
     ----------
     plot_data : dict
         Dictionary containing the data for plotting.
-    correlation_type : str, optional
-        The type of correlation to analyse, by default "corrcoef".
+    analysis_type : JointPlotAnalysisType
+        The type of correlation to analyse
 
     Returns
     -------
@@ -333,11 +334,9 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
     medium_correlations = {}
     weak_correlations = {}
     for variables in plot_data["covariate_stats"]:
-        if correlation_type == "corrcoef":
+        if analysis_type in [JointPlotAnalysisType.CORR, JointPlotAnalysisType.CROSS_CORR]:
             corr_coeff = plot_data["covariate_stats"][variables]["Correlation Coefficient"]
             p_value = plot_data["covariate_stats"][variables]["P-Value"]
-            # print(variables)
-            # print(corr_coeff)
             if abs(corr_coeff) >= strong_correlation and p_value <= 0.05:
                 strong_correlations[variables] = corr_coeff, p_value
             elif abs(corr_coeff) >= medium_correlation and p_value <= 0.05:
@@ -348,9 +347,9 @@ def analyse_correlation_strength(plot_data: dict, correlation_type: str = "corrc
     return strong_correlations, medium_correlations, weak_correlations
 
 
-def text_covariate_analysis(plot_data: dict) -> html.Div:
+def analyse_causal_strength(plot_data: dict) -> dict:
     """
-    Create a textual summary of the covariate analysis.
+    Analyse the strength of causal relationships in the plot data.
 
     Parameters
     ----------
@@ -359,77 +358,122 @@ def text_covariate_analysis(plot_data: dict) -> html.Div:
 
     Returns
     -------
+    dict
+        A dictionary containing strong causal relationships.
+    """
+    causal_variables = {}
+    for variables in plot_data["covariate_stats"]:
+        p_value = plot_data["covariate_stats"][variables]["P-Value"]
+        if p_value <= 0.05:
+            causal_variables[variables] = p_value
+
+    return causal_variables
+
+
+def text_covariate_analysis(plot_data: dict, analysis_type: JointPlotAnalysisType) -> html.Div:  # noqa: C901
+    """
+    Create a textual summary of the covariate analysis.
+
+    Parameters
+    ----------
+    plot_data : dict
+        Dictionary containing the data for plotting.
+    analysis_type : JointPlotAnalysisType
+        The type of correlation analysis performed.
+
+    Returns
+    -------
     html.Div
         A div containing the textual summary of the covariate analysis.
     """
-    strong_correlation, medium_correlation, weak_correlation = analyse_correlation_strength(
-        plot_data, correlation_type="corrcoef"
-    )
-    strong_corr_text_ul = []
-    medium_corr_text_ul = []
-    weak_corr_text_ul = []
-
-    if len(strong_correlation) > 0:
-        strong_corr_text = html.P(
-            " The following strong correlations have been observed: ",
-            className="insights_calving_summary_text_no_just",
+    if analysis_type == JointPlotAnalysisType.CORR or analysis_type == JointPlotAnalysisType.CROSS_CORR:
+        strong_correlation, medium_correlation, weak_correlation = analyse_correlation_strength(
+            plot_data, analysis_type
         )
-        for corr_vars in strong_correlation:
-            strong_corr_text_ul.append(
-                html.P(
-                    f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
-                    f"(correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, "
-                    f"p-value = {strong_correlation[corr_vars][1]: .3f})",
-                    className="cov_analysis_summary_text_no_just_indent",
-                )
+        strong_corr_text_ul = []
+        medium_corr_text_ul = []
+        weak_corr_text_ul = []
+
+        if len(strong_correlation) > 0:
+            strong_corr_text = html.P(
+                " The following strong correlations have been observed: ",
+                className="insights_calving_summary_text_no_just",
             )
-    else:
-        strong_corr_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
-
-    if len(medium_correlation) > 0:
-        medium_corr_text = html.P(
-            " The following medium correlations have been observed: ",
-            className="cov_analysis_summary_text_no_just",
-        )
-        for corr_vars in medium_correlation:
-            medium_corr_text_ul.append(
-                html.P(
-                    f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
-                    f"(correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, "
-                    f"p-value = {medium_correlation[corr_vars][1]: .3f})",
-                    className="cov_analysis_summary_text_no_just_indent",
+            for corr_vars in strong_correlation:
+                strong_corr_text_ul.append(
+                    html.P(
+                        f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
+                        f"(correlation coefficient = {strong_correlation[corr_vars][0]: .2f}, "
+                        f"p-value = {strong_correlation[corr_vars][1]: .3f})",
+                        className="cov_analysis_summary_text_no_just_indent",
+                    )
                 )
+        else:
+            strong_corr_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
+
+        if len(medium_correlation) > 0:
+            medium_corr_text = html.P(
+                " The following medium correlations have been observed: ",
+                className="cov_analysis_summary_text_no_just",
             )
-    else:
-        medium_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
-
-    # medium_corr_text = html.P(medium_corr_text, className="insights_calving_summary_text_no_just")
-
-    if len(weak_correlation) > 0:
-        weak_corr_text = html.P(
-            " The following weak correlations have been observed: ",
-            className="cov_analysis_summary_text_no_just",
-        )
-        for corr_vars in weak_correlation:
-            weak_corr_text_ul.append(
-                html.P(
-                    f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
-                    f"(correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, "
-                    f"p-value = {weak_correlation[corr_vars][1]: .3f})",
-                    className="cov_analysis_summary_text_no_just_indent",
+            for corr_vars in medium_correlation:
+                medium_corr_text_ul.append(
+                    html.P(
+                        f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
+                        f"(correlation coefficient = {medium_correlation[corr_vars][0]: .2f}, "
+                        f"p-value = {medium_correlation[corr_vars][1]: .3f})",
+                        className="cov_analysis_summary_text_no_just_indent",
+                    )
                 )
-            )
-    else:
-        weak_corr_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
+        else:
+            medium_corr_text = html.P("", className="insights_calving_summary_text_no_just_indent")
 
-    text = [
-        strong_corr_text,
-        *strong_corr_text_ul,
-        medium_corr_text,
-        *medium_corr_text_ul,
-        weak_corr_text,
-        *weak_corr_text_ul,
-    ]
+        if len(weak_correlation) > 0:
+            weak_corr_text = html.P(
+                " The following weak correlations have been observed: ",
+                className="cov_analysis_summary_text_no_just",
+            )
+            for corr_vars in weak_correlation:
+                weak_corr_text_ul.append(
+                    html.P(
+                        f"{corr_vars.split('/')[0].split(':')[1]} and {corr_vars.split('/')[1].split(':')[1]} "
+                        f"(correlation coefficient = {weak_correlation[corr_vars][0]: .2f}, "
+                        f"p-value = {weak_correlation[corr_vars][1]: .3f})",
+                        className="cov_analysis_summary_text_no_just_indent",
+                    )
+                )
+        else:
+            weak_corr_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
+
+        text = [
+            strong_corr_text,
+            *strong_corr_text_ul,
+            medium_corr_text,
+            *medium_corr_text_ul,
+            weak_corr_text,
+            *weak_corr_text_ul,
+        ]
+    elif analysis_type == JointPlotAnalysisType.CAUSAL:
+        causal_variables = analyse_causal_strength(plot_data)
+
+        if len(causal_variables) > 0:
+            causal_text = html.P(
+                " The following causal relationships have been observed: ",
+                className="cov_analysis_summary_text_no_just",
+            )
+            causal_text_ul = []
+            for caus_vars in causal_variables:
+                causal_text_ul.append(
+                    html.P(
+                        f"{caus_vars.split('/')[0].split(':')[1]} -> {caus_vars.split('/')[1].split(':')[1]} "
+                        f"(p-value = {causal_variables[caus_vars]: .3f})",
+                        className="cov_analysis_summary_text_no_just_indent",
+                    )
+                )
+        else:
+            causal_text = html.P("", className="cov_analysis_summary_text_no_just_indent")
+            causal_text_ul = []
+        text = [causal_text, *causal_text_ul]
     return html.Div(text)
 
 
@@ -454,7 +498,7 @@ def customwrap(s: str, width: int = 16, separator: str = "<br>") -> str:
     return separator.join(textwrap.wrap(s, width=width))
 
 
-def plot_covariate_analysis(plot_data: dict) -> go.Figure:
+def plot_covariate_analysis(plot_data: dict, analysis_type: JointPlotAnalysisType) -> go.Figure:
     """
     Plot the results of a covariate analysis.
 
@@ -462,6 +506,8 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
     ----------
     plot_data : dict
         Dictionary containing the data for plotting.
+    analysis_type : JointPlotAnalysisType
+        The type of correlation analysis performed.
 
     Returns
     -------
@@ -551,13 +597,19 @@ def plot_covariate_analysis(plot_data: dict) -> go.Figure:
                 row=b_idx + 1,
                 col=a_idx + 1,
             )
-            stats = plot_data["covariate_stats"].get(
-                f"{a_label}/{b_label}",
-                plot_data["covariate_stats"].get(
-                    f"{b_label}/{a_label}",
+            if analysis_type == JointPlotAnalysisType.CAUSAL:
+                stats = plot_data["covariate_stats"].get(
+                    f"{a_label}/{b_label}",
                     {},
-                ),
-            )
+                )
+            else:
+                stats = plot_data["covariate_stats"].get(
+                    f"{a_label}/{b_label}",
+                    plot_data["covariate_stats"].get(
+                        f"{b_label}/{a_label}",
+                        {},
+                    ),
+                )
             axes_id = a_idx + b_idx * (len(labels) + 1) + 1
             axes_name = str(axes_id) if axes_id > 0 else ""
             fig.add_annotation(

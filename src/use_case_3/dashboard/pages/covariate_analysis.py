@@ -35,6 +35,7 @@ from use_case_3.dashboard.query_api import (
     output_path,
     s3_client,
 )
+from use_case_3.timeseries_module.timeseries_enums import JointPlotAnalysisType
 
 DISALLOWED_DATASETS = {
     "4D_ANTARCTICA_SUBGLACIAL_LAKES",
@@ -183,7 +184,7 @@ async def conduct_covariate_analysis_integrated(
     _n_clicks: int,
     ice_shelf: str,
     year_range: tuple[int, int],
-    analysis_type: str,
+    analysis_type: JointPlotAnalysisType,
     selector_ids: list[str],
     selector_values: list[str],
 ) -> tuple[go.Figure | None, str | None, bool, str]:
@@ -238,8 +239,8 @@ async def conduct_covariate_analysis_integrated(
             r = requests.get(output_url)
             r.raise_for_status()
             plot_data = r.json()
-            fig = plot_covariate_analysis(plot_data)
-            summary_div = text_covariate_analysis(plot_data)
+            fig = plot_covariate_analysis(plot_data, analysis_type)
+            summary_div = text_covariate_analysis(plot_data, analysis_type)
 
             raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
             parsed_url = urlparse(raw_data_url)
