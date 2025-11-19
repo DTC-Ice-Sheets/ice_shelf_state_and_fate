@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 def test_integrated(tmp_path) -> None:
     from use_case_3.covariate_analyser_module_entrypoint import (
-        main as covariate_analyser_main,
+        app as covariate_analyser_app,
     )
-    from use_case_3.timeseries_module_entrypoint import main as timeseries_main
+    from use_case_3.timeseries_module_entrypoint import app as timeseries_app
     from use_case_3.timeseries_preprocessor_module_entrypoint import (
-        main as preprocessor_main,
+        app as preprocessor_app,
     )
 
     input_zarr_path_1 = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
@@ -40,7 +40,7 @@ def test_integrated(tmp_path) -> None:
         ],
     ):
         assert not timeseries_path_1.exists()
-        timeseries_main()
+        timeseries_app(result_action="return_value")
         assert timeseries_path_1.is_dir()
 
     with patch.object(
@@ -63,7 +63,7 @@ def test_integrated(tmp_path) -> None:
         ],
     ):
         assert not timeseries_path_2.exists()
-        timeseries_main()
+        timeseries_app(result_action="return_value")
         assert timeseries_path_2.is_dir()
 
     with patch.object(
@@ -80,7 +80,7 @@ def test_integrated(tmp_path) -> None:
         ],
     ):
         assert not preprocessed_timeseries_path.exists()
-        preprocessor_main()
+        preprocessor_app(result_action="return_value")
         assert preprocessed_timeseries_path.is_dir()
 
     with patch.object(
@@ -95,5 +95,5 @@ def test_integrated(tmp_path) -> None:
         ],
     ):
         assert not analysis_output_path.exists()
-        covariate_analyser_main()
+        covariate_analyser_app(result_action="return_value")
         assert analysis_output_path.is_file()
