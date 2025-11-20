@@ -85,7 +85,11 @@ jobs:
           poetry run ruff check --config pyproject.toml
 
       - name: Check docstrings
+        # Super annoying bug in pydoclint requires force-reinstall here to make sure it is installed after `docstring-parser`.
+        # This is because pydoclint relies on a forked version and they didn't change the module name.
+        # https://github.com/jsh9/pydoclint/issues/162
         run: |
+          poetry run pip install --force-reinstall pydoclint
           poetry run pydoclint --config pyproject.toml --quiet src/
 
       - name: Check for security issues

@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 
 def test_main(tmp_path) -> None:
-    from use_case_3.timeseries_preprocessor_module_entrypoint import main
+    from use_case_3.timeseries_preprocessor_module_entrypoint import app
 
     input_zarr_paths = [
         "tests/use_case_3/test_inputs/rasters/test_timeseries_A.zarr",
@@ -20,5 +20,5 @@ def test_main(tmp_path) -> None:
 
     with patch.object(sys, "argv", argv):
         assert not output_zarr_path.exists()
-        main()
+        app(result_action="return_value")
         assert output_zarr_path.is_dir()

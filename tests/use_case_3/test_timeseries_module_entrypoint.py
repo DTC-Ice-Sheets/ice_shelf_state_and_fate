@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 
 def test_main(tmp_path) -> None:
-    from use_case_3.dataset_summary_module_entrypoint import main
+    from use_case_3.dataset_summary_module_entrypoint import app
 
     input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
     output_path = tmp_path / "output.json"
@@ -25,7 +25,7 @@ def test_main(tmp_path) -> None:
         ],
     ):
         assert not output_path.exists()
-        main()
+        app(result_action="return_value")
         assert output_path.is_file()
         with output_path.open("r") as f:
             out = json.load(f)

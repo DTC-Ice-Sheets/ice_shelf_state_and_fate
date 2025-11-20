@@ -1,54 +1,43 @@
 """Entrypoint for the covariate analyser module."""
 
-import argparse
 import json
-from types import UnionType
-from typing import get_args
+from pathlib import Path
 
+import cyclopts
 import xarray as xr
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
-from use_case_3.schemas import CovariateAnalyserModuleEntryPointSchema
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
+    JointPlotAnalysisType,
     TimeseriesType,
 )
 
+app = cyclopts.App()
 
-def main() -> None:
-    """Execute the covariate analyser module from CLI arguments."""
-    parser = argparse.ArgumentParser(
-        prog="use_case_3.covariate_analyser_module",
-        description="Plot covariate analysis from a set of pre-processed timeseries.",
-    )
 
-    # Add arguments to the parser
-    for name, field in CovariateAnalyserModuleEntryPointSchema.model_fields.items():
-        # The type argument needs to be a function, so remove ` | None` if present
-        type_ = field.annotation
-        if type_ is None:
-            type_ = int
-        elif isinstance(type_, UnionType):
-            type_ = get_args(type_)[0]
+@app.default
+def main(
+    input_path: Path,
+    output_path: Path,
+    analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
+) -> None:
+    """Plot covariate analysis from a set of pre-processed timeseries.
 
-        parser.add_argument(
-            f"--{name}",
-            dest=name,
-            type=type_,
-            default=field.default,
-            help=field.description,
-            required=name in ["input_path"],
-        )
-
-    # Parse the input arguments
-    args = parser.parse_args()
-    model = CovariateAnalyserModuleEntryPointSchema(**vars(args))
-
+    Parameters
+    ----------
+    input_path : Path
+        Path to the input .zarr file containing pre-processed timeseries.
+    output_path : Path
+        Path to save the output .json file.
+    analysis_type : JointPlotAnalysisType, optional
+        Type of covariate analysis to perform.
+    """
     timeseries = []
-    ds = xr.open_zarr(model.input_path)
+    ds = xr.open_zarr(input_path)
     for key, attr in ds.attrs["timeseries"].items():
         label = attr["label"]
         measurement_name = attr["measurement_name"]
@@ -77,12 +66,12 @@ def main() -> None:
     analyser = CovariateAnalyser(preprocessor)
 
     results = analyser.run_analysis(
-        analysis_type=model.analysis_type,
+        analysis_type=analysis_type,
     )
 
-    with model.output_path.open("w") as f:
+    with output_path.open("w") as f:
         json.dump(results, f)
 
 
 if __name__ == "__main__":
-    main()
+    app()
