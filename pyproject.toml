@@ -55,7 +55,7 @@ commitizen = "^4.9.1"
 pydoclint = "^0.6.10"
 
 [tool.poetry.group.dashboard.dependencies]
-plotly = "^6.4.0"
+plotly = "^6.5.0"
 dash = { extras = ["async", "diskcache"], version = "^3.3.0" }
 dash-auth = "^2.3.0"
 dash-bootstrap-components = "^2.0.4"
