@@ -2,9 +2,7 @@
 
 import logging
 from datetime import datetime
-from shutil import make_archive, rmtree
 from typing import Callable
-from urllib.parse import urlparse
 
 import dash
 import dash_bootstrap_components as dbc
@@ -20,20 +18,16 @@ from dtc_query_client import (
     VariableItem,
 )
 from dtc_query_client.helpers import iterate_job
-from dtc_wrapper.helpers import download_directory_from_s3, parse_s3_url
 
 from use_case_3.dashboard.components.dataset_selection import create_dataset_selection
 from use_case_3.dashboard.components.error_banner import create_error_banner
 from use_case_3.dashboard.components.ice_shelf_selection import create_ice_shelf_selection
 from use_case_3.dashboard.components.progress_dialog import create_progress_dialog
-from use_case_3.dashboard.components.s3_directory_download_button import create_s3_directory_download_button
 from use_case_3.dashboard.dashboard_layout import layout_navbar
 from use_case_3.dashboard.plotting import plot_covariate_analysis, plot_placeholder, text_covariate_analysis
 from use_case_3.dashboard.query_api import (
     api_config,
     config_dict,
-    output_path,
-    s3_client,
 )
 from use_case_3.timeseries_module.timeseries_enums import JointPlotAnalysisType
 
@@ -125,10 +119,7 @@ layout = [
                             html.Div(
                                 [
                                     dcc.Graph(id="results-plot", figure=plot_placeholder()),
-                                    create_s3_directory_download_button(
-                                        "Download Raw Data",
-                                        index="download-raw-data",
-                                    ),
+                                    html.Div(id="raw-data"),
                                 ],
                                 style={
                                     "display": "flex",
@@ -152,7 +143,7 @@ layout = [
 @callback(
     Output("results-plot", "figure"),
     Output("analysis_results_div", "children"),
-    Output({"type": "s3-download-url", "index": "download-raw-data"}, "data"),
+    Output("raw-data", "children"),
     Output("job-runner-error-message", "is_open"),
     Output("job-runner-error-message", "children"),
     Input("run-analysis-button", "n_clicks"),
@@ -243,16 +234,42 @@ async def conduct_covariate_analysis_integrated(
             summary_div = text_covariate_analysis(plot_data, analysis_type)
 
             raw_data_url = res.outputs["use-case-3-timeseries-preprocessor"]["output_timeseries"]
-            parsed_url = urlparse(raw_data_url)
-            bucket_name = parsed_url.netloc if parsed_url.scheme == "s3" else parsed_url.netloc.split(".")[0]
-            s3_prefix = parsed_url.path.lstrip("/")
-            raw_data_s3_url = f"s3://{bucket_name}/{s3_prefix}"
+            raw_data_text = dbc.Accordion(
+                dbc.AccordionItem(
+                    html.Div(
+                        [
+                            html.Span(
+                                [
+                                    "The raw data used in this analysis can be accessed with the ",
+                                    html.A(
+                                        "Python Xarray library",
+                                        href="https://docs.xarray.dev/en/stable/user-guide/io.html#zarr",
+                                    ),
+                                    " using the following code snippet:",
+                                ]
+                            ),
+                            html.Pre(
+                                f'import xarray as xr\nds = xr.open_zarr(\n    "{raw_data_url}"\n)',
+                                style={
+                                    "padding": "1em",
+                                    "overflowX": "scroll",
+                                    "width": "100%",
+                                },
+                            ),
+                        ]
+                    ),
+                    title="Raw data access",
+                ),
+                start_collapsed=True,
+                style={"width": "40em"},
+            )
+
     except Exception as e:
         logger.exception("Error occurred while generating plot")
         if "res" in locals():
             logger.error(res)
         return None, None, None, True, str(e)
-    return fig, summary_div, raw_data_s3_url, False, ""
+    return fig, summary_div, raw_data_text, False, ""
 
 
 @callback(
@@ -286,60 +303,3 @@ async def cancel_job(_n_clicks: int, job_id: str) -> tuple[bool, bool, str]:
         logger.error(e)
         return False, True, str(e)
     return True, False, ""
-
-
-@callback(
-    Output({"type": "s3-download-download", "index": "download-raw-data"}, "data"),
-    Output({"type": "s3-download-error-message", "index": "download-raw-data"}, "is_open"),
-    Output({"type": "s3-download-error-message", "index": "download-raw-data"}, "children"),
-    Input({"type": "s3-download-button", "index": "download-raw-data"}, "n_clicks"),
-    State({"type": "s3-download-url", "index": "download-raw-data"}, "data"),
-    running=[
-        (Output({"type": "s3-download-button", "index": "download-raw-data"}, "disabled"), True, False),
-        (Output({"type": "progress-dialog-modal", "index": "download-raw-data"}, "is_open"), True, False),
-        (Output({"type": "progress-dialog-state", "index": "download-raw-data"}, "data"), "", ""),
-        (
-            Output({"type": "progress-dialog-status-message", "index": "download-raw-data"}, "children"),
-            "Setting up...",
-            "Done!",
-        ),
-        (Output({"type": "progress-dialog-progress-bar", "index": "download-raw-data"}, "value"), 0, 100),
-    ],
-    progress=[
-        Output({"type": "progress-dialog-status-message", "index": "download-raw-data"}, "children"),
-        Output({"type": "progress-dialog-progress-bar", "index": "download-raw-data"}, "value"),
-    ],
-    background=True,
-    prevent_initial_call=True,
-)
-def s3_directory_download(
-    set_progress: Callable[[tuple[str, int]], None], _n_clicks: int, s3_url: str
-) -> tuple[dict | None, bool, str]:
-    """Trigger a download of the raw data.
-
-    This should absolutely be a pattern matching callback inside `s3_directory_download_button.py`.
-    Unfortunately, dash throws an error that pattern matching is not supported in background callbacks.
-    """
-    try:
-        bucket_name, s3_prefix = parse_s3_url(s3_url)
-        set_progress(("Downloading data...", 33))
-        local_path = download_directory_from_s3(
-            bucket_name,
-            s3_prefix,
-            output_path,
-            s3_client,
-        )
-        set_progress(("Compressing data...", 66))
-        archive_path = make_archive(
-            base_dir=local_path,
-            root_dir=local_path,
-            base_name=str(local_path),
-            format="zip",
-        )
-        set_progress(("Cleaning up...", 90))
-        rmtree(local_path)
-    except Exception as e:
-        logger.exception("Failed to prepare S3 directory download.")
-        return None, True, str(e)
-
-    return dcc.express.send_file(archive_path), False, ""
