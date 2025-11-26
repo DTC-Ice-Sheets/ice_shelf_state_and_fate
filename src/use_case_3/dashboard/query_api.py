@@ -10,7 +10,6 @@ from datetime import datetime
 from pathlib import Path
 
 import asyncstdlib
-import boto3
 import xarray as xr
 import yaml
 from data_download_module.main import download_data
@@ -31,15 +30,6 @@ from use_case_3.timeseries_module.timeseries_enums import (
 api_config = Configuration(
     host=os.environ.get("DTC_API_URL", "https://query.dtc-ice-sheets.org"),
     access_token=os.environ["DTC_API_KEY"],
-)
-
-s3_client = boto3.client(
-    "s3",
-    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-    endpoint_url=os.environ["AWS_S3_ENDPOINT"],
-    region_name=os.environ["AWS_DEFAULT_REGION"],
-    use_ssl=True,
 )
 
 output_path = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
