@@ -1046,14 +1046,14 @@ tomlkit = ">=0.8.0,<1.0.0"
 
 [[package]]
 name = "contextily"
-version = "1.6.2"
+version = "1.7.0"
 description = "Context geo-tiles in Python"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "contextily-1.6.2-py3-none-any.whl", hash = "sha256:b06ead7258b34e73db2e318e33554f54a22d207b3c272b74d8b64801773b3fc3"},
-    {file = "contextily-1.6.2.tar.gz", hash = "sha256:3c747925269be248a9b1a761859e05d1681286e04d5d0796bdaf1de3409474bb"},
+    {file = "contextily-1.7.0-py3-none-any.whl", hash = "sha256:38393b8e7dc38580ef1f60211a9ba1c3eb142a439c260509c201987754fa9dba"},
+    {file = "contextily-1.7.0.tar.gz", hash = "sha256:6534faa5702b89b46d0d81b4c538754f2d8b3dd8cc298454b11ccedfa67e73ac"},
 ]
 
 [package.dependencies]
@@ -7082,4 +7082,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "4de39db4ef4888c403f1a37da6bba44a11126d78fb81d3a3d7cfa5329e4a5a83"
+content-hash = "209da6ca4c82b3d277036b71f3559471aeef1ffb13ce2fd93cbd8c2d8bb51443"
