@@ -20,20 +20,20 @@ app = cyclopts.App()
 
 
 @app.default
-async def main(
-    ice_shelf: str,
+def main(
+    input_path: Path,
     output_path: Path,
 ) -> None:
     """Collect the summary data for an ice shelf.
 
     Parameters
     ----------
-    ice_shelf : str
-        Identifier for the ice shelf to collect summary data for.
+    input_path : Path
+        Path to the input timeseries .zarr file.
     output_path : Path
         Path to save the output .json file.
     """
-    data = await timeseries_zarr_to_json(ice_shelf=ice_shelf)
+    data = timeseries_zarr_to_json(input_path)
     with output_path.open("w") as f:
         json.dump(data, f, default=_json_encoder)
 
