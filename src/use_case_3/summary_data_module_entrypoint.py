@@ -7,7 +7,7 @@ from typing import Any
 
 import cyclopts
 
-from use_case_3.summary_data_module.summary_data import timeseries_zarr_to_json
+from use_case_3.summary_data_module.summary_data import summary_timeseries_zarr_to_json
 
 
 def _json_encoder(obj: Any) -> Any:  # noqa: ANN401
@@ -33,7 +33,7 @@ def main(
     output_path : Path
         Path to save the output .json file.
     """
-    data = timeseries_zarr_to_json(input_path)
+    data = summary_timeseries_zarr_to_json(input_path)
     with output_path.open("w") as f:
         json.dump(data, f, default=_json_encoder)
 

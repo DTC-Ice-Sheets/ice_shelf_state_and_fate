@@ -1,16 +1,9 @@
 """Module to calculate simple summary data from time series."""
 
-import os
 from pathlib import Path
 
 import xarray as xr
 import yaml
-from dtc_query_client import Configuration
-
-api_config = Configuration(
-    host=os.environ.get("DTC_API_URL", "https://query.dtc-ice-sheets.org"),
-    access_token=os.environ["DTC_API_KEY"],
-)
 
 output_path = Path("/data/yak1/working/dtc_ice_sheets/dashboard_download_scratch")
 initial_datasets_path = Path("/data/yak1/working/dtc_ice_sheets/initial_datasets")
