@@ -12,13 +12,6 @@ def test_summary_timeseries_zarr_to_json():
 
     out_dict = timeseries_zarr_to_json(data=data_xr)
 
-    assert out_dict["calving"]["measurements"] == [0, 1, 2]
-    assert out_dict["calving"]["uncertainties"] == [3, 4, 5]
-    assert out_dict["calving"]["time"] == [6, 7, 8]
-    assert out_dict["calving"]["timeseries_type"] == "derivative"
-    assert out_dict["calving"]["uncertainty_type"] == "std"
-    assert out_dict["calving"]["units"] == "Gt yr-1"
-
     assert out_dict == {
         "calving": {
             "measurements": [0, 1, 2],
