@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Any
 
 import cyclopts
+import xarray as xr
 
-from use_case_3.summary_data_module.summary_data import summary_timeseries_zarr_to_json
+from use_case_3.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module import timeseries_zarr_to_json
 
 
 def _json_encoder(obj: Any) -> Any:  # noqa: ANN401
@@ -33,9 +34,10 @@ def main(
     output_path : Path
         Path to save the output .json file.
     """
-    data = summary_timeseries_zarr_to_json(input_path)
+    data_xr = xr.open_dataset(input_path)
+    data_dict = timeseries_zarr_to_json(data=data_xr)
     with output_path.open("w") as f:
-        json.dump(data, f, default=_json_encoder)
+        json.dump(data_dict, f, default=_json_encoder)
 
 
 if __name__ == "__main__":
