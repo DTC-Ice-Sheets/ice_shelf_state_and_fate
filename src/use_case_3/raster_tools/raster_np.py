@@ -622,8 +622,9 @@ class RasterNp(np.ndarray):
         mask = geometry_mask(
             geometries=geometries, out_shape=(y, x), transform=transform, invert=False, all_touched=True
         ).astype(int)
-        mask = RasterNp(
-            input_array=mask, bounding_box=bounding_box, resolution=resolution, y_affine_negative=y_affine_negative
+        return RasterNp(
+            input_array=mask.astype(bool),
+            bounding_box=bounding_box,
+            resolution=resolution,
+            y_affine_negative=y_affine_negative,
         )
-
-        return mask.astype(bool)
