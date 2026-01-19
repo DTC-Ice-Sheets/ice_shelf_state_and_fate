@@ -5805,14 +5805,14 @@ files = [
 
 [[package]]
 name = "scikit-gstat"
-version = "1.0.22"
+version = "1.0.23"
 description = "Geostatistical expansion in the scipy style"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "scikit_gstat-1.0.22-py3-none-any.whl", hash = "sha256:058b3a25299b2050a33be96d5f61dfaac48a93dbce286b695fa4e15430b9a07c"},
-    {file = "scikit_gstat-1.0.22.tar.gz", hash = "sha256:476eb45093d56d014ba7b31a816f73e5b32b23533c6047ef047f264d8261d3c9"},
+    {file = "scikit_gstat-1.0.23-py3-none-any.whl", hash = "sha256:b337dd4c0873d737786f035466351fb423889ebf0e9ca409303aea7e0765f713"},
+    {file = "scikit_gstat-1.0.23.tar.gz", hash = "sha256:19bb272842143addaf1af5c82a884485abc913471d416e1164f4717f93c9f414"},
 ]
 
 [package.dependencies]
@@ -7103,4 +7103,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "b1868104a6cc7133e29523101f07f41e073671f7ff479cbbb6838fa305a14f30"
+content-hash = "905b9415c0733779a6bf4536b196ca8c54169a0c7999ac6a040d69065f2d5e77"
