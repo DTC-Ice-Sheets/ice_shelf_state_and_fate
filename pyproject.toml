@@ -60,7 +60,7 @@ dash-auth = "^2.3.0"
 dash-bootstrap-components = "^2.0.4"
 data-download-module = { git = "https://github.com/DTC-Ice-Sheets/data_download_module.git", branch = "use-case-3-dashboard-local-datasets" }
 dtc-query-client = { git = "https://github.com/DTC-Ice-Sheets/dtc_query_api.git", subdirectory = "dtc_query_client", tag = "0.0.40" }
-gunicorn = "^23.0.0"
+gunicorn = "^24.1.1"
 ipywidgets = "^8.1.8"
 jupyter = "^1.1.1"
 ruptures = "^1.1.10"
