@@ -26,7 +26,7 @@ def test_integrated(tmp_path) -> None:
         [
             "timeseries_module",
             "--label",
-            "test_label",
+            "test_label_1",
             "--dataset_path",
             input_zarr_path_1,
             "--output_path",
@@ -49,7 +49,7 @@ def test_integrated(tmp_path) -> None:
         [
             "timeseries_module",
             "--label",
-            "test_label",
+            "test_label_2",
             "--dataset_path",
             input_zarr_path_2,
             "--output_path",
