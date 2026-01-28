@@ -36,6 +36,11 @@ def main(
         Path to save the output .json file.
     analysis_type : JointPlotAnalysisType, optional
         Type of covariate analysis to perform.
+
+    Raises
+    ------
+    ValueError
+        "At minimum of two timeseries are required for covariate analysis."
     """
     timeseries = []
     ds = xr.open_zarr(input_path)
@@ -63,10 +68,7 @@ def main(
             continue
 
     if len(timeseries) < 2:
-        raise ValueError(
-            f"Only {len(timeseries)} valid timeseries found in the input dataset for covariate analysis. "
-            "At least 2 are required."
-        )
+        raise ValueError("At minimum of two timeseries are required for covariate analysis.")
     preprocessor = TimeSeriesPreprocessor(
         timeseries=timeseries,
         time_period=AggregationPeriod(ds.attrs["time_period"]),
