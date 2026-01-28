@@ -1,5 +1,6 @@
 """Module entrypoint for the timeseries pre-processor module."""
 
+import warnings
 from pathlib import Path
 
 import cyclopts
@@ -40,23 +41,28 @@ def main(
     xarrays = {}
     for path in input_paths:
         ds = xr.open_zarr(path)
-        ts = Timeseries(
-            label=ds.attrs["label"],
-            timeseries_type=TimeseriesType(ds.attrs["timeseries_type"]),
-            measurement_name=ds.attrs["measurement_name"],
-            measurements=ds["measurement"].to_series(),
-            measurement_std=ds["std"].to_series(),
-            measurement_n=ds["n"].to_series(),
-            **(
-                {
-                    "measurement_uncertainties": ds["uncertainty"].to_series(),
-                    "measurement_uncertainties_std": ds["uncertainty_std"].to_series(),
-                    "measurement_uncertainties_n": ds["uncertainty_n"].to_series(),
-                }
-                if "uncertainty" in ds
-                else {}
-            ),
-        )
+        # Check if any of the input variables contain no data, as we don't want to include these from now on.
+        if ds["measurement"] is not None:
+            ts = Timeseries(
+                label=ds.attrs["label"],
+                timeseries_type=TimeseriesType(ds.attrs["timeseries_type"]),
+                measurement_name=ds.attrs["measurement_name"],
+                measurements=ds["measurement"].to_series(),
+                measurement_std=ds["std"].to_series(),
+                measurement_n=ds["n"].to_series(),
+                **(
+                    {
+                        "measurement_uncertainties": ds["uncertainty"].to_series(),
+                        "measurement_uncertainties_std": ds["uncertainty_std"].to_series(),
+                        "measurement_uncertainties_n": ds["uncertainty_n"].to_series(),
+                    }
+                    if "uncertainty" in ds
+                    else {}
+                ),
+            )
+        else:
+            warnings.warn(f"No data containted in {path}, skipping this dataset", stacklevel=1)
+            continue
         timeseries.append(ts)
         xarrays[ts.label] = ds
 
