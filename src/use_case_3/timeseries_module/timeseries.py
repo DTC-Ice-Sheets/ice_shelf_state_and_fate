@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
@@ -94,20 +95,31 @@ class Timeseries:
         t0_normalisation : str | None
             Whether to normalise the time series against time zero, by default None
         """
-        data_observations = data[measurement_name].to_numpy()
-        if measurement_uncertainty_name is not None:
-            data_uncertainties = data[measurement_uncertainty_name].to_numpy()
-            data_uncertainties[data_uncertainties < -200] = np.nan
-        else:
-            data_uncertainties = None
-        dimension_data = {key: data[key] for key in data.coords}
+        try:
+            data_observations = data[measurement_name].to_numpy()
+            if measurement_uncertainty_name is not None:
+                data_uncertainties = data[measurement_uncertainty_name].to_numpy()
+                data_uncertainties[data_uncertainties < -200] = np.nan
+            else:
+                data_uncertainties = None
+            dimension_data = {key: data[key] for key in data.coords}
 
-        dimension_names = list(data[measurement_name].dims)
+            dimension_names = list(data[measurement_name].dims)
+        except Exception as e:  # noqa: BLE001
+            warnings.warn(f"Could not extract measurement or uncertainties from dataset - {e}", stacklevel=1)
+            data_observations = None
+            data_uncertainties = None
+            dimension_data = {}
+            dimension_names = []
 
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
-        # print(self.label, data_observations.shape)
-        if len(data_observations.shape) > 1 and data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
+        if (
+            data_observations is not None
+            and len(data_observations.shape) > 1
+            and data_observations.shape[1] > 1
+            and data_observations.shape[2] > 1
+        ):
             self._process_timeseries_nd(
                 data_observations=data_observations,
                 data_uncertainties=data_uncertainties,
@@ -122,7 +134,7 @@ class Timeseries:
                 t0_normalisation=t0_normalisation,
                 apply_mask=apply_mask,
             )
-        else:
+        elif len(data_observations.shape) >= 1:
             self._process_timeseries_1d(
                 data_observations=data_observations,
                 dimension_data=dimension_data,
@@ -134,6 +146,17 @@ class Timeseries:
                 uncertainty=uncertainty,
                 independent=independent,
                 t0_normalisation=t0_normalisation,
+            )
+        elif data_observations is None:
+            warnings.warn(
+                f"Data for measurement {measurement_name} could not be processed into timeseries - data is None",
+                stacklevel=1,
+            )
+        else:
+            warnings.warn(
+                f"Data for measurement {measurement_name} could not be processed into timeseries - invalid shape "
+                f"{data_observations.shape}",
+                stacklevel=1,
             )
         self.uncertainty = uncertainty
         self.extent_polygon = mask_geometry

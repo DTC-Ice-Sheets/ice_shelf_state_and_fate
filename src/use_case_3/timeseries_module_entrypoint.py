@@ -1,6 +1,7 @@
 """Entrypoint for timeseries module."""
 
 import json
+import warnings
 from pathlib import Path
 
 import cyclopts
@@ -68,7 +69,13 @@ def main(
         The type of normalisation to apply against time zero, if any.
     """
     timeseries = Timeseries(label=label, timeseries_type=timeseries_type)
-    data = xr.open_zarr(dataset_path)
+    # Try opening the dataset - If for some reason we can't open it we propagate data=None forwards.
+    try:
+        data = xr.open_zarr(dataset_path)
+    except Exception as e:  # noqa: BLE001
+        warnings.warn(f"Could not open dataset at {dataset_path} - {e}", stacklevel=1)
+        data = None
+
     mask_geometry: Polygon | MultiPolygon | None
     if mask_json_path is not None:
         with mask_json_path.open("r") as f:
@@ -91,6 +98,7 @@ def main(
         t0_normalisation=str(t0_normalisation) if t0_normalisation is not None else None,
     )
 
+    # if timeseries.measurements is not None:
     output = xr.Dataset(
         data_vars={
             "measurement": (["time"], timeseries.measurements.values),
