@@ -206,6 +206,39 @@ def timeseries_dataset_1d_fixture(timeseries_fixture):
     return ds, "time series 1", "unit 1", "measurement", "cumulative", "ice_shelf"
 
 
+@pytest.fixture
+def timeseries_dataset_none_fixture():
+    return None, "time series 1", "unit 1", "measurement", "cumulative", "ice_shelf"
+
+
+def test_process_timeseries_datanone(timeseries_dataset_none_fixture):
+    timeseries = Timeseries(
+        label=timeseries_dataset_none_fixture[1],
+        measurement_name=timeseries_dataset_none_fixture[2],
+        unit=timeseries_dataset_none_fixture[2],
+        timeseries_type=TimeseriesType(timeseries_dataset_none_fixture[4]),
+    )
+
+    timeseries.process_timeseries(
+        data=timeseries_dataset_none_fixture[0],
+        measurement_name=timeseries_dataset_none_fixture[3],
+        measurement_uncertainty_name="measurement_uncertainties",
+        mask_geometry=None,
+        apply_mask=False,
+        period=AggregationPeriod.MONTH,
+        aggregate=AggregationStrategy.MEAN,
+        uncertainty=UncertaintyType.STD,
+        independent=True,
+        t0_normalisation=None,
+    )
+
+    assert timeseries.label == timeseries_dataset_none_fixture[1]
+    assert timeseries.measurements is None
+    assert timeseries.measurement_std is None
+    assert timeseries.measurement_n is None
+    assert timeseries.measurement_uncertainties is None
+
+
 def test_process_timeseries_1d(timeseries_dataset_1d_fixture):
     timeseries = Timeseries(
         label=timeseries_dataset_1d_fixture[1],

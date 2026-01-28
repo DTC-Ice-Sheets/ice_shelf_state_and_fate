@@ -45,7 +45,7 @@ class Timeseries:
 
     def process_timeseries(
         self: Timeseries,
-        data: xr.Dataset,
+        data: xr.Dataset | None,
         measurement_name: str,
         measurement_uncertainty_name: str | None,
         mask_geometry: Polygon | MultiPolygon | None,
@@ -66,7 +66,7 @@ class Timeseries:
 
         Parameters
         ----------
-        data : xr.Dataset
+        data : xr.Dataset | None
             The xarray dataset containing the measurement of interest as well as any other data of interest such as
             uncertainties. Ideally, this should be an xr.Dataset which has been read from an appropriately formatted
             GeoZarr.
@@ -134,7 +134,7 @@ class Timeseries:
                 t0_normalisation=t0_normalisation,
                 apply_mask=apply_mask,
             )
-        elif len(data_observations.shape) >= 1:
+        elif data_observations is not None and len(data_observations.shape) >= 1:
             self._process_timeseries_1d(
                 data_observations=data_observations,
                 dimension_data=dimension_data,
