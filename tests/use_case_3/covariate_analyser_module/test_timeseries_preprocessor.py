@@ -228,6 +228,48 @@ def timeseries_7_lag_fixture():
     )
 
 
+@pytest.fixture
+def timeseries_merge_fixture():
+    timeseries_1 = pd.Series(
+        [1, 2, 3, 4, 5],
+        index=[
+            pd.Timestamp(year=2020, month=1, day=1),
+            pd.Timestamp(year=2020, month=2, day=1),
+            pd.Timestamp(year=2020, month=3, day=1),
+            pd.Timestamp(year=2020, month=4, day=1),
+            pd.Timestamp(year=2020, month=5, day=1),
+        ],
+    )
+
+    timeseries_2 = pd.Series(
+        [3, 4, 5, 6, 7],
+        index=[
+            pd.Timestamp(year=2020, month=1, day=1),
+            pd.Timestamp(year=2020, month=2, day=1),
+            pd.Timestamp(year=2020, month=3, day=1),
+            pd.Timestamp(year=2020, month=4, day=1),
+            pd.Timestamp(year=2020, month=5, day=1),
+        ],
+    )
+
+    return [
+        Timeseries(
+            measurements=timeseries_1,
+            label="time series merge",
+            unit="unit 1",
+            measurement_name="measurement 1",
+            timeseries_type=TimeseriesType("cumulative"),
+        ),
+        Timeseries(
+            measurements=timeseries_2,
+            label="time series merge",
+            unit="unit 1",
+            measurement_name="measurement 1",
+            timeseries_type=TimeseriesType("cumulative"),
+        ),
+    ]
+
+
 def test__init__(
     timeseries_1_fixture, timeseries_2_fixture, timeseries_5_fixture, expected_timeseries_dict_fixture1_fixture_2
 ):
@@ -648,3 +690,17 @@ def test_check_timeseries_intersection(
     )
 
     assert not timeseries_container._check_timeseries_intersection()
+
+
+def test_merge_timeseries(timeseries_merge_fixture):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=timeseries_merge_fixture,
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+
+    timeseries_container._merge_timeseries()
+
+    assert len(timeseries_container.timeseries) == 1
+    assert timeseries_container.timeseries["time series merge"].measurements.to_list() == [2, 3, 4, 5, 6]

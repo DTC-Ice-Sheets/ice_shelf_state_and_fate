@@ -58,6 +58,7 @@ class TimeSeriesPreprocessor:
             self.aggregation_period = time_period
 
         self.timeseries = {}
+        self._timeseries_merge = []
         self.aggregation = aggregation
         self.add_timeseries(timeseries=timeseries)
         self.start_date = None
@@ -75,6 +76,8 @@ class TimeSeriesPreprocessor:
         same frequency, trims the time series to be the same length and then interpolates any missing values
         using linear interpolation.
         """
+        self._merge_timeseries()
+
         if not self._check_timeseries_intersection():
             raise ValueError("One or more of the specified time series don't intersect temporally")
 
@@ -146,6 +149,63 @@ class TimeSeriesPreprocessor:
                     & (ts.measurement_uncertainties.index <= end_date)
                 ]
 
+    def _merge_timeseries(self: TimeSeriesPreprocessor) -> None:
+        """
+        Merge time series that share the same label.
+
+        Average matching series across columns after resampling.
+        """
+        for ts_label in self._timeseries_merge:
+            ts_for_merging = []
+            while len(self.timeseries[ts_label]) > 0:
+                ts = self.timeseries[ts_label].pop(0)
+                # display(self._resample_timeseries_agg(time_series=ts))
+                ts_for_merging.append(self._resample_timeseries_agg(time_series=ts))
+            ts_df = pd.concat([ts.measurements for ts in ts_for_merging], axis=1)
+            self.timeseries[ts_label] = Timeseries(
+                label=ts_label,
+                measurements=ts_df.mean(axis=1),
+                unit=ts_for_merging[0].unit,
+                timeseries_type=ts_for_merging[0].timeseries_type,
+            )
+
+    def _resample_timeseries_agg(self: TimeSeriesPreprocessor, time_series: Timeseries) -> Timeseries:
+        """
+        Resample and aggregate a time series.
+
+        Parameters
+        ----------
+        time_series : Timeseries
+            Provide the source time series to resample.
+
+        Returns
+        -------
+        Timeseries
+            Return a copied series with measurements and
+            uncertainties resampled to the configured period.
+        """
+        timeseries_agg = deepcopy(time_series)
+        timeseries_agg.measurements = time_series.measurements.groupby(
+            pd.PeriodIndex(
+                time_series.measurements.index,
+                freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
+            )
+        ).agg(self.aggregation.aggregation)
+        if timeseries_agg.measurement_uncertainties is not None:
+            timeseries_agg.measurement_uncertainties = time_series.measurement_uncertainties.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties.index,
+                    freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
+                )
+            ).agg(self.aggregation.aggregation)
+        timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
+        if timeseries_agg.measurement_uncertainties is not None:
+            timeseries_agg.measurement_uncertainties.index = (
+                timeseries_agg.measurement_uncertainties.index.to_timestamp()
+            )
+
+        return timeseries_agg
+
     def _resample_timeseries(
         self: TimeSeriesPreprocessor,
     ) -> None:
@@ -156,26 +216,7 @@ class TimeSeriesPreprocessor:
         though.
         """
         for ts_label, ts in self.timeseries.items():
-            timeseries_agg = deepcopy(ts)
-            timeseries_agg.measurements = ts.measurements.groupby(
-                pd.PeriodIndex(
-                    ts.measurements.index,
-                    freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
-                )
-            ).agg(self.aggregation.aggregation)
-            if timeseries_agg.measurement_uncertainties is not None:
-                timeseries_agg.measurement_uncertainties = ts.measurement_uncertainties.groupby(
-                    pd.PeriodIndex(
-                        ts.measurement_uncertainties.index,
-                        freq=AggregationPeriod.pd_period_freq(self.aggregation_period),
-                    )
-                ).agg(self.aggregation.aggregation)
-            timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
-            if timeseries_agg.measurement_uncertainties is not None:
-                timeseries_agg.measurement_uncertainties.index = (
-                    timeseries_agg.measurement_uncertainties.index.to_timestamp()
-                )
-            self.timeseries[ts_label] = timeseries_agg
+            self.timeseries[ts_label] = self._resample_timeseries_agg(time_series=ts)
 
     def _interpolate_timeseries(
         self: TimeSeriesPreprocessor,
@@ -223,4 +264,14 @@ class TimeSeriesPreprocessor:
             The timeseries as a dictionary where the key is a label in the list of timeseries labels.
         """
         for timeseries_single in timeseries:
-            self.timeseries[timeseries_single.label] = timeseries_single
+            if timeseries_single.label not in self.timeseries:
+                self.timeseries[timeseries_single.label] = timeseries_single
+            else:
+                if isinstance(self.timeseries[timeseries_single.label], list):
+                    self.timeseries[timeseries_single.label].append(timeseries_single)
+                else:
+                    self.timeseries[timeseries_single.label] = [
+                        self.timeseries[timeseries_single.label],
+                        timeseries_single,
+                    ]
+                    self._timeseries_merge.append(timeseries_single.label)
