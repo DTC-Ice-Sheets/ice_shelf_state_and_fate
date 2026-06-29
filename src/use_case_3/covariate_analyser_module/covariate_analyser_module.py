@@ -648,6 +648,10 @@ class CovariateAnalyser:
             out["variables"][ts.label] = {
                 "measurement_name": ts.measurement_name,
                 "values": ts.measurements.to_list(),
+                "values_uncertainties": ts.measurement_uncertainties.to_list()
+                if ts.measurement_uncertainties is not None
+                else [],
+                "timestamps": ts.measurements.index.strftime("%Y-%m-%d").to_list(),
                 "hist_values": hist.tolist(),
                 "hist_edges": bin_edges.tolist(),
             }
