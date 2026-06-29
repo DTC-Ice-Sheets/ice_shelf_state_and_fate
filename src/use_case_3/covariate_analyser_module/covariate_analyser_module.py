@@ -620,7 +620,7 @@ class CovariateAnalyser:
 
     def run_analysis(
         self: CovariateAnalyser,
-        max_lag: int | None = None,
+        max_lag: int | None = 6,
         analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
     ) -> dict:
         """
@@ -629,7 +629,7 @@ class CovariateAnalyser:
         Parameters
         ----------
         max_lag : int | None, optional
-            The maximum lag to consider for the analysis, by default None.
+            The maximum lag to consider for the analysis, by default 6 time units.
         analysis_type : JointPlotAnalysisType, optional
             The type of analysis to perform, by default JointPlotAnalysisType.CORR.
 
