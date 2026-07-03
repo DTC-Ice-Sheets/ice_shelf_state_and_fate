@@ -38,6 +38,19 @@ def preprocessed_timeseries_zarr() -> xr.Dataset:
 
 
 @pytest.fixture
+def preprocessed_test_dataset_a_zarr() -> xr.Dataset:
+    """Fixture to create a temporary Zarr store for testing."""
+    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
+    return xr.open_zarr(input_zarr_path)
+
+
+@pytest.fixture
 def tmp_json_output_path(tmp_path: Path) -> Path:
     """Fixture to create a temporary JSON output path for testing."""
     return tmp_path / "output.json"
+
+
+@pytest.fixture
+def tmp_zarr_output_path(tmp_path: Path) -> Path:
+    """Fixture to create a temporary Zarr output path for testing."""
+    return tmp_path / "output.zarr"
