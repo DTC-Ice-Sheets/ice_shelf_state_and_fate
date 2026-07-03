@@ -9,6 +9,7 @@ import cyclopts
 import xarray as xr
 
 from use_case_3.dataset_summary_module.dataset_summary_module import calculate_summary_grid
+from use_case_3.helper_functions import ZarrType
 
 
 def _json_encoder(obj: Any) -> Any:  # noqa: ANN401
@@ -22,7 +23,7 @@ app = cyclopts.App()
 
 @app.default
 def main(
-    input_path: Path,
+    input_path: ZarrType,
     output_path: Path,
     max_res: int = 20,
 ) -> None:
@@ -30,8 +31,8 @@ def main(
 
     Parameters
     ----------
-    input_path : Path
-        Path to the input timeseries .zarr file.
+    input_path : ZarrType
+        Path to the input timeseries .zarr file. Can be a local path or web URL.
     output_path : Path
         Path to save the output .json file.
     max_res : int, optional

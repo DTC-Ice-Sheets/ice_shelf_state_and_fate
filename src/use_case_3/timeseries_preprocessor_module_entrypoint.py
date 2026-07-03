@@ -31,9 +31,9 @@ def main(
         List of paths to the input timeseries .zarr files
     output_path : Path
         Path to save the output .zarr file.
-    time_period : AggregationPeriod | None, optional
+    time_period : AggregationPeriod | None
         Time period for aggregation. If None, the lowest frequency from the input timeseries is used.
-    aggregation : AggregationStrategy, optional
+    aggregation : AggregationStrategy
         Aggregation strategy to apply when multiple measurements fall within the same time bin.
     """
     timeseries = []
