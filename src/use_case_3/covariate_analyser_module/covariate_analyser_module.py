@@ -88,7 +88,7 @@ class CovariateAnalyser:
         max_lag : int | None
             The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
             default None
-        analysis_type : JointPlotAnalysisType, optional
+        analysis_type : JointPlotAnalysisType
             Whether or not the crosscorrelation is used to align the series, by default JointPlotAnalysisType.CORR
 
         Returns
@@ -110,7 +110,7 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        corr_thresh : float, optional
+        corr_thresh : float
             The correlation threshold, by default 0.5
 
         Returns
@@ -149,9 +149,9 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        corr_thresh : float, optional
+        corr_thresh : float
             The correlation threshold, by default 0.5
-        max_lag : int | None, optional
+        max_lag : int | None
             The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
             directions, by default 3
 
@@ -195,7 +195,7 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        max_lags : int | None, optional
+        max_lags : int | None
             The maximum number of lags, if to large will be adjusted to floor((n - 1) / 3) - 1 where n is the no. rows
              in data. In this context the maximum lags refers to the number of lags used to forecast, by default 10
 
@@ -237,7 +237,7 @@ class CovariateAnalyser:
             The first time series.
         timeseries_label_2 : str
             The second time series.
-        altered : bool, optional
+        altered : bool
             A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.
 
         Returns
@@ -502,7 +502,7 @@ class CovariateAnalyser:
             The label for the first timeseries.
         timeseries_label_2 : str
             The label for the second timeseries.
-        plot : bool, optional
+        plot : bool
             True if you want a plot of the model fits, by default False
 
         Returns
@@ -628,9 +628,9 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        max_lag : int | None, optional
+        max_lag : int | None
             The maximum lag to consider for the analysis, by default 6 time units.
-        analysis_type : JointPlotAnalysisType, optional
+        analysis_type : JointPlotAnalysisType
             The type of analysis to perform, by default JointPlotAnalysisType.CORR.
 
         Returns

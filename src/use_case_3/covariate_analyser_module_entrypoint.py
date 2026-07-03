@@ -34,7 +34,7 @@ def main(
         Path to the input .zarr store containing pre-processed timeseries. Can be a local path or web URL.
     output_path : Path
         Path to save the output .json file.
-    analysis_type : JointPlotAnalysisType, optional
+    analysis_type : JointPlotAnalysisType
         Type of covariate analysis to perform.
     """
     timeseries = []

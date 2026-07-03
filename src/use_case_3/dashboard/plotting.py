@@ -123,13 +123,13 @@ def plot_summary_timeseries(
     ----------
     timeseries : Timeseries
         The timeseries object to plot.
-    outliers : tuple[np.ndarray, np.ndarray] | None, optional
+    outliers : tuple[np.ndarray, np.ndarray] | None
         An optional tuple of (x, y) coordinates for outliers to plot.
-    brackets : list[int] | None, optional
+    brackets : list[int] | None
         An optional list of indices to draw vertical brackets at.
-    y_label : str | None, optional
+    y_label : str | None
         An optional label for the y-axis.
-    margin : dict[str, int] | None, optional
+    margin : dict[str, int] | None
         An optional dictionary specifying the margins of the plot.
 
     Returns
@@ -229,11 +229,11 @@ def plot_summary_timeseries_multiple(
         The container holding the timeseries data.
     variables : list[str]
         The list of variable names to plot.
-    outliers : tuple[np.ndarray, np.ndarray] | None, optional
+    outliers : tuple[np.ndarray, np.ndarray] | None
         An optional tuple of (x, y) coordinates for outliers to plot.
-    y_label : str | None, optional
+    y_label : str | None
         An optional label for the y-axis.
-    margin : dict[str, int] | None, optional
+    margin : dict[str, int] | None
         An optional dictionary specifying the margins of the plot.
 
     Returns
@@ -485,9 +485,9 @@ def customwrap(s: str, width: int = 16, separator: str = "<br>") -> str:
     ----------
     s : str
         The string to wrap.
-    width : int, optional
+    width : int
         The maximum line width, by default 16
-    separator : str, optional
+    separator : str
         The separator to use for line breaks, by default "<br>"
 
     Returns

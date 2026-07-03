@@ -151,9 +151,9 @@ class Timeseries:
         ----------
         data_agg : pd.DataFrame
             _The aggregated data.
-        data_uncertainties_agg : pd.DataFrame | None, optional
+        data_uncertainties_agg : pd.DataFrame | None
             The aggregated data uncertainties, by default None
-        data_coverage_agg : pd.DataFrame | None, optional
+        data_coverage_agg : pd.DataFrame | None
             The aggregated data coverage, by default None
         """
         self.measurements = data_agg["aggregation"]
@@ -1211,7 +1211,7 @@ class Timeseries:
             The input data.
         dimension_names : list[str]
             The input dimension names.
-        modify_dimension_names : bool, optional
+        modify_dimension_names : bool
             Whether the dimension_names should be modified, this is used when multiple data arrays with the same
             dimensions need to be modified, by default False.
 

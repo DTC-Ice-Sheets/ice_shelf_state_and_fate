@@ -35,7 +35,7 @@ def main(
         Path to the input timeseries .zarr file. Can be a local path or web URL.
     output_path : Path
         Path to save the output .json file.
-    max_res : int, optional
+    max_res : int
         Maximum resolution for the dataset summary.
     """
     data = xr.open_zarr(input_path)
