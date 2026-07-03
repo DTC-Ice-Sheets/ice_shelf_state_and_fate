@@ -107,7 +107,6 @@ select = [
 [tool.pydoclint]
 style = 'numpy'
 check_style_mismatch = "true"
-exclude = 'tests/'
 
 mccabe = { max-complexity = 10 }
 

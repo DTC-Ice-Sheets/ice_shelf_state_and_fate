@@ -115,7 +115,6 @@ def path_or_web_url_validator(type_: object, path_or_url: Path | str) -> str:  #
     str
         The validated path or URL as a string.
 
-
     Raises
     ------
     ValueError
