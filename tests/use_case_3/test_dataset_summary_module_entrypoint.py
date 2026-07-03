@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import cyclopts
 import pytest
+from xarray import Dataset
 
 from use_case_3.dataset_summary_module_entrypoint import app
 
@@ -30,7 +31,7 @@ def test_main(tmp_json_output_path) -> None:
         assert tmp_json_output_path.is_file()
 
 
-def test_main_valid_input_url(preprocessed_timeseries_zarr, tmp_json_output_path: Path) -> None:
+def test_main_valid_input_url(preprocessed_timeseries_zarr: Dataset, tmp_json_output_path: Path) -> None:
     input_zarr_path = "https://example.com/test_preprocessed_timeseries.zarr"
 
     with (

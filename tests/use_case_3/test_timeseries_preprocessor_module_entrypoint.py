@@ -3,9 +3,10 @@
 import sys
 from unittest.mock import patch
 
+from use_case_3.timeseries_preprocessor_module_entrypoint import app
+
 
 def test_main(tmp_path) -> None:
-    from use_case_3.timeseries_preprocessor_module_entrypoint import app
 
     input_zarr_paths = [
         "tests/use_case_3/test_inputs/rasters/test_timeseries_A.zarr",

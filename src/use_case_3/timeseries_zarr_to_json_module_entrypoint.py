@@ -8,6 +8,7 @@ from typing import Any
 import cyclopts
 import xarray as xr
 
+from use_case_3.helper_functions import ZarrType
 from use_case_3.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module import timeseries_zarr_to_json
 
 
@@ -22,15 +23,15 @@ app = cyclopts.App()
 
 @app.default
 def main(
-    input_path: Path,
+    input_path: ZarrType,
     output_path: Path,
 ) -> None:
     """Collect the summary data for an ice shelf.
 
     Parameters
     ----------
-    input_path : Path
-        Path to the input timeseries .zarr file.
+    input_path : ZarrType
+        Path to the input timeseries .zarr file. Can be a local path or a web URL.
     output_path : Path
         Path to save the output .json file.
     """
