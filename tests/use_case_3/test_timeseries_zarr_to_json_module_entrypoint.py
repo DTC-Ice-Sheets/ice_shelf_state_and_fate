@@ -35,7 +35,7 @@ def test_main_valid_input_url(preprocessed_timeseries_zarr: Dataset, tmp_json_ou
     input_zarr_path = "https://example.com/test_preprocessed_timeseries.zarr"
 
     with (
-        # to avoid making an actual HTTP request, we patch the open_zarr function to return our fixture dataset
+        # to avoid making an actual HTTP request, we patch the open_dataset function to return our fixture dataset
         patch(
             "use_case_3.timeseries_zarr_to_json_module_entrypoint.xr.open_dataset",
             return_value=preprocessed_timeseries_zarr,

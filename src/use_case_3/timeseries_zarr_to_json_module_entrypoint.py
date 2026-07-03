@@ -8,7 +8,7 @@ from typing import Any
 import cyclopts
 import xarray as xr
 
-from use_case_3.helper_functions import ZarrType
+from use_case_3.entrypoint_helpers import ZarrType
 from use_case_3.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module import timeseries_zarr_to_json
 
 

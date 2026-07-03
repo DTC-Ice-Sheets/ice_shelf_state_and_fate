@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import cyclopts
 import pytest
-from xarray import Dataset
+import xarray as xr
 
 from use_case_3.timeseries_module_entrypoint import app
 
@@ -32,12 +32,16 @@ def test_main(tmp_zarr_output_path: Path) -> None:
         app(result_action="return_value")
         assert tmp_zarr_output_path.is_dir()
 
+        out = xr.open_zarr(tmp_zarr_output_path)
+        assert set(out.data_vars) == {"measurement", "std", "n"}
+        assert "time" in out.coords
 
-def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: Dataset, tmp_zarr_output_path: Path) -> None:
+
+def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: xr.Dataset, tmp_zarr_output_path: Path) -> None:
     input_zarr_path = "https://example.com/test_preprocessed_timeseries.zarr"
 
     with (
-        # to avoid making an actual HTTP request, we patch the open_dataset function to return our fixture dataset
+        # to avoid making an actual HTTP request, we patch the open_zarr function to return our fixture dataset
         patch(
             "use_case_3.timeseries_module_entrypoint.xr.open_zarr",
             return_value=preprocessed_test_dataset_a_zarr,

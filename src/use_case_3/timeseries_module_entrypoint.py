@@ -7,7 +7,7 @@ import cyclopts
 import xarray as xr
 from shapely.geometry import MultiPolygon, Polygon, shape
 
-from use_case_3.helper_functions import ZarrType
+from use_case_3.entrypoint_helpers import ZarrType
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,

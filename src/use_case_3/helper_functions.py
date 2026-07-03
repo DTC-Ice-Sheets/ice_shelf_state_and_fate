@@ -1,10 +1,8 @@
 """Helper functions for Use Case 3."""
 
 from pathlib import Path
-from typing import Annotated
 
 import geopandas as gpd
-from cyclopts import Parameter
 from shapely.geometry import MultiPolygon, Polygon
 
 
@@ -96,34 +94,3 @@ def ocean_polygon(
     ice_shelf_polygon_epsg4326 = ice_shelf_polygon.to_crs("epsg:4326")
 
     return ice_shelf_polygon_epsg4326["geometry"].values[0], ice_shelf_polygon["geometry"].values[0]
-
-
-def path_or_web_url_validator(type_: object, path_or_url: Path | str) -> str:  # noqa: ARG001
-    """Validate that the provided path is either a valid local path or a web URL.
-
-    NOTE: Path("") resolves to the current directory (".") - which is considered a valid path.
-
-    Parameters
-    ----------
-    type_ : object
-        The type of the argument being validated - unused, purely required for cyclopts validator compatibility.
-    path_or_url : Path | str
-        The candidate path or URL to validate.
-
-    Returns
-    -------
-    str
-        The validated path or URL as a string.
-
-    Raises
-    ------
-    ValueError
-        If the provided path is neither a valid local path nor a web URL like string.
-    """
-    if not Path(path_or_url).exists() and not str(path_or_url).startswith(("http://", "https://", "s3://")):
-        raise ValueError(f"The provided path '{path_or_url}' is neither a valid local path nor a web URL.")
-    return str(path_or_url)
-
-
-# alias for use in cyclopts Parameter definitions
-ZarrType = Annotated[str, Parameter(validator=path_or_web_url_validator)]
