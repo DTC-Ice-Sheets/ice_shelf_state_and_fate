@@ -8,6 +8,7 @@ import xarray as xr
 
 from use_case_3.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.helper_functions import ZarrType
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
@@ -21,7 +22,7 @@ app = cyclopts.App()
 
 @app.default
 def main(
-    input_path: Path,
+    input_path: ZarrType,
     output_path: Path,
     analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
 ) -> None:
@@ -29,8 +30,8 @@ def main(
 
     Parameters
     ----------
-    input_path : Path
-        Path to the input .zarr file containing pre-processed timeseries.
+    input_path : ZarrType
+        Path to the input .zarr store containing pre-processed timeseries. Can be a local path or web URL.
     output_path : Path
         Path to save the output .json file.
     analysis_type : JointPlotAnalysisType, optional
