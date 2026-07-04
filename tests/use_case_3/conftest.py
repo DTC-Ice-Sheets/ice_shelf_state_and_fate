@@ -8,19 +8,11 @@ import xarray as xr
 
 @pytest.fixture
 def invalid_file_path(tmp_path: Path) -> Path:
-    """Provide a path to a non-existent GeoZarr store directory for testing.
-
-    Parameters
-    ----------
-    tmp_path : Path
-        Temporary path provided by pytest.
-    """
     return tmp_path / "non_existent_file.zarr"
 
 
 @pytest.fixture
 def invalid_url() -> str:
-    """Provide an invalid URL for testing."""
     return "invalid_url/doesnt/start/with/http/or/https"
 
 
@@ -32,14 +24,24 @@ def invalid_path() -> str:
 
 @pytest.fixture
 def preprocessed_timeseries_zarr() -> xr.Dataset:
-    """Fixture to create a temporary Zarr store for testing."""
     input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_preprocessed_timeseries.zarr"
     return xr.open_zarr(input_zarr_path)
 
 
 @pytest.fixture
+def timeseries_a_zarr() -> xr.Dataset:
+    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_timeseries_A.zarr"
+    return xr.open_zarr(input_zarr_path)
+
+
+@pytest.fixture
+def timeseries_b_zarr() -> xr.Dataset:
+    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_timeseries_B.zarr"
+    return xr.open_zarr(input_zarr_path)
+
+
+@pytest.fixture
 def preprocessed_test_dataset_a_zarr() -> xr.Dataset:
-    """Fixture to create a temporary Zarr store for testing."""
     input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
     return xr.open_zarr(input_zarr_path)
 
