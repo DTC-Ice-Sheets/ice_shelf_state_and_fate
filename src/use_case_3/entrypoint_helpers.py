@@ -38,4 +38,4 @@ def path_or_web_url_validator(type_: object, path_or_url: Path | str) -> str:  #
 
 
 # alias for use in cyclopts Parameter definitions
-ZarrType = Annotated[str, Parameter(validator=path_or_web_url_validator)]
+type ZarrType = Annotated[str, Parameter(validator=path_or_web_url_validator)]
