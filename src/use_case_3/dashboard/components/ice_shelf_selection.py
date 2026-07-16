@@ -16,7 +16,7 @@ def create_ice_shelf_selection(show_map: bool = True) -> list[dbc.Row]:
 
     Parameters
     ----------
-    show_map : bool, optional
+    show_map : bool
         Whether to show the ice shelf map under the dropdown, by default True.
         Intended for pages that place the map elsewhere using `create_ice_shelf_map()`.
 

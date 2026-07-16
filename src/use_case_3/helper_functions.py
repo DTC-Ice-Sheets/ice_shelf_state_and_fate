@@ -78,7 +78,7 @@ def ocean_polygon(
         GeoDataFrame must have a valid CRS.
     ice_shelf_name : str
         The ice shelf name
-    distance : int | float, optional
+    distance : int | float
         The distance in projected units to buffer the ice shelf polygon, by default 10000
 
     Returns

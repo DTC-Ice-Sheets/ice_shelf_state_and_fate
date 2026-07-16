@@ -24,11 +24,11 @@ class TimeSeriesPreprocessor:
     ----------
     timeseries : list[Timeseries]
             The list of timeseries objects.
-    time_period : AggregationPeriod | None, optional
+    time_period : AggregationPeriod | None
         The aggregation period to apply. If None, the coarsest frequency from the input timeseries is used.
-    aggregation : AggregationStrategy, optional
+    aggregation : AggregationStrategy
         The aggregation type to apply, by default AggregationStrategy.MEAN
-    process_timeseries : bool, optional
+    process_timeseries : bool
         Whether to preprocess all of the input timeseries, by default True
     """
 

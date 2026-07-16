@@ -6,6 +6,7 @@ import cyclopts
 import xarray as xr
 
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from use_case_3.entrypoint_helpers import ZarrType
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
@@ -18,7 +19,7 @@ app = cyclopts.App()
 
 @app.default
 def main(
-    input_paths: list[Path],
+    input_paths: list[ZarrType],
     output_path: Path,
     time_period: AggregationPeriod | None = None,
     aggregation: AggregationStrategy = AggregationStrategy.MEAN,
@@ -27,13 +28,13 @@ def main(
 
     Parameters
     ----------
-    input_paths : list[Path]
-        List of paths to the input timeseries .zarr files
+    input_paths : list[ZarrType]
+        List of paths to the input timeseries .zarr files. Files can be local paths or URLs.
     output_path : Path
         Path to save the output .zarr file.
-    time_period : AggregationPeriod | None, optional
+    time_period : AggregationPeriod | None
         Time period for aggregation. If None, the lowest frequency from the input timeseries is used.
-    aggregation : AggregationStrategy, optional
+    aggregation : AggregationStrategy
         Aggregation strategy to apply when multiple measurements fall within the same time bin.
     """
     timeseries = []

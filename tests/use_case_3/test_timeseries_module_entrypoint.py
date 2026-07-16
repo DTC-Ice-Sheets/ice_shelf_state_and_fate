@@ -1,35 +1,98 @@
 """Testing the entrypoint."""
 
-import json
+import re
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
+import cyclopts
+import pytest
+import xarray as xr
 
-def test_main(tmp_path) -> None:
-    from use_case_3.dataset_summary_module_entrypoint import app
+from use_case_3.timeseries_module_entrypoint import app
 
+
+def test_main(tmp_zarr_output_path: Path) -> None:
     input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
-    output_path = tmp_path / "output.json"
 
-    with patch.object(
-        sys,
-        "argv",
-        [
-            "dataset_summary_module",
-            "--input_path",
-            input_zarr_path,
-            "--output_path",
-            str(output_path),
-            "--max_res",
-            "5",
-        ],
-    ):
-        assert not output_path.exists()
+    argv = [
+        "timeseries_module",
+        "--label",
+        "any old label",
+        "--dataset_path",
+        input_zarr_path,
+        "--output_path",
+        str(tmp_zarr_output_path),
+        "--measurement_name",
+        "measurement",
+    ]
+
+    with patch.object(sys, "argv", argv):
+        assert not tmp_zarr_output_path.exists()
         app(result_action="return_value")
-        assert output_path.is_file()
-        with output_path.open("r") as f:
-            out = json.load(f)
-        assert out["dims"].keys() == {"x", "y", "time"}
-        assert out["vars"].keys() == {"measurement", "measurement_uncertainties"}
-        assert all(len(out["dims"][dim]["idxs"]) == 5 for dim in out["dims"])
-        assert all(len(out["dims"][dim]["values"]) == 5 for dim in out["dims"])
+        assert tmp_zarr_output_path.is_dir()
+
+        out = xr.open_zarr(tmp_zarr_output_path)
+        assert set(out.data_vars) == {"measurement", "std", "n"}
+        assert "time" in out.coords
+
+
+def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: xr.Dataset, tmp_zarr_output_path: Path) -> None:
+    input_zarr_path = "https://example.com/test_preprocessed_timeseries.zarr"
+
+    with (
+        # to avoid making an actual HTTP request, we patch the open_zarr function to return our fixture dataset
+        patch(
+            "use_case_3.timeseries_module_entrypoint.xr.open_zarr",
+            return_value=preprocessed_test_dataset_a_zarr,
+        ),
+        patch.object(
+            sys,
+            "argv",
+            [
+                "timeseries_module",
+                "--label",
+                "any old label",
+                "--dataset_path",
+                input_zarr_path,
+                "--output_path",
+                str(tmp_zarr_output_path),
+                "--measurement_name",
+                "measurement",
+            ],
+        ),
+    ):
+        assert not tmp_zarr_output_path.exists()
+        app(result_action="return_value")
+        assert tmp_zarr_output_path.is_dir()
+
+
+@pytest.mark.parametrize(
+    "test_source",
+    ["invalid_file_path", "invalid_path", "invalid_url"],
+)
+def test_main_invalid_input_raises_validation_error(test_source: str, tmp_zarr_output_path: Path, request) -> None:
+
+    error_string = test_data = request.getfixturevalue(test_source)
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "timeseries_module",
+                "--label",
+                "any old label",
+                "--dataset_path",
+                str(test_data),
+                "--output_path",
+                str(tmp_zarr_output_path),
+                "--measurement_name",
+                "measurement",
+            ],
+        ),
+        pytest.raises(
+            cyclopts.ValidationError,
+            match=re.escape(f"The provided path '{error_string}' is neither a valid local path nor a web URL."),
+        ),
+    ):
+        app(result_action="return_value", exit_on_error=False)

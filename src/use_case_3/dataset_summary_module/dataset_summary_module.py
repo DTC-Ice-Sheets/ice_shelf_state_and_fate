@@ -11,7 +11,7 @@ def calculate_summary_grid(data: xr.Dataset, max_res: int = 50) -> dict:
     ----------
     data : xr.Dataset
         The input xarray dataset to summarize.
-    max_res : int, optional
+    max_res : int
         The maximum number of points to sample along each dimension.
         If a dimension size is less than or equal to max_res, all points are used.
 

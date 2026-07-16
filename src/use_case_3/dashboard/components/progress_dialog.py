@@ -26,7 +26,7 @@ def create_progress_dialog(
         - progress-dialog-progress-bar: A dbc.Progress bar showing the percentage completion of the task.
         - progress-dialog-cancel-button: (optional) A button to cancel the task.
         - progress-dialog-cancel-error-message: (optional) An error banner to show cancellation errors.
-    cancellable : bool, optional
+    cancellable : bool
         Whether to include the cancel button and error message, by default False.
 
     Returns

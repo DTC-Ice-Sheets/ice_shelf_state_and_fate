@@ -7,6 +7,7 @@ import cyclopts
 import xarray as xr
 from shapely.geometry import MultiPolygon, Polygon, shape
 
+from use_case_3.entrypoint_helpers import ZarrType
 from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
@@ -22,7 +23,7 @@ app = cyclopts.App()
 @app.default
 def main(
     label: str,
-    dataset_path: Path,
+    dataset_path: ZarrType,
     output_path: Path,
     measurement_name: str,
     measurement_uncertainty_name: str | None = None,
@@ -42,29 +43,29 @@ def main(
     ----------
     label : str
         Label for the timeseries.
-    dataset_path : Path
-        Path to the input dataset .zarr file.
+    dataset_path : ZarrType
+        Path or URL to the input dataset .zarr file. Can be a local path or a URL.
     output_path : Path
         Path to save the output .zarr file.
     measurement_name : str
         Name of the measurement to extract from the dataset.
-    measurement_uncertainty_name : str | None, optional
+    measurement_uncertainty_name : str | None
         Name of the uncertainty to extract from the dataset.
-    mask_json_path : Path | None, optional
+    mask_json_path : Path | None
         Path to the mask geometry GeoJSON file.
-    apply_mask : bool, optional
+    apply_mask : bool
         Whether the mask will be used to filter the data. Otherwise, the mask is only used to calculate coverage.
-    timeseries_type : TimeseriesType, optional
+    timeseries_type : TimeseriesType
         Type of timeseries to compute (cumulative or derivative).
-    aggregate : AggregationStrategy, optional
+    aggregate : AggregationStrategy
         Aggregation strategy to apply when multiple measurements fall within the same time bin.
-    period : AggregationPeriod | None, optional
+    period : AggregationPeriod | None
         Time period for aggregation. If None, a single value will be computed for the entire timeseries.
-    uncertainty : UncertaintyType | None, optional
+    uncertainty : UncertaintyType | None
         The statistics type describing the uncertainty.
-    independent : bool, optional
+    independent : bool
         Whether the uncertainties are independent or not.
-    t0_normalisation : NormalisationType | None, optional
+    t0_normalisation : NormalisationType | None
         The type of normalisation to apply against time zero, if any.
     """
     timeseries = Timeseries(label=label, timeseries_type=timeseries_type)
