@@ -1,5 +1,7 @@
 """Testing the entrypoint."""
 
+import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -29,6 +31,40 @@ def test_main_valid_input_path(tmp_json_output_path: Path) -> None:
         assert not tmp_json_output_path.exists()
         app(result_action="return_value")
         assert tmp_json_output_path.is_file()
+
+
+def test_main_valid_input_with_nans(tmp_json_output_path: Path) -> None:
+    input_zarr_path = "tests/use_case_3/test_inputs/cov_analysis_input_with_nans.zarr"
+
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "covariate_analyser_module",
+            "--input_path",
+            input_zarr_path,
+            "--output_path",
+            str(tmp_json_output_path),
+            "--analysis_type",
+            "corr",
+        ],
+    ):
+        assert not tmp_json_output_path.exists()
+        app(result_action="return_value")
+        assert tmp_json_output_path.is_file()
+
+    with tmp_json_output_path.open() as f:
+        results = json.load(f)
+
+    variables = results["variables"]
+    assert variables
+    for variable in variables.values():
+        # histogram counts should always be finite ints that sum to the number of non-NaN measurements
+        n_valid = sum(1 for value in variable["values"] if not math.isnan(value))
+        assert sum(variable["hist_values"]) == n_valid
+        assert all(math.isfinite(edge) for edge in variable["hist_edges"])
+
+    assert results["covariate_stats"]
 
 
 def test_main_valid_input_url(preprocessed_timeseries_zarr: Dataset, tmp_json_output_path: Path) -> None:

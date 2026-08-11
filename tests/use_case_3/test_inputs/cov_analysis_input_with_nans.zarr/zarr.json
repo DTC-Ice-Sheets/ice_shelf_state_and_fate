@@ -1,0 +1,362 @@
+{
+  "attributes": {
+    "time_period": "quarter",
+    "aggregation": "mean",
+    "timeseries": {
+      "Ice Velocity - Sentinel-1 (Monthly): Ice velocity - magnitude [m s-1].land_ice_surface_velocity_magnitude": {
+        "label": "Ice Velocity - Sentinel-1 (Monthly): Ice velocity - magnitude [m s-1]",
+        "measurement_name": "land_ice_surface_velocity_magnitude",
+        "timeseries_type": "cumulative"
+      },
+      "ITSLive Basal Melt: Basal Melt Rate [m yr-1].land_ice_basal_melt_rate": {
+        "label": "ITSLive Basal Melt: Basal Melt Rate [m yr-1]",
+        "measurement_name": "land_ice_basal_melt_rate",
+        "timeseries_type": "cumulative"
+      },
+      "Sea Ice Concentration: Sea Ice Concentration [%].sea_ice_area_fraction": {
+        "label": "Sea Ice Concentration: Sea Ice Concentration [%]",
+        "measurement_name": "sea_ice_area_fraction",
+        "timeseries_type": "cumulative"
+      },
+      "ITSLive Basal Melt: Elevation Change [m].height_change": {
+        "label": "ITSLive Basal Melt: Elevation Change [m]",
+        "measurement_name": "height_change",
+        "timeseries_type": "cumulative"
+      },
+      "ITSLive Basal Melt: Land Ice Thickness [m].land_ice_thickness": {
+        "label": "ITSLive Basal Melt: Land Ice Thickness [m]",
+        "measurement_name": "land_ice_thickness",
+        "timeseries_type": "cumulative"
+      },
+      "GLORY Ocean Re-analysis: Sea Water Potential Temperature [C].sea_water_potential_temperature": {
+        "label": "GLORY Ocean Re-analysis: Sea Water Potential Temperature [C]",
+        "measurement_name": "sea_water_potential_temperature",
+        "timeseries_type": "cumulative"
+      }
+    }
+  },
+  "zarr_format": 3,
+  "consolidated_metadata": {
+    "kind": "inline",
+    "must_understand": false,
+    "metadata": {
+      "GLORY Ocean Re-analysis: Sea Water Potential Temperature [C].sea_water_potential_temperature": {
+        "shape": [
+          13
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": "NaN",
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "Ice Velocity - Sentinel-1 (Monthly): Ice velocity - magnitude [m s-1].land_ice_surface_velocity_magnitude": {
+        "shape": [
+          13
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": "NaN",
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "ITSLive Basal Melt: Basal Melt Rate [m yr-1].land_ice_basal_melt_rate": {
+        "shape": [
+          13
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": "NaN",
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "ITSLive Basal Melt: Elevation Change [m].height_change": {
+        "shape": [
+          13
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": "NaN",
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "ITSLive Basal Melt: Land Ice Thickness [m].land_ice_thickness": {
+        "shape": [
+          13
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": "NaN",
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "Sea Ice Concentration: Sea Ice Concentration [%].sea_ice_area_fraction": {
+        "shape": [
+          13
+        ],
+        "data_type": "float64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": "NaN",
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "_FillValue": "AAAAAAAA+H8="
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      },
+      "time": {
+        "shape": [
+          13
+        ],
+        "data_type": "int64",
+        "chunk_grid": {
+          "name": "regular",
+          "configuration": {
+            "chunk_shape": [
+              13
+            ]
+          }
+        },
+        "chunk_key_encoding": {
+          "name": "default",
+          "configuration": {
+            "separator": "/"
+          }
+        },
+        "fill_value": 0,
+        "codecs": [
+          {
+            "name": "bytes",
+            "configuration": {
+              "endian": "little"
+            }
+          },
+          {
+            "name": "zstd",
+            "configuration": {
+              "level": 0,
+              "checksum": false
+            }
+          }
+        ],
+        "attributes": {
+          "units": "days since 2014-10-01",
+          "calendar": "proleptic_gregorian"
+        },
+        "dimension_names": [
+          "time"
+        ],
+        "zarr_format": 3,
+        "node_type": "array",
+        "storage_transformers": []
+      }
+    }
+  },
+  "node_type": "group"
+}
