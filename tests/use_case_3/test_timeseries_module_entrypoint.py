@@ -13,13 +13,13 @@ from use_case_3.timeseries_module_entrypoint import app
 
 
 def test_main(tmp_zarr_output_path: Path) -> None:
-    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
+    input_zarr_path = "[tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr]"
 
     argv = [
         "timeseries_module",
         "--label",
         "any old label",
-        "--dataset_path",
+        "--dataset_paths",
         input_zarr_path,
         "--output_path",
         str(tmp_zarr_output_path),
@@ -38,7 +38,7 @@ def test_main(tmp_zarr_output_path: Path) -> None:
 
 
 def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: xr.Dataset, tmp_zarr_output_path: Path) -> None:
-    input_zarr_path = "https://example.com/test_preprocessed_timeseries.zarr"
+    input_zarr_path = "[https://example.com/test_preprocessed_timeseries.zarr]"
 
     with (
         # to avoid making an actual HTTP request, we patch the open_zarr function to return our fixture dataset
@@ -53,7 +53,7 @@ def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: xr.Dataset, tmp_
                 "timeseries_module",
                 "--label",
                 "any old label",
-                "--dataset_path",
+                "--dataset_paths",
                 input_zarr_path,
                 "--output_path",
                 str(tmp_zarr_output_path),
@@ -72,7 +72,6 @@ def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: xr.Dataset, tmp_
     ["invalid_file_path", "invalid_path", "invalid_url"],
 )
 def test_main_invalid_input_raises_validation_error(test_source: str, tmp_zarr_output_path: Path, request) -> None:
-
     error_string = test_data = request.getfixturevalue(test_source)
     with (
         patch.object(

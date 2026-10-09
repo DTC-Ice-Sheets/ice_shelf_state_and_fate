@@ -23,7 +23,7 @@ app = cyclopts.App()
 @app.default
 def main(
     label: str,
-    dataset_path: ZarrType,
+    dataset_paths: list[ZarrType],
     output_path: Path,
     measurement_name: str,
     measurement_uncertainty_name: str | None = None,
@@ -43,8 +43,8 @@ def main(
     ----------
     label : str
         Label for the timeseries.
-    dataset_path : ZarrType
-        Path or URL to the input dataset .zarr file. Can be a local path or a URL.
+    dataset_paths : list[ZarrType]
+        Paths or URLs to the input dataset .zarr files. Can be local paths or URLs.
     output_path : Path
         Path to save the output .zarr file.
     measurement_name : str
@@ -68,30 +68,41 @@ def main(
     t0_normalisation : NormalisationType | None
         The type of normalisation to apply against time zero, if any.
     """
-    timeseries = Timeseries(label=label, timeseries_type=timeseries_type)
-    data = xr.open_zarr(dataset_path)
-    mask_geometry: Polygon | MultiPolygon | None
-    if mask_json_path is not None:
-        with mask_json_path.open("r") as f:
-            geom = shape(json.load(f))
-            assert isinstance(geom, (Polygon, MultiPolygon)), f"Invalid geometry {geom}"
-            mask_geometry = geom
+    timeseries_list = []
+    for dataset_path in dataset_paths:
+        timeseries = Timeseries(label=label, timeseries_type=timeseries_type)
+        data = xr.open_zarr(dataset_path)
+        mask_geometry: Polygon | MultiPolygon | None
+        if mask_json_path is not None:
+            with mask_json_path.open("r") as f:
+                geom = shape(json.load(f))
+                assert isinstance(geom, (Polygon, MultiPolygon)), f"Invalid geometry {geom}"
+                mask_geometry = geom
+        else:
+            mask_geometry = None
+
+        timeseries.process_timeseries(
+            data=data,
+            measurement_name=measurement_name,
+            measurement_uncertainty_name=measurement_uncertainty_name,
+            mask_geometry=mask_geometry,
+            apply_mask=apply_mask,
+            aggregate=aggregate,
+            period=period,
+            uncertainty=uncertainty,
+            independent=independent,
+            t0_normalisation=str(t0_normalisation) if t0_normalisation is not None else None,
+        )
+        timeseries_list.append(timeseries)
+
+    if len(timeseries_list) > 0:
+        timeseries = Timeseries._merge_timeseries(
+            timeseries_list, aggregation=AggregationStrategy.MEAN, aggregation_period=AggregationPeriod.MONTH
+        )
+    elif len(timeseries_list) == 1:
+        timeseries = timeseries_list[0]
     else:
-        mask_geometry = None
-
-    timeseries.process_timeseries(
-        data=data,
-        measurement_name=measurement_name,
-        measurement_uncertainty_name=measurement_uncertainty_name,
-        mask_geometry=mask_geometry,
-        apply_mask=apply_mask,
-        aggregate=aggregate,
-        period=period,
-        uncertainty=uncertainty,
-        independent=independent,
-        t0_normalisation=str(t0_normalisation) if t0_normalisation is not None else None,
-    )
-
+        raise ValueError("No timeseries data available.")
     output = xr.Dataset(
         data_vars={
             "measurement": (["time"], timeseries.measurements.values),

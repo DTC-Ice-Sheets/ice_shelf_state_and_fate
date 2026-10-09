@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
@@ -1397,6 +1398,85 @@ class Timeseries:
             modify = False
 
         return data_cube_masked, modify
+
+    @staticmethod
+    def _merge_timeseries(
+        timeseries_merge: list[Timeseries], aggregation: AggregationStrategy, aggregation_period: AggregationPeriod
+    ) -> Timeseries:
+        """
+        Merge multiple time series into a single time series.
+
+        Parameters
+        ----------
+        timeseries_merge : list[Timeseries]
+            A list of time series to merge.
+        aggregation : AggregationStrategy
+            The aggregation strategy to use when merging.
+        aggregation_period : AggregationPeriod
+            The period to which the time series should be resampled before merging.
+
+        Returns
+        -------
+        Timeseries
+            The merged time series.
+        """
+        ts_for_merging = [
+            Timeseries._resample_timeseries_agg(ts, aggregation, aggregation_period) for ts in timeseries_merge
+        ]
+
+        merged_timeseries = Timeseries(
+            label=ts_for_merging[0].label,
+            measurements=pd.concat([ts.measurements for ts in ts_for_merging], axis=1).mean(axis=1),
+            measurement_std=np.sqrt(pd.concat([ts.measurement_std**2 for ts in ts_for_merging], axis=1).sum(axis=1)),
+            measurement_n=pd.concat([ts.measurement_n for ts in ts_for_merging], axis=1).sum(axis=1),
+            unit=ts_for_merging[0].unit,
+            timeseries_type=ts_for_merging[0].timeseries_type,
+        )
+        return merged_timeseries
+
+    @staticmethod
+    def _resample_timeseries_agg(
+        time_series: Timeseries, aggregation: AggregationStrategy, aggregation_period: AggregationPeriod
+    ) -> Timeseries:
+        """
+        Resample and aggregate a time series.
+
+        Parameters
+        ----------
+        time_series : Timeseries
+            Provide the source time series to resample.
+        aggregation : AggregationStrategy
+            The aggregation strategy to use when resampling.
+        aggregation_period : AggregationPeriod
+            The period to which the time series should be resampled.
+
+        Returns
+        -------
+        Timeseries
+            Return a copied series with measurements and
+            uncertainties resampled to the configured period.
+        """
+        timeseries_agg = deepcopy(time_series)
+        timeseries_agg.measurements = time_series.measurements.groupby(
+            pd.PeriodIndex(
+                time_series.measurements.index,
+                freq=AggregationPeriod.pd_period_freq(aggregation_period),
+            )
+        ).agg(aggregation)
+        if timeseries_agg.measurement_uncertainties is not None:
+            timeseries_agg.measurement_uncertainties = time_series.measurement_uncertainties.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties.index,
+                    freq=AggregationPeriod.pd_period_freq(aggregation_period),
+                )
+            ).agg(aggregation)
+        timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
+        if timeseries_agg.measurement_uncertainties is not None:
+            timeseries_agg.measurement_uncertainties.index = (
+                timeseries_agg.measurement_uncertainties.index.to_timestamp()
+            )
+
+        return timeseries_agg
 
     def plot(
         self: Timeseries,
