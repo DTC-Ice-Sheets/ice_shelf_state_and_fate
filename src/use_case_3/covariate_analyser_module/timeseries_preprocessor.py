@@ -221,17 +221,14 @@ class TimeSeriesPreprocessor:
         ----------
         timeseries : list[Timeseries]
             The timeseries as a dictionary where the key is a label in the list of timeseries labels.
+
+        Raises
+        ------
+        ValueError
+            If a timeseries with the same label already exists.
         """
         for timeseries_single in timeseries:
             if timeseries_single.label not in self.timeseries:
                 self.timeseries[timeseries_single.label] = timeseries_single
             else:
                 raise ValueError(f"Timeseries with label {timeseries_single.label} already exists.")
-                # if isinstance(self.timeseries[timeseries_single.label], list):
-                #     self.timeseries[timeseries_single.label].append(timeseries_single)
-                # else:
-                #     self.timeseries[timeseries_single.label] = [
-                #         self.timeseries[timeseries_single.label],
-                #         timeseries_single,
-                #     ]
-                # self._timeseries_merge.append(timeseries_single.label)

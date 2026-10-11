@@ -1424,7 +1424,7 @@ class Timeseries:
             Timeseries._resample_timeseries_agg(ts, aggregation, aggregation_period) for ts in timeseries_merge
         ]
 
-        merged_timeseries = Timeseries(
+        return Timeseries(
             label=ts_for_merging[0].label,
             measurements=pd.concat([ts.measurements for ts in ts_for_merging], axis=1).mean(axis=1),
             measurement_std=np.sqrt(pd.concat([ts.measurement_std**2 for ts in ts_for_merging], axis=1).sum(axis=1)),
@@ -1432,7 +1432,6 @@ class Timeseries:
             unit=ts_for_merging[0].unit,
             timeseries_type=ts_for_merging[0].timeseries_type,
         )
-        return merged_timeseries
 
     @staticmethod
     def _resample_timeseries_agg(

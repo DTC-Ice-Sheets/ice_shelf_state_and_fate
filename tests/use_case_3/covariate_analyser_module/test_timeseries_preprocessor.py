@@ -690,17 +690,3 @@ def test_check_timeseries_intersection(
     )
 
     assert not timeseries_container._check_timeseries_intersection()
-
-
-def test_merge_timeseries(timeseries_merge_fixture):
-    timeseries_container = TimeSeriesPreprocessor(
-        timeseries=timeseries_merge_fixture,
-        time_period=AggregationPeriod.MONTH,
-        aggregation=AggregationStrategy.MEAN,
-        process_timeseries=False,
-    )
-
-    timeseries_container._merge_timeseries()
-
-    assert len(timeseries_container.timeseries) == 1
-    assert timeseries_container.timeseries["time series merge"].measurements.to_list() == [2, 3, 4, 5, 6]

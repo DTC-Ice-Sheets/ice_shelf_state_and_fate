@@ -67,6 +67,11 @@ def main(
         Whether the uncertainties are independent or not.
     t0_normalisation : NormalisationType | None
         The type of normalisation to apply against time zero, if any.
+
+    Raises
+    ------
+    ValueError
+        If no timeseries data is available after processing the input datasets.
     """
     timeseries_list = []
     for dataset_path in dataset_paths:
@@ -95,7 +100,7 @@ def main(
         )
         timeseries_list.append(timeseries)
 
-    if len(timeseries_list) > 0:
+    if len(timeseries_list) > 1:
         timeseries = Timeseries._merge_timeseries(
             timeseries_list, aggregation=AggregationStrategy.MEAN, aggregation_period=AggregationPeriod.MONTH
         )

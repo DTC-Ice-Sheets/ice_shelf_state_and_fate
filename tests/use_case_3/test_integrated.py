@@ -13,8 +13,8 @@ def test_integrated(tmp_path) -> None:
         app as preprocessor_app,
     )
 
-    input_zarr_path_1 = "[tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr]"
-    input_zarr_path_2 = "[tests/use_case_3/test_inputs/rasters/test_dataset_B.zarr]"
+    input_zarr_path_1 = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
+    input_zarr_path_2 = "tests/use_case_3/test_inputs/rasters/test_dataset_B.zarr"
     timeseries_path_1 = tmp_path / "timeseries_1.zarr"
     timeseries_path_2 = tmp_path / "timeseries_2.zarr"
     preprocessed_timeseries_path = tmp_path / "preprocessed.zarr"
@@ -26,7 +26,7 @@ def test_integrated(tmp_path) -> None:
         [
             "timeseries_module",
             "--label",
-            "test_label",
+            "test_label_1",
             "--dataset_paths",
             input_zarr_path_1,
             "--output_path",
@@ -49,7 +49,7 @@ def test_integrated(tmp_path) -> None:
         [
             "timeseries_module",
             "--label",
-            "test_label",
+            "test_label_2",
             "--dataset_paths",
             input_zarr_path_2,
             "--output_path",
