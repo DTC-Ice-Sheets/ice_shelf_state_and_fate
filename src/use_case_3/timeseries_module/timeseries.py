@@ -165,10 +165,21 @@ class Timeseries:
             self.measurement_uncertainties = data_uncertainties_agg["uncertainty"]
             self.measurement_uncertainties_std = data_uncertainties_agg["uncertainty_std"]
             self.measurement_uncertainties_n = data_uncertainties_agg["uncertainty_n"]
+        else:
+            self.measurement_uncertainties = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
+            self.measurement_uncertainties_std = pd.Series(
+                [np.nan] * len(self.measurements), index=self.measurements.index
+            )
+            self.measurement_uncertainties_n = pd.Series(
+                [np.nan] * len(self.measurements), index=self.measurements.index
+            )
 
         if data_coverage_agg is not None:
             self.measurement_coverage = data_coverage_agg["coverage"]
             self.measurement_coverage_n = data_coverage_agg["coverage_n"]
+        else:
+            self.measurement_coverage = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
+            self.measurement_coverage_n = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
 
     def _process_timeseries_nd(
         self: Timeseries,
@@ -1429,6 +1440,10 @@ class Timeseries:
             measurements=pd.concat([ts.measurements for ts in ts_for_merging], axis=1).mean(axis=1),
             measurement_std=np.sqrt(pd.concat([ts.measurement_std**2 for ts in ts_for_merging], axis=1).sum(axis=1)),
             measurement_n=pd.concat([ts.measurement_n for ts in ts_for_merging], axis=1).sum(axis=1),
+            measurement_uncertainties=pd.concat(
+                [ts.measurement_uncertainties for ts in ts_for_merging if ts.measurement_uncertainties is not None],
+                axis=1,
+            ).mean(axis=1),
             unit=ts_for_merging[0].unit,
             timeseries_type=ts_for_merging[0].timeseries_type,
         )
@@ -1462,6 +1477,18 @@ class Timeseries:
                 freq=AggregationPeriod.pd_period_freq(aggregation_period),
             )
         ).agg(aggregation)
+        timeseries_agg.measurement_std = time_series.measurement_std.groupby(
+            pd.PeriodIndex(
+                time_series.measurement_std.index,
+                freq=AggregationPeriod.pd_period_freq(aggregation_period),
+            )
+        ).agg(aggregation)
+        timeseries_agg.measurement_n = time_series.measurement_n.groupby(
+            pd.PeriodIndex(
+                time_series.measurement_n.index,
+                freq=AggregationPeriod.pd_period_freq(aggregation_period),
+            )
+        ).agg(aggregation)
         if timeseries_agg.measurement_uncertainties is not None:
             timeseries_agg.measurement_uncertainties = time_series.measurement_uncertainties.groupby(
                 pd.PeriodIndex(
@@ -1469,11 +1496,40 @@ class Timeseries:
                     freq=AggregationPeriod.pd_period_freq(aggregation_period),
                 )
             ).agg(aggregation)
+            timeseries_agg.measurement_uncertainties_std = time_series.measurement_uncertainties_std.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties_std.index,
+                    freq=AggregationPeriod.pd_period_freq(aggregation_period),
+                )
+            ).agg(aggregation)
+            timeseries_agg.measurement_uncertainties_n = time_series.measurement_uncertainties_n.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties_n.index,
+                    freq=AggregationPeriod.pd_period_freq(aggregation_period),
+                )
+            ).agg(aggregation)
         timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
-        if timeseries_agg.measurement_uncertainties is not None:
-            timeseries_agg.measurement_uncertainties.index = (
-                timeseries_agg.measurement_uncertainties.index.to_timestamp()
-            )
+        timeseries_agg.measurement_std.index = (
+            timeseries_agg.measurement_std.index.to_timestamp() if timeseries_agg.measurement_std is not None else None
+        )
+        timeseries_agg.measurement_n.index = (
+            timeseries_agg.measurement_n.index.to_timestamp() if timeseries_agg.measurement_n is not None else None
+        )
+        timeseries_agg.measurement_uncertainties.index = (
+            timeseries_agg.measurement_uncertainties.index.to_timestamp()
+            if timeseries_agg.measurement_uncertainties is not None
+            else None
+        )
+        timeseries_agg.measurement_uncertainties_std.index = (
+            timeseries_agg.measurement_uncertainties_std.index.to_timestamp()
+            if timeseries_agg.measurement_uncertainties_std is not None
+            else None
+        )
+        timeseries_agg.measurement_uncertainties_n.index = (
+            timeseries_agg.measurement_uncertainties_n.index.to_timestamp()
+            if timeseries_agg.measurement_uncertainties_n is not None
+            else None
+        )
 
         return timeseries_agg
 

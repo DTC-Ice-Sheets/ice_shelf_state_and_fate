@@ -102,7 +102,7 @@ def main(
 
     if len(timeseries_list) > 1:
         timeseries = Timeseries._merge_timeseries(
-            timeseries_list, aggregation=AggregationStrategy.MEAN, aggregation_period=AggregationPeriod.MONTH
+            timeseries_list, aggregation=AggregationStrategy.MEAN, aggregation_period=period
         )
     elif len(timeseries_list) == 1:
         timeseries = timeseries_list[0]
