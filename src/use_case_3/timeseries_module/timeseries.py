@@ -1653,104 +1653,107 @@ class Timeseries:
 
         This assumes that the timeseries is ordered. It also assumes that there are associated uncertainties.
         """
-        start = self.measurements.iloc[0]
-        start_uncertainty = (
-            self.measurement_uncertainties.iloc[0] if self.measurement_uncertainties is not None else np.nan
-        )
-        end = self.measurements.iloc[-1]
-        end_uncertainty = (
-            self.measurement_uncertainties.iloc[-1] if self.measurement_uncertainties is not None else np.nan
-        )
-        difference = end - start
-        difference_uncertainty = self._combine_uncertainties_quadrature(start_uncertainty, end_uncertainty)
+        try:
+            start = self.measurements.iloc[0]
+            start_uncertainty = (
+                self.measurement_uncertainties.iloc[0] if self.measurement_uncertainties is not None else np.nan
+            )
+            end = self.measurements.iloc[-1]
+            end_uncertainty = (
+                self.measurement_uncertainties.iloc[-1] if self.measurement_uncertainties is not None else np.nan
+            )
+            difference = end - start
+            difference_uncertainty = self._combine_uncertainties_quadrature(start_uncertainty, end_uncertainty)
 
-        value_maximum = self.measurements.max()
-        value_maximum_uncertainty = (
-            self.measurement_uncertainties[self.measurements.idxmax()]
-            if self.measurement_uncertainties is not None
-            else np.nan
-        )
+            value_maximum = self.measurements.max()
+            value_maximum_uncertainty = (
+                self.measurement_uncertainties[self.measurements.idxmax()]
+                if self.measurement_uncertainties is not None
+                else np.nan
+            )
 
-        value_minimum = self.measurements.min()
-        value_minimum_uncertainty = (
-            self.measurement_uncertainties[self.measurements.idxmin()]
-            if self.measurement_uncertainties is not None
-            else np.nan
-        )
-        percentile_90 = np.percentile(self.measurements, 90)
-        percentile_75 = np.percentile(self.measurements, 75)
-        percentile_50 = np.percentile(self.measurements, 50)
-        percentile_25 = np.percentile(self.measurements, 25)
-        percentile_10 = np.percentile(self.measurements, 10)
-        if self.measurement_coverage is not None:
-            coverage_maximum = self.measurement_coverage.max()
-            coverage_minimum = self.measurement_coverage.min()
-            coverage_range = coverage_maximum - coverage_minimum
-            coverage_mean = self.measurement_coverage.mean()
-            coverage_std = self.measurement_coverage.std()
-            coverage_median = self.measurement_coverage.median()
-        else:
-            coverage_maximum = np.nan
-            coverage_minimum = np.nan
-            coverage_range = np.nan
-            coverage_mean = np.nan
-            coverage_std = np.nan
-            coverage_median = np.nan
+            value_minimum = self.measurements.min()
+            value_minimum_uncertainty = (
+                self.measurement_uncertainties[self.measurements.idxmin()]
+                if self.measurement_uncertainties is not None
+                else np.nan
+            )
+            percentile_90 = np.percentile(self.measurements, 90)
+            percentile_75 = np.percentile(self.measurements, 75)
+            percentile_50 = np.percentile(self.measurements, 50)
+            percentile_25 = np.percentile(self.measurements, 25)
+            percentile_10 = np.percentile(self.measurements, 10)
+            if self.measurement_coverage is not None:
+                coverage_maximum = self.measurement_coverage.max()
+                coverage_minimum = self.measurement_coverage.min()
+                coverage_range = coverage_maximum - coverage_minimum
+                coverage_mean = self.measurement_coverage.mean()
+                coverage_std = self.measurement_coverage.std()
+                coverage_median = self.measurement_coverage.median()
+            else:
+                coverage_maximum = np.nan
+                coverage_minimum = np.nan
+                coverage_range = np.nan
+                coverage_mean = np.nan
+                coverage_std = np.nan
+                coverage_median = np.nan
 
-        observation_uncertainty_corr = (
-            np.corrcoef(self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten())[
+            observation_uncertainty_corr = (
+                np.corrcoef(
+                    self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten()
+                )[0, -1]
+                if self.measurement_uncertainties is not None
+                else np.nan
+            )
+            linearity_corr = np.corrcoef(np.arange(self.measurements.shape[0]), self.measurements.to_numpy().flatten())[
                 0, -1
             ]
-            if self.measurement_uncertainties is not None
-            else np.nan
-        )
-        linearity_corr = np.corrcoef(np.arange(self.measurements.shape[0]), self.measurements.to_numpy().flatten())[
-            0, -1
-        ]
 
-        if (
-            ~np.isnan(self.measurements.index.to_numpy()).any()
-            and ~np.isnan(self.measurements.to_numpy().flatten()).any()
-        ):
-            rate_of_change = (
-                LinearRegression()
-                .fit(self.measurements.index.to_numpy().reshape(-1, 1), self.measurements.to_numpy().flatten())
-                .coef_[0]
-            )
-        else:
-            rate_of_change = np.nan
+            if (
+                ~np.isnan(self.measurements.index.to_numpy()).any()
+                and ~np.isnan(self.measurements.to_numpy().flatten()).any()
+            ):
+                rate_of_change = (
+                    LinearRegression()
+                    .fit(self.measurements.index.to_numpy().reshape(-1, 1), self.measurements.to_numpy().flatten())
+                    .coef_[0]
+                )
+            else:
+                rate_of_change = np.nan
 
-        mean = self.measurements.mean()
-        total = self.measurements.sum()
+            mean = self.measurements.mean()
+            total = self.measurements.sum()
 
-        self.summary_stats = {
-            "Initial Value": [start, start - start_uncertainty, start + start_uncertainty],
-            "Final Value": [end, end - end_uncertainty, end + end_uncertainty],
-            "Difference": [difference, difference - difference_uncertainty, difference + difference_uncertainty],
-            "Maximum Value": [
-                value_maximum,
-                value_maximum - value_maximum_uncertainty,
-                value_maximum + value_maximum_uncertainty,
-            ],
-            "Minimum Value": [
-                value_minimum,
-                value_minimum - value_minimum_uncertainty,
-                value_minimum + value_minimum_uncertainty,
-            ],
-            "10th Percentile Value": [percentile_10, np.nan, np.nan],
-            "25th Percentile Value": [percentile_25, np.nan, np.nan],
-            "50th Percentile Value": [percentile_50, np.nan, np.nan],
-            "75th Percentile Value": [percentile_75, np.nan, np.nan],
-            "90th Percentile Value": [percentile_90, np.nan, np.nan],
-            "Coverage Maximum (%)": [coverage_maximum, coverage_maximum, coverage_maximum],
-            "Coverage Minimum (%)": [coverage_minimum, coverage_minimum, coverage_minimum],
-            "Coverage Range (%)": [coverage_range, coverage_range, coverage_range],
-            "Coverage Mean (%)": [coverage_mean, coverage_mean, coverage_mean],
-            "Coverage Median (%)": [coverage_median, coverage_median, coverage_median],
-            "Coverage Standard Deviation (%)": [coverage_std, coverage_std, coverage_std],
-            "Observation/Uncertainty Correlation": [observation_uncertainty_corr, np.nan, np.nan],
-            "Observation Linearity (correlation coef.)": [linearity_corr, np.nan, np.nan],
-            "rate of change": [rate_of_change, np.nan, np.nan],
-            "Mean": [mean, np.nan, np.nan],
-            "Total": [total, np.nan, np.nan],
-        }
+            self.summary_stats = {
+                "Initial Value": [start, start - start_uncertainty, start + start_uncertainty],
+                "Final Value": [end, end - end_uncertainty, end + end_uncertainty],
+                "Difference": [difference, difference - difference_uncertainty, difference + difference_uncertainty],
+                "Maximum Value": [
+                    value_maximum,
+                    value_maximum - value_maximum_uncertainty,
+                    value_maximum + value_maximum_uncertainty,
+                ],
+                "Minimum Value": [
+                    value_minimum,
+                    value_minimum - value_minimum_uncertainty,
+                    value_minimum + value_minimum_uncertainty,
+                ],
+                "10th Percentile Value": [percentile_10, np.nan, np.nan],
+                "25th Percentile Value": [percentile_25, np.nan, np.nan],
+                "50th Percentile Value": [percentile_50, np.nan, np.nan],
+                "75th Percentile Value": [percentile_75, np.nan, np.nan],
+                "90th Percentile Value": [percentile_90, np.nan, np.nan],
+                "Coverage Maximum (%)": [coverage_maximum, coverage_maximum, coverage_maximum],
+                "Coverage Minimum (%)": [coverage_minimum, coverage_minimum, coverage_minimum],
+                "Coverage Range (%)": [coverage_range, coverage_range, coverage_range],
+                "Coverage Mean (%)": [coverage_mean, coverage_mean, coverage_mean],
+                "Coverage Median (%)": [coverage_median, coverage_median, coverage_median],
+                "Coverage Standard Deviation (%)": [coverage_std, coverage_std, coverage_std],
+                "Observation/Uncertainty Correlation": [observation_uncertainty_corr, np.nan, np.nan],
+                "Observation Linearity (correlation coef.)": [linearity_corr, np.nan, np.nan],
+                "rate of change": [rate_of_change, np.nan, np.nan],
+                "Mean": [mean, np.nan, np.nan],
+                "Total": [total, np.nan, np.nan],
+            }
+        except Exception as e:  # noqa: BLE001
+            self.summary_stats = {"Error": [str(e), np.nan, np.nan]}
