@@ -1139,16 +1139,16 @@ class Timeseries:
 
     @staticmethod
     def _combine_uncertainties_quadrature(
-        data_uncertainties_1: np.float64 | np.ndarray, data_uncertainties_2: np.float64 | np.ndarray
+        data_uncertainties_1: float | np.ndarray, data_uncertainties_2: float | np.ndarray
     ) -> np.float64 | np.ndarray:
         """
         Combine uncertainties through quadrature.
 
         Parameters
         ----------
-        data_uncertainties_1 : np.float64 | np.ndarray
+        data_uncertainties_1 : float | np.ndarray
             The first vector of uncertainties.
-        data_uncertainties_2 : np.float64 | np.ndarray
+        data_uncertainties_2 : float | np.ndarray
             The second vector of uncertainties.
 
         Returns
@@ -1654,17 +1654,29 @@ class Timeseries:
         This assumes that the timeseries is ordered. It also assumes that there are associated uncertainties.
         """
         start = self.measurements.iloc[0]
-        start_uncertainty = self.measurement_uncertainties.iloc[0]
+        start_uncertainty = (
+            self.measurement_uncertainties.iloc[0] if self.measurement_uncertainties is not None else np.nan
+        )
         end = self.measurements.iloc[-1]
-        end_uncertainty = self.measurement_uncertainties.iloc[-1]
+        end_uncertainty = (
+            self.measurement_uncertainties.iloc[-1] if self.measurement_uncertainties is not None else np.nan
+        )
         difference = end - start
         difference_uncertainty = self._combine_uncertainties_quadrature(start_uncertainty, end_uncertainty)
 
         value_maximum = self.measurements.max()
-        value_maximum_uncertainty = self.measurement_uncertainties[self.measurements.idxmax()]
+        value_maximum_uncertainty = (
+            self.measurement_uncertainties[self.measurements.idxmax()]
+            if self.measurement_uncertainties is not None
+            else np.nan
+        )
 
         value_minimum = self.measurements.min()
-        value_minimum_uncertainty = self.measurement_uncertainties[self.measurements.idxmin()]
+        value_minimum_uncertainty = (
+            self.measurement_uncertainties[self.measurements.idxmin()]
+            if self.measurement_uncertainties is not None
+            else np.nan
+        )
         percentile_90 = np.percentile(self.measurements, 90)
         percentile_75 = np.percentile(self.measurements, 75)
         percentile_50 = np.percentile(self.measurements, 50)
@@ -1685,18 +1697,28 @@ class Timeseries:
             coverage_std = np.nan
             coverage_median = np.nan
 
-        observation_uncertainty_corr = np.corrcoef(
-            self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten()
-        )[0, -1]
+        observation_uncertainty_corr = (
+            np.corrcoef(self.measurements.to_numpy().flatten(), self.measurement_uncertainties.to_numpy().flatten())[
+                0, -1
+            ]
+            if self.measurement_uncertainties is not None
+            else np.nan
+        )
         linearity_corr = np.corrcoef(np.arange(self.measurements.shape[0]), self.measurements.to_numpy().flatten())[
             0, -1
         ]
 
-        rate_of_change = (
-            LinearRegression()
-            .fit(self.measurements.index.to_numpy().reshape(-1, 1), self.measurements.to_numpy().flatten())
-            .coef_[0]
-        )
+        if (
+            ~np.isnan(self.measurements.index.to_numpy()).any()
+            and ~np.isnan(self.measurements.to_numpy().flatten()).any()
+        ):
+            rate_of_change = (
+                LinearRegression()
+                .fit(self.measurements.index.to_numpy().reshape(-1, 1), self.measurements.to_numpy().flatten())
+                .coef_[0]
+            )
+        else:
+            rate_of_change = np.nan
 
         mean = self.measurements.mean()
         total = self.measurements.sum()
