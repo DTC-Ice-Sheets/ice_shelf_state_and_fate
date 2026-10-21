@@ -5,8 +5,8 @@ from pathlib import Path
 import xarray as xr
 import yaml
 
-config_dict_path = Path("src/use_case_3/dashboard/variable_mappings.yml")
-config_dict_local_path = Path("src/use_case_3/dashboard/variable_mappings_local.yml")
+config_dict_path = Path("src/use_case_3/timeseries_zarr_to_json_module/variable_mappings.yml")
+config_dict_local_path = Path("src/use_case_3/timeseries_zarr_to_json_module/variable_mappings_local.yml")
 
 # Load metadata about the available datasets and variables
 with config_dict_path.open("r", encoding="utf-8") as f:

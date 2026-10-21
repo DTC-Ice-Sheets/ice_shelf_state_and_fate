@@ -1,4 +1,5 @@
 """Test the helper functions."""
+
 import numpy as np
 
 from use_case_3.raster_tools import helpers

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
@@ -164,10 +165,21 @@ class Timeseries:
             self.measurement_uncertainties = data_uncertainties_agg["uncertainty"]
             self.measurement_uncertainties_std = data_uncertainties_agg["uncertainty_std"]
             self.measurement_uncertainties_n = data_uncertainties_agg["uncertainty_n"]
+        else:
+            self.measurement_uncertainties = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
+            self.measurement_uncertainties_std = pd.Series(
+                [np.nan] * len(self.measurements), index=self.measurements.index
+            )
+            self.measurement_uncertainties_n = pd.Series(
+                [np.nan] * len(self.measurements), index=self.measurements.index
+            )
 
         if data_coverage_agg is not None:
             self.measurement_coverage = data_coverage_agg["coverage"]
             self.measurement_coverage_n = data_coverage_agg["coverage_n"]
+        else:
+            self.measurement_coverage = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
+            self.measurement_coverage_n = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
 
     def _process_timeseries_nd(
         self: Timeseries,
@@ -1397,6 +1409,129 @@ class Timeseries:
             modify = False
 
         return data_cube_masked, modify
+
+    @staticmethod
+    def _merge_timeseries(
+        timeseries_merge: list[Timeseries], aggregation: AggregationStrategy, aggregation_period: AggregationPeriod
+    ) -> Timeseries:
+        """
+        Merge multiple time series into a single time series.
+
+        Parameters
+        ----------
+        timeseries_merge : list[Timeseries]
+            A list of time series to merge.
+        aggregation : AggregationStrategy
+            The aggregation strategy to use when merging.
+        aggregation_period : AggregationPeriod
+            The period to which the time series should be resampled before merging.
+
+        Returns
+        -------
+        Timeseries
+            The merged time series.
+        """
+        ts_for_merging = [
+            Timeseries._resample_timeseries_agg(ts, aggregation, aggregation_period) for ts in timeseries_merge
+        ]
+
+        return Timeseries(
+            label=ts_for_merging[0].label,
+            measurements=pd.concat([ts.measurements for ts in ts_for_merging], axis=1).mean(axis=1),
+            measurement_std=np.sqrt(pd.concat([ts.measurement_std**2 for ts in ts_for_merging], axis=1).sum(axis=1)),
+            measurement_n=pd.concat([ts.measurement_n for ts in ts_for_merging], axis=1).sum(axis=1),
+            measurement_uncertainties=pd.concat(
+                [ts.measurement_uncertainties for ts in ts_for_merging if ts.measurement_uncertainties is not None],
+                axis=1,
+            ).mean(axis=1),
+            unit=ts_for_merging[0].unit,
+            timeseries_type=ts_for_merging[0].timeseries_type,
+        )
+
+    @staticmethod
+    def _resample_timeseries_agg(
+        time_series: Timeseries, aggregation: AggregationStrategy, aggregation_period: AggregationPeriod
+    ) -> Timeseries:
+        """
+        Resample and aggregate a time series.
+
+        Parameters
+        ----------
+        time_series : Timeseries
+            Provide the source time series to resample.
+        aggregation : AggregationStrategy
+            The aggregation strategy to use when resampling.
+        aggregation_period : AggregationPeriod
+            The period to which the time series should be resampled.
+
+        Returns
+        -------
+        Timeseries
+            Return a copied series with measurements and
+            uncertainties resampled to the configured period.
+        """
+        timeseries_agg = deepcopy(time_series)
+        timeseries_agg.measurements = time_series.measurements.groupby(
+            pd.PeriodIndex(
+                time_series.measurements.index,
+                freq=AggregationPeriod.pd_period_freq(aggregation_period),
+            )
+        ).agg(aggregation)
+        timeseries_agg.measurement_std = time_series.measurement_std.groupby(
+            pd.PeriodIndex(
+                time_series.measurement_std.index,
+                freq=AggregationPeriod.pd_period_freq(aggregation_period),
+            )
+        ).agg(aggregation)
+        timeseries_agg.measurement_n = time_series.measurement_n.groupby(
+            pd.PeriodIndex(
+                time_series.measurement_n.index,
+                freq=AggregationPeriod.pd_period_freq(aggregation_period),
+            )
+        ).agg(aggregation)
+        if timeseries_agg.measurement_uncertainties is not None:
+            timeseries_agg.measurement_uncertainties = time_series.measurement_uncertainties.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties.index,
+                    freq=AggregationPeriod.pd_period_freq(aggregation_period),
+                )
+            ).agg(aggregation)
+            timeseries_agg.measurement_uncertainties_std = time_series.measurement_uncertainties_std.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties_std.index,
+                    freq=AggregationPeriod.pd_period_freq(aggregation_period),
+                )
+            ).agg(aggregation)
+            timeseries_agg.measurement_uncertainties_n = time_series.measurement_uncertainties_n.groupby(
+                pd.PeriodIndex(
+                    time_series.measurement_uncertainties_n.index,
+                    freq=AggregationPeriod.pd_period_freq(aggregation_period),
+                )
+            ).agg(aggregation)
+        timeseries_agg.measurements.index = timeseries_agg.measurements.index.to_timestamp()
+        timeseries_agg.measurement_std.index = (
+            timeseries_agg.measurement_std.index.to_timestamp() if timeseries_agg.measurement_std is not None else None
+        )
+        timeseries_agg.measurement_n.index = (
+            timeseries_agg.measurement_n.index.to_timestamp() if timeseries_agg.measurement_n is not None else None
+        )
+        timeseries_agg.measurement_uncertainties.index = (
+            timeseries_agg.measurement_uncertainties.index.to_timestamp()
+            if timeseries_agg.measurement_uncertainties is not None
+            else None
+        )
+        timeseries_agg.measurement_uncertainties_std.index = (
+            timeseries_agg.measurement_uncertainties_std.index.to_timestamp()
+            if timeseries_agg.measurement_uncertainties_std is not None
+            else None
+        )
+        timeseries_agg.measurement_uncertainties_n.index = (
+            timeseries_agg.measurement_uncertainties_n.index.to_timestamp()
+            if timeseries_agg.measurement_uncertainties_n is not None
+            else None
+        )
+
+        return timeseries_agg
 
     def plot(
         self: Timeseries,

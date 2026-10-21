@@ -206,6 +206,43 @@ def timeseries_dataset_1d_fixture(timeseries_fixture):
     return ds, "time series 1", "unit 1", "measurement", "cumulative", "ice_shelf"
 
 
+@pytest.fixture
+def merge_timeseries_fixture():
+    time = pd.date_range(start="2020-01-01", periods=5, freq="MS")
+    timeseries_1 = Timeseries(
+        label="time series 1",
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=pd.Series([0, 1, 2, 3, 4], index=time),
+        measurement_std=pd.Series([2, 2, 2, 2, 2], index=time),
+        measurement_n=pd.Series([1, 2, 3, 4, 5], index=time),
+        measurement_uncertainties=pd.Series([2, 3, 4, 5, 6], index=time),
+        measurement_uncertainties_std=pd.Series([1, 1, 1, 1, 1], index=time),
+        measurement_uncertainties_n=pd.Series([1, 1, 1, 1, 1], index=time),
+        measurement_coverage=pd.Series([100, 100, 100, 100, 100], index=time),
+        measurement_coverage_n=pd.Series([10, 11, 12, 13, 14], index=time),
+        unit="unit 1",
+        uncertainty=UncertaintyType.STD,
+    )
+
+    time = pd.date_range(start="2020-01-01", periods=6, freq="MS")
+    timeseries_2 = Timeseries(
+        label="time series 1",
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=pd.Series([2, 3, 4, 5, np.nan, 7], index=time),
+        measurement_std=pd.Series([3, 3, 3, 3, 3, 3], index=time),
+        measurement_n=pd.Series([2, 3, 4, 5, 6, 7], index=time),
+        measurement_uncertainties=pd.Series([3, 4, 5, 6, 7, 8], index=time),
+        measurement_uncertainties_std=pd.Series([2, 2, 2, 2, 2, 2], index=time),
+        measurement_uncertainties_n=pd.Series([3, 3, 3, 3, 3, 3], index=time),
+        measurement_coverage=pd.Series([50, 50, 50, 50, 50, 50], index=time),
+        measurement_coverage_n=pd.Series([1, 2, 3, 4, 5, 6], index=time),
+        unit="unit 1",
+        uncertainty=UncertaintyType.STD,
+    )
+
+    return [timeseries_1, timeseries_2]
+
+
 def test_process_timeseries_1d(timeseries_dataset_1d_fixture):
     timeseries = Timeseries(
         label=timeseries_dataset_1d_fixture[1],
@@ -877,3 +914,24 @@ def test__determine_percentiles(timeseries_obj_fixture, data_array_nans_fixture,
 
     assert np.allclose(percentiles, np.array([3.75, 12.5, 20.75]))
     assert time_coords_agg == [0, 1, 2]
+
+
+def test__merge_timeseries(merge_timeseries_fixture):
+    timeseries_merged = Timeseries._merge_timeseries(
+        timeseries_merge=merge_timeseries_fixture,
+        aggregation=AggregationStrategy.MEAN,
+        aggregation_period=AggregationPeriod.MONTH,
+    )
+
+    np.testing.assert_array_equal(timeseries_merged.measurements, np.array([1, 2, 3, 4, 4, 7]))
+    pd.testing.assert_index_equal(
+        timeseries_merged.measurements.index, pd.date_range(start="2020-01-01", periods=6, freq="MS")
+    )
+    assert np.allclose(
+        timeseries_merged.measurement_std,
+        np.array([3.605551275463989, 3.605551275463989, 3.605551275463989, 3.605551275463989, 3.605551275463989, 3]),
+    )
+    assert np.allclose(
+        timeseries_merged.measurement_n,
+        np.array([3, 5, 7, 9, 11, 7]),
+    )

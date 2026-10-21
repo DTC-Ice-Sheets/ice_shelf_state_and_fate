@@ -1,4 +1,5 @@
 """Gridding helper functions."""
+
 from typing import Any, Tuple
 
 import numpy as np
