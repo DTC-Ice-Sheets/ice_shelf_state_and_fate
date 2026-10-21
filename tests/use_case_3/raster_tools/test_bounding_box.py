@@ -1,4 +1,5 @@
 """Test the BoundingBox class."""
+
 import pytest
 
 from use_case_3.raster_tools.bounding_box import BoundingBox

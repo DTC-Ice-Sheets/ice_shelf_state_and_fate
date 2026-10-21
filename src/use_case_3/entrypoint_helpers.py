@@ -1,7 +1,7 @@
 """
 Helper functions for entrypoint scripts.
 
-Helps to optimises loading time by avoiding imports of large dependencies from helper_functions.py.
+Helps to optimise loading time by avoiding imports of large dependencies from helper_functions.py.
 """
 
 from pathlib import Path
