@@ -1566,135 +1566,34 @@ class Timeseries:
         mean = self.measurements.mean()
         total = self.measurements.sum()
 
-        data = np.zeros((21, 3))
-
-        # Start
-        data[0, 0] = start
-        data[0, 1] = start - start_uncertainty
-        data[0, 2] = start + start_uncertainty
-
-        # End
-        data[1, 0] = end
-        data[1, 1] = end - end_uncertainty
-        data[1, 2] = end + end_uncertainty
-
-        # Difference
-        data[2, 0] = difference
-        data[2, 1] = difference - difference_uncertainty
-        data[2, 2] = difference + difference_uncertainty
-
-        # Maximum
-        data[3, 0] = value_maximum
-        data[3, 1] = value_maximum - value_maximum_uncertainty
-        data[3, 2] = value_maximum + value_maximum_uncertainty
-
-        # Minimum
-        data[4, 0] = value_minimum
-        data[4, 1] = value_minimum - value_minimum_uncertainty
-        data[4, 2] = value_minimum + value_minimum_uncertainty
-
-        # Percentiles (0.9, 0.75, 0.5, 0.25, 0.1)
-        data[5, 0] = percentile_10
-        data[5, 1] = np.nan
-        data[5, 2] = np.nan
-
-        data[6, 0] = percentile_25
-        data[6, 1] = np.nan
-        data[6, 2] = np.nan
-
-        data[7, 0] = percentile_50
-        data[7, 1] = np.nan
-        data[7, 2] = np.nan
-
-        data[8, 0] = percentile_75
-        data[8, 1] = np.nan
-        data[8, 2] = np.nan
-
-        data[9, 0] = percentile_90
-        data[9, 1] = np.nan
-        data[9, 2] = np.nan
-
-        # Coverage Maximum
-        data[10, 0] = coverage_maximum
-        data[10, 1] = np.nan
-        data[10, 2] = np.nan
-
-        # Coverage Minimum
-        data[11, 0] = coverage_minimum
-        data[11, 1] = np.nan
-        data[11, 2] = np.nan
-
-        # Coverage Range
-        data[12, 0] = coverage_range
-        data[12, 1] = np.nan
-        data[12, 2] = np.nan
-
-        # Coverage Mean
-        data[13, 0] = coverage_mean
-        data[13, 1] = np.nan
-        data[13, 2] = np.nan
-
-        # Coverage Median
-        data[14, 0] = coverage_median
-        data[14, 1] = np.nan
-        data[14, 2] = np.nan
-
-        # Coverage Std
-        data[15, 0] = coverage_std
-        data[15, 1] = np.nan
-        data[15, 2] = np.nan
-
-        # observation_uncertainty_corr
-        data[16, 0] = observation_uncertainty_corr
-        data[16, 1] = np.nan
-        data[16, 2] = np.nan
-
-        # linearity_corr
-        data[17, 0] = linearity_corr
-        data[17, 1] = np.nan
-        data[17, 2] = np.nan
-
-        # rate_of_change
-        data[18, 0] = rate_of_change
-        data[18, 1] = np.nan
-        data[18, 2] = np.nan
-
-        # mean
-        data[19, 0] = mean
-        data[19, 1] = np.nan
-        data[19, 2] = np.nan
-
-        # total
-        data[20, 0] = total
-        data[20, 1] = np.nan
-        data[20, 2] = np.nan
-
-        indexes = [
-            "Initial Value",
-            "Final Value",
-            "Difference",
-            "Maximum Value",
-            "Minimum Value",
-            "10th Percentile Value",
-            "25th Percentile Value",
-            "50th Percentile Value",
-            "75th Percentile Value",
-            "90th Percentile Value",
-            "Coverage Maximum (%)",
-            "Coverage Minimum (%)",
-            "Coverage Range (%)",
-            "Coverage Mean (%)",
-            "Coverage Median (%)",
-            "Coverage Standard Deviation (%)",
-            "Observation/Uncertainty Correlation",
-            "Observation Linearity (correlation coef.)",
-            "rate of change",
-            "Mean",
-            "Total",
-        ]
-
-        summary_statistics = pd.DataFrame(
-            data=data, index=indexes, columns=["Value", "Lower Uncertainty Bound", "Upper Uncertainty Bound"]
-        )
-
-        self.summary_stats = summary_statistics
+        self.summary_stats = {
+            "Initial Value": [start, start - start_uncertainty, start + start_uncertainty],
+            "Final Value": [end, end - end_uncertainty, end + end_uncertainty],
+            "Difference": [difference, difference - difference_uncertainty, difference + difference_uncertainty],
+            "Maximum Value": [
+                value_maximum,
+                value_maximum - value_maximum_uncertainty,
+                value_maximum + value_maximum_uncertainty,
+            ],
+            "Minimum Value": [
+                value_minimum,
+                value_minimum - value_minimum_uncertainty,
+                value_minimum + value_minimum_uncertainty,
+            ],
+            "10th Percentile Value": [percentile_10, np.nan, np.nan],
+            "25th Percentile Value": [percentile_25, np.nan, np.nan],
+            "50th Percentile Value": [percentile_50, np.nan, np.nan],
+            "75th Percentile Value": [percentile_75, np.nan, np.nan],
+            "90th Percentile Value": [percentile_90, np.nan, np.nan],
+            "Coverage Maximum (%)": [coverage_maximum, coverage_maximum, coverage_maximum],
+            "Coverage Minimum (%)": [coverage_minimum, coverage_minimum, coverage_minimum],
+            "Coverage Range (%)": [coverage_range, coverage_range, coverage_range],
+            "Coverage Mean (%)": [coverage_mean, coverage_mean, coverage_mean],
+            "Coverage Median (%)": [coverage_median, coverage_median, coverage_median],
+            "Coverage Standard Deviation (%)": [coverage_std, coverage_std, coverage_std],
+            "Observation/Uncertainty Correlation": [observation_uncertainty_corr, np.nan, np.nan],
+            "Observation Linearity (correlation coef.)": [linearity_corr, np.nan, np.nan],
+            "rate of change": [rate_of_change, np.nan, np.nan],
+            "Mean": [mean, np.nan, np.nan],
+            "Total": [total, np.nan, np.nan],
+        }

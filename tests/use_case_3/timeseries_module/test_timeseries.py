@@ -817,40 +817,40 @@ def test_summary_statistics(timeseries_obj_fixture, time_series_fixture):
 
     summary_stats = timeseries_obj_fixture.summary_stats
 
-    assert summary_stats.loc["Initial Value", "Value"] == 6
-    assert summary_stats.loc["Initial Value", "Lower Uncertainty Bound"] == 5.5
-    assert summary_stats.loc["Initial Value", "Upper Uncertainty Bound"] == 6.5
+    assert summary_stats["Initial Value"][0] == 6
+    assert summary_stats["Initial Value"][1] == 5.5
+    assert summary_stats["Initial Value"][2] == 6.5
 
-    assert summary_stats.loc["Final Value", "Value"] == 8
-    assert summary_stats.loc["Final Value", "Lower Uncertainty Bound"] == 7.5
-    assert summary_stats.loc["Final Value", "Upper Uncertainty Bound"] == 8.5
+    assert summary_stats["Final Value"][0] == 8
+    assert summary_stats["Final Value"][1] == 7.5
+    assert summary_stats["Final Value"][2] == 8.5
 
-    assert summary_stats.loc["Difference", "Value"] == 2
-    assert np.isclose(summary_stats.loc["Difference", "Lower Uncertainty Bound"], 2 - 0.707107)
-    assert np.isclose(summary_stats.loc["Difference", "Upper Uncertainty Bound"], 2 + 0.707107)
+    assert summary_stats["Difference"][0] == 2
+    assert np.isclose(summary_stats["Difference"][1], 2 - 0.707107)
+    assert np.isclose(summary_stats["Difference"][2], 2 + 0.707107)
 
-    assert summary_stats.loc["Maximum Value", "Value"] == 8
-    assert summary_stats.loc["Maximum Value", "Lower Uncertainty Bound"] == 7.5
-    assert summary_stats.loc["Maximum Value", "Upper Uncertainty Bound"] == 8.5
+    assert summary_stats["Maximum Value"][0] == 8
+    assert summary_stats["Maximum Value"][1] == 7.5
+    assert summary_stats["Maximum Value"][2] == 8.5
 
-    assert summary_stats.loc["Minimum Value", "Value"] == 6
-    assert summary_stats.loc["Minimum Value", "Lower Uncertainty Bound"] == 5.5
-    assert summary_stats.loc["Minimum Value", "Upper Uncertainty Bound"] == 6.5
+    assert summary_stats["Minimum Value"][0] == 6
+    assert summary_stats["Minimum Value"][1] == 5.5
+    assert summary_stats["Minimum Value"][2] == 6.5
 
-    assert summary_stats.loc["10th Percentile Value", "Value"] == 6.2
-    assert summary_stats.loc["25th Percentile Value", "Value"] == 6.5
-    assert summary_stats.loc["50th Percentile Value", "Value"] == 7
-    assert summary_stats.loc["75th Percentile Value", "Value"] == 7.5
-    assert summary_stats.loc["90th Percentile Value", "Value"] == 7.8
+    assert summary_stats["10th Percentile Value"][0] == 6.2
+    assert summary_stats["25th Percentile Value"][0] == 6.5
+    assert summary_stats["50th Percentile Value"][0] == 7
+    assert summary_stats["75th Percentile Value"][0] == 7.5
+    assert summary_stats["90th Percentile Value"][0] == 7.8
 
-    assert summary_stats.loc["Coverage Maximum (%)", "Value"] == 100.0
-    assert summary_stats.loc["Coverage Minimum (%)", "Value"] == 50.0
-    assert summary_stats.loc["Coverage Range (%)", "Value"] == 50.0
-    assert summary_stats.loc["Coverage Mean (%)", "Value"] == 75.0
-    assert summary_stats.loc["Coverage Median (%)", "Value"] == 75.0
-    assert np.isnan(summary_stats.loc["Observation/Uncertainty Correlation", "Value"])
+    assert summary_stats["Coverage Maximum (%)"][0] == 100.0
+    assert summary_stats["Coverage Minimum (%)"][0] == 50.0
+    assert summary_stats["Coverage Range (%)"][0] == 50.0
+    assert summary_stats["Coverage Mean (%)"][0] == 75.0
+    assert summary_stats["Coverage Median (%)"][0] == 75.0
+    assert np.isnan(summary_stats["Observation/Uncertainty Correlation"][0])
 
-    assert np.isclose(summary_stats.loc["Observation Linearity (correlation coef.)", "Value"], 1.0)
+    assert np.isclose(summary_stats["Observation Linearity (correlation coef.)"][0], 1.0)
 
 
 def test__calculate_percentiles_timeseries(
