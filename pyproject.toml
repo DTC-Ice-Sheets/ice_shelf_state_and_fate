@@ -70,7 +70,7 @@ diskcache = "^5.6.3"
 asyncstdlib = "^3.13.1"
 
 [tool.poetry.group.deployment.dependencies]
-dtc-wrapper = { git = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git", tag = "0.0.41" }
+dtc-wrapper = { git = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git", tag = "0.0.43" }
 
 [tool.ruff]
 line-length = 120

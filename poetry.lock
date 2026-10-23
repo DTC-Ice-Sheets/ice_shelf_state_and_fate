@@ -1976,7 +1976,7 @@ subdirectory = "dtc_query_client"
 
 [[package]]
 name = "dtc-wrapper"
-version = "0.0.41"
+version = "0.0.43"
 description = "Deployment wrapper for DTC Ice Sheets modules."
 optional = false
 python-versions = ">=3.12,<4.0"
@@ -1992,8 +1992,8 @@ numpy = "^2.3"
 [package.source]
 type = "git"
 url = "https://github.com/DTC-Ice-Sheets/dtc_wrapper.git"
-reference = "0.0.41"
-resolved_reference = "80bd167acb185678f9e9f1402410cab949e6b265"
+reference = "0.0.43"
+resolved_reference = "ee8e51947e6af261ddc42e964dd20ccd1c4718e6"
 
 [[package]]
 name = "ecmwf-datastores-client"
@@ -8059,4 +8059,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "1fb7f74f68c8fbee7e88e6c063a46aceec75eaf40640b64770a37abf15026a1a"
+content-hash = "aca672065a285087b4ac9b92136040c9e2342c7c4cf3a881d0885a230bbc3ebf"
