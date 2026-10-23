@@ -1,5 +1,7 @@
 """Module for creating a timeseries object."""
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -935,3 +937,35 @@ def test__merge_timeseries(merge_timeseries_fixture):
         timeseries_merged.measurement_n,
         np.array([3, 5, 7, 9, 11, 7]),
     )
+
+
+def test__safe_serialise():
+    val_1 = float(3.14)
+    val_2 = np.int64(42)
+    val_3 = np.float32(2.71)
+    val_4 = np.nan
+
+    np.testing.assert_almost_equal(Timeseries._safe_serialise(val_1), 3.14)
+    np.testing.assert_almost_equal(Timeseries._safe_serialise(val_2), 42)
+    np.testing.assert_almost_equal(Timeseries._safe_serialise(val_3), 2.71)
+    np.isnan(Timeseries._safe_serialise(val_4))
+
+    val_1_json = json.dumps(Timeseries._safe_serialise(val_1))
+    val_2_json = json.dumps(Timeseries._safe_serialise(val_2))
+    val_3_json = json.dumps(Timeseries._safe_serialise(val_3))
+    val_4_json = json.dumps(Timeseries._safe_serialise(val_4))
+
+    assert val_1_json == "3.14"
+    assert val_2_json == "42"
+    assert val_3_json[0:3] == "2.7"  # Truncated due to numpy floating point precision issues
+    assert val_4_json == "NaN"
+
+    val_1_back = json.loads(Timeseries._safe_serialise(val_1_json))
+    val_2_back = json.loads(Timeseries._safe_serialise(val_2_json))
+    val_3_back = json.loads(Timeseries._safe_serialise(val_3_json))
+    val_4_back = json.loads(Timeseries._safe_serialise(val_4_json))
+
+    np.testing.assert_almost_equal(val_1_back, 3.14)
+    np.testing.assert_almost_equal(val_2_back, 42)
+    np.testing.assert_almost_equal(val_3_back, 2.71)
+    assert np.isnan(val_4_back)

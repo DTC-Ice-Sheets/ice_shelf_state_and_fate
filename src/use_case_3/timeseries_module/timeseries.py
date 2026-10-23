@@ -1649,7 +1649,7 @@ class Timeseries:
         plt.show()
 
     @staticmethod
-    def _to_safe_serialise(x: Any) -> Any:  # noqa: ANN401
+    def _safe_serialise(x: Any) -> Any:  # noqa: ANN401
         return x.item() if isinstance(x, np.generic) else x
 
     def summary_statistics(self: Timeseries) -> None:
@@ -1762,7 +1762,7 @@ class Timeseries:
             }
 
             self.summary_stats = {
-                key: [self._to_safe_serialise(v) for v in values] for key, values in summary_stats.items()
+                key: [self._safe_serialise(v) for v in values] for key, values in summary_stats.items()
             }
         except Exception as e:  # noqa: BLE001
             self.summary_stats = {"Error": [str(e), np.nan, np.nan]}
