@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1647,6 +1648,10 @@ class Timeseries:
         plt.ylabel("Coverage (%)")
         plt.show()
 
+    @staticmethod
+    def _to_safe_serialise(x: Any) -> Any:  # noqa: ANN401
+        return x.item() if isinstance(x, np.generic) else x
+
     def summary_statistics(self: Timeseries) -> None:
         """
         Generate a set of summary statistics for a time series.
@@ -1724,7 +1729,7 @@ class Timeseries:
             mean = self.measurements.mean()
             total = self.measurements.sum()
 
-            self.summary_stats = {
+            summary_stats = {
                 "Initial Value": [start, start - start_uncertainty, start + start_uncertainty],
                 "Final Value": [end, end - end_uncertainty, end + end_uncertainty],
                 "Difference": [difference, difference - difference_uncertainty, difference + difference_uncertainty],
@@ -1738,22 +1743,26 @@ class Timeseries:
                     value_minimum - value_minimum_uncertainty,
                     value_minimum + value_minimum_uncertainty,
                 ],
-                "10th Percentile Value": [percentile_10, np.nan, np.nan],
-                "25th Percentile Value": [percentile_25, np.nan, np.nan],
-                "50th Percentile Value": [percentile_50, np.nan, np.nan],
-                "75th Percentile Value": [percentile_75, np.nan, np.nan],
-                "90th Percentile Value": [percentile_90, np.nan, np.nan],
+                "10th Percentile Value": [percentile_10, None, None],
+                "25th Percentile Value": [percentile_25, None, None],
+                "50th Percentile Value": [percentile_50, None, None],
+                "75th Percentile Value": [percentile_75, None, None],
+                "90th Percentile Value": [percentile_90, None, None],
                 "Coverage Maximum (%)": [coverage_maximum, coverage_maximum, coverage_maximum],
                 "Coverage Minimum (%)": [coverage_minimum, coverage_minimum, coverage_minimum],
                 "Coverage Range (%)": [coverage_range, coverage_range, coverage_range],
                 "Coverage Mean (%)": [coverage_mean, coverage_mean, coverage_mean],
                 "Coverage Median (%)": [coverage_median, coverage_median, coverage_median],
                 "Coverage Standard Deviation (%)": [coverage_std, coverage_std, coverage_std],
-                "Observation/Uncertainty Correlation": [observation_uncertainty_corr, np.nan, np.nan],
-                "Observation Linearity (correlation coef.)": [linearity_corr, np.nan, np.nan],
-                "rate of change": [rate_of_change, np.nan, np.nan],
-                "Mean": [mean, np.nan, np.nan],
-                "Total": [total, np.nan, np.nan],
+                "Observation/Uncertainty Correlation": [observation_uncertainty_corr, None, None],
+                "Observation Linearity (correlation coef.)": [linearity_corr, None, None],
+                "rate of change": [rate_of_change, None, None],
+                "Mean": [mean, None, None],
+                "Total": [total, None, None],
+            }
+
+            self.summary_stats = {
+                key: [self._to_safe_serialise(v) for v in values] for key, values in summary_stats.items()
             }
         except Exception as e:  # noqa: BLE001
             self.summary_stats = {"Error": [str(e), np.nan, np.nan]}
