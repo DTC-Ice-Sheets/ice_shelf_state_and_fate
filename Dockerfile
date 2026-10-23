@@ -26,4 +26,5 @@ RUN poetry install --only-root
 # Remove GitHub token after install
 RUN rm /root/.netrc
 
+ENV DTC_WRAPPER_MODULE_NAME=use_case_3
 CMD ["poetry", "run", "dtc-wrapper"]
