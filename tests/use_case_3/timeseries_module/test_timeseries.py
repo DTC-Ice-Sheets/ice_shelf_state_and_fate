@@ -1,5 +1,7 @@
 """Module for creating a timeseries object."""
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -854,40 +856,40 @@ def test_summary_statistics(timeseries_obj_fixture, time_series_fixture):
 
     summary_stats = timeseries_obj_fixture.summary_stats
 
-    assert summary_stats.loc["Initial Value", "Value"] == 6
-    assert summary_stats.loc["Initial Value", "Lower Uncertainty Bound"] == 5.5
-    assert summary_stats.loc["Initial Value", "Upper Uncertainty Bound"] == 6.5
+    assert summary_stats["Initial Value"][0] == 6
+    assert summary_stats["Initial Value"][1] == 5.5
+    assert summary_stats["Initial Value"][2] == 6.5
 
-    assert summary_stats.loc["Final Value", "Value"] == 8
-    assert summary_stats.loc["Final Value", "Lower Uncertainty Bound"] == 7.5
-    assert summary_stats.loc["Final Value", "Upper Uncertainty Bound"] == 8.5
+    assert summary_stats["Final Value"][0] == 8
+    assert summary_stats["Final Value"][1] == 7.5
+    assert summary_stats["Final Value"][2] == 8.5
 
-    assert summary_stats.loc["Difference", "Value"] == 2
-    assert np.isclose(summary_stats.loc["Difference", "Lower Uncertainty Bound"], 2 - 0.707107)
-    assert np.isclose(summary_stats.loc["Difference", "Upper Uncertainty Bound"], 2 + 0.707107)
+    assert summary_stats["Difference"][0] == 2
+    assert np.isclose(summary_stats["Difference"][1], 2 - 0.707107)
+    assert np.isclose(summary_stats["Difference"][2], 2 + 0.707107)
 
-    assert summary_stats.loc["Maximum Value", "Value"] == 8
-    assert summary_stats.loc["Maximum Value", "Lower Uncertainty Bound"] == 7.5
-    assert summary_stats.loc["Maximum Value", "Upper Uncertainty Bound"] == 8.5
+    assert summary_stats["Maximum Value"][0] == 8
+    assert summary_stats["Maximum Value"][1] == 7.5
+    assert summary_stats["Maximum Value"][2] == 8.5
 
-    assert summary_stats.loc["Minimum Value", "Value"] == 6
-    assert summary_stats.loc["Minimum Value", "Lower Uncertainty Bound"] == 5.5
-    assert summary_stats.loc["Minimum Value", "Upper Uncertainty Bound"] == 6.5
+    assert summary_stats["Minimum Value"][0] == 6
+    assert summary_stats["Minimum Value"][1] == 5.5
+    assert summary_stats["Minimum Value"][2] == 6.5
 
-    assert summary_stats.loc["10th Percentile Value", "Value"] == 6.2
-    assert summary_stats.loc["25th Percentile Value", "Value"] == 6.5
-    assert summary_stats.loc["50th Percentile Value", "Value"] == 7
-    assert summary_stats.loc["75th Percentile Value", "Value"] == 7.5
-    assert summary_stats.loc["90th Percentile Value", "Value"] == 7.8
+    assert summary_stats["10th Percentile Value"][0] == 6.2
+    assert summary_stats["25th Percentile Value"][0] == 6.5
+    assert summary_stats["50th Percentile Value"][0] == 7
+    assert summary_stats["75th Percentile Value"][0] == 7.5
+    assert summary_stats["90th Percentile Value"][0] == 7.8
 
-    assert summary_stats.loc["Coverage Maximum (%)", "Value"] == 100.0
-    assert summary_stats.loc["Coverage Minimum (%)", "Value"] == 50.0
-    assert summary_stats.loc["Coverage Range (%)", "Value"] == 50.0
-    assert summary_stats.loc["Coverage Mean (%)", "Value"] == 75.0
-    assert summary_stats.loc["Coverage Median (%)", "Value"] == 75.0
-    assert np.isnan(summary_stats.loc["Observation/Uncertainty Correlation", "Value"])
+    assert summary_stats["Coverage Maximum (%)"][0] == 100.0
+    assert summary_stats["Coverage Minimum (%)"][0] == 50.0
+    assert summary_stats["Coverage Range (%)"][0] == 50.0
+    assert summary_stats["Coverage Mean (%)"][0] == 75.0
+    assert summary_stats["Coverage Median (%)"][0] == 75.0
+    assert np.isnan(summary_stats["Observation/Uncertainty Correlation"][0])
 
-    assert np.isclose(summary_stats.loc["Observation Linearity (correlation coef.)", "Value"], 1.0)
+    assert np.isclose(summary_stats["Observation Linearity (correlation coef.)"][0], 1.0)
 
 
 def test__calculate_percentiles_timeseries(
@@ -935,3 +937,47 @@ def test__merge_timeseries(merge_timeseries_fixture):
         timeseries_merged.measurement_n,
         np.array([3, 5, 7, 9, 11, 7]),
     )
+
+
+def test__safe_serialise():
+    val_1 = float(3.14)
+    val_2 = np.int64(42)
+    val_3 = np.float32(2.71)
+    val_4 = np.nan
+    val_5 = None
+    val_6 = "test"
+
+    np.testing.assert_almost_equal(Timeseries._safe_serialise(val_1), 3.14)
+    np.testing.assert_almost_equal(Timeseries._safe_serialise(val_2), 42)
+    np.testing.assert_almost_equal(Timeseries._safe_serialise(val_3), 2.71)
+    np.isnan(Timeseries._safe_serialise(val_4))
+    assert Timeseries._safe_serialise(val_5) is None
+    assert Timeseries._safe_serialise(val_6) == "test"
+
+    val_1_json = json.dumps(Timeseries._safe_serialise(val_1))
+    val_2_json = json.dumps(Timeseries._safe_serialise(val_2))
+    val_3_json = json.dumps(Timeseries._safe_serialise(val_3))
+    val_4_json = json.dumps(Timeseries._safe_serialise(val_4))
+    val_5_json = json.dumps(Timeseries._safe_serialise(val_5))
+    val_6_json = json.dumps(Timeseries._safe_serialise(val_6))
+
+    assert val_1_json == "3.14"
+    assert val_2_json == "42"
+    assert val_3_json[0:3] == "2.7"  # Truncated due to numpy floating point precision issues
+    assert val_4_json == "NaN"
+    assert val_5_json == "null"
+    assert val_6_json == '"test"'
+
+    val_1_back = json.loads(Timeseries._safe_serialise(val_1_json))
+    val_2_back = json.loads(Timeseries._safe_serialise(val_2_json))
+    val_3_back = json.loads(Timeseries._safe_serialise(val_3_json))
+    val_4_back = json.loads(Timeseries._safe_serialise(val_4_json))
+    val_5_back = json.loads(Timeseries._safe_serialise(val_5_json))
+    val_6_back = json.loads(Timeseries._safe_serialise(val_6_json))
+
+    np.testing.assert_almost_equal(val_1_back, 3.14)
+    np.testing.assert_almost_equal(val_2_back, 42)
+    np.testing.assert_almost_equal(val_3_back, 2.71)
+    assert np.isnan(val_4_back)
+    assert val_5_back is None
+    assert val_6_back == "test"
