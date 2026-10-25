@@ -981,3 +981,68 @@ def test__safe_serialise():
     assert np.isnan(val_4_back)
     assert val_5_back is None
     assert val_6_back == "test"
+
+
+def test_detect_anomalies_marks_upper_and_lower_outliers():
+    dates = pd.date_range("2020-01-01", periods=7, freq="MS")
+    measurements = pd.Series([1, 1, 1, 1, 1, 100, -100], index=dates)
+    timeseries = Timeseries(
+        label="test",
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=measurements,
+    )
+
+    total_outlier, upper_outlier, lower_outlier = timeseries.detect_anomalies()
+
+    expected_upper = pd.Series([False, False, False, False, False, True, False], index=dates)
+    expected_lower = pd.Series([False, False, False, False, False, False, True], index=dates)
+    pd.testing.assert_series_equal(upper_outlier, expected_upper)
+    pd.testing.assert_series_equal(lower_outlier, expected_lower)
+    pd.testing.assert_series_equal(total_outlier, expected_upper | expected_lower)
+
+
+@pytest.mark.parametrize(
+    ("p_value", "expected_outlier"),
+    [(0.01, True), (0.1, False)],
+)
+def test_detect_anomalies_respects_stationarity_check(monkeypatch, p_value, expected_outlier):
+    dates = pd.date_range("2020-01-01", periods=6, freq="MS")
+    measurements = pd.Series([1, 1, 1, 1, 1, 100], index=dates)
+    timeseries = Timeseries(
+        label="test",
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=measurements,
+    )
+
+    def fake_adfuller(data, autolag):
+        np.testing.assert_array_equal(data, measurements.to_numpy())
+        assert autolag == "AIC"
+        return 0.0, p_value
+
+    monkeypatch.setattr("use_case_3.timeseries_module.timeseries.adfuller", fake_adfuller)
+
+    total_outlier, upper_outlier, lower_outlier = timeseries.detect_anomalies(stationary_check=True)
+
+    expected_upper = pd.Series([False, False, False, False, False, expected_outlier], index=dates)
+    expected_lower = pd.Series([False] * len(dates), index=dates)
+    pd.testing.assert_series_equal(upper_outlier, expected_upper)
+    pd.testing.assert_series_equal(lower_outlier, expected_lower)
+    pd.testing.assert_series_equal(total_outlier, expected_upper)
+
+
+def test_detect_changes_identifies_step_change():
+    dates = pd.date_range("2020-01-01", periods=20, freq="MS")
+    measurements = pd.Series([0.0] * 10 + [10.0] * 10, index=dates)
+    timeseries = Timeseries(
+        label="test",
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=measurements,
+    )
+
+    change_regions, change_points = timeseries.detect_changes(penalty=1.0)
+
+    assert change_points == [10, 20]
+    pd.testing.assert_series_equal(
+        change_regions,
+        pd.Series([0.0] * 10 + [1.0] * 10, index=dates),
+    )

@@ -618,7 +618,7 @@ class CovariateAnalyser:
 
         return joint
 
-    def run_analysis(
+    def run_analysis(  # noqa: C901
         self: CovariateAnalyser,
         max_lag: int | None = 6,
         analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
@@ -657,6 +657,22 @@ class CovariateAnalyser:
                 "hist_values": hist.tolist(),
                 "hist_edges": bin_edges.tolist(),
             }
+
+            try:
+                change_points, _ = ts.detect_changes(jump=1, penalty=25000.0, min_size=1)
+                out["variables"][ts.label]["change_points"] = change_points.to_list()
+            except Exception:  # noqa: BLE001
+                out["variables"][ts.label]["change_points"] = []
+            try:
+                anomolies, anomalies_upper, anomalies_lower = ts.detect_anomalies()
+                out["variables"][ts.label]["anomolies"] = anomolies.to_list()
+                out["variables"][ts.label]["anomalies_upper"] = anomalies_upper.to_list()
+                out["variables"][ts.label]["anomalies_lower"] = anomalies_lower.to_list()
+
+            except Exception:  # noqa: BLE001
+                out["variables"][ts.label]["anomolies"] = []
+                out["variables"][ts.label]["anomalies_upper"] = []
+                out["variables"][ts.label]["anomalies_lower"] = []
 
         for ts_a in self.timeseries_container.timeseries.values():
             for ts_b in self.timeseries_container.timeseries.values():
