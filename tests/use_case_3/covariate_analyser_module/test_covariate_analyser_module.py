@@ -656,3 +656,106 @@ def test_granger_causality_test(fixture_series_x, fixture_series_y):
 
     np.testing.assert_almost_equal(f_score, 2.6001062494609055)
     np.testing.assert_almost_equal(p_value, 0.18902718453358755)
+
+
+def test_power_model():
+    x = np.array([1.0, 2.0, 3.0])
+
+    result = CovariateAnalyser._power_model(x=x, a=2.0, b=2.0)
+
+    np.testing.assert_allclose(result, np.array([2.0, 8.0, 18.0]))
+
+
+def test_fit_power_law_nonlinear():
+    x = np.linspace(1.0, 10.0, 10)
+    y = 2.5 * x**1.75
+
+    result = CovariateAnalyser.fit_power_law_nonlinear(x=x, y=y)
+
+    assert result["a"] == pytest.approx(2.5)
+    assert result["b"] == pytest.approx(1.75)
+    assert result["rss"] == pytest.approx(0.0, abs=1e-10)
+    assert result["r2"] == pytest.approx(1.0)
+    assert result["n"] == len(x)
+    assert result["a_ci"][0] <= result["a"] <= result["a_ci"][1]
+    assert result["b_ci"][0] <= result["b"] <= result["b_ci"][1]
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "message"),
+    [
+        (np.array([-1.0, 1.0, 2.0]), np.array([1.0, 2.0, 3.0]), "x must be >= 0"),
+        (np.array([1.0, 2.0]), np.array([1.0, 2.0]), "need more than 2 points"),
+    ],
+)
+def test_fit_power_law_nonlinear_rejects_invalid_data(x, y, message):
+    with pytest.raises(ValueError, match=message):
+        CovariateAnalyser.fit_power_law_nonlinear(x=x, y=y)
+
+
+def test_fit_power_law_model_filters_nonpositive_bins(fixture_series_x, fixture_series_y, monkeypatch):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[fixture_series_x, fixture_series_y],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+    analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+    analyser._timeseries_altered = {
+        fixture_series_x.label: fixture_series_x,
+        fixture_series_y.label: fixture_series_y,
+    }
+    binned_x = np.array([-1.0, 0.0, 2.0, 4.0])
+    binned_y = np.array([10.0, 20.0, 30.0, 40.0])
+    fit_result = {"a": 3.0, "b": 1.5}
+    fit_inputs = {}
+
+    def align_timeseries(timeseries_label_1, timeseries_label_2, max_lag):
+        assert timeseries_label_1 == fixture_series_x.label
+        assert timeseries_label_2 == fixture_series_y.label
+        assert max_lag == 2
+        return 2, AggregationPeriod.MONTH
+
+    def bin_data(x, y, n_bins, method):
+        assert x is fixture_series_x.measurements
+        assert y is fixture_series_y.measurements
+        assert n_bins == 4
+        assert method == "quantile"
+        return binned_x, binned_y, np.ones(len(binned_x))
+
+    monkeypatch.setattr(analyser, "_align_timeseries", align_timeseries)
+    monkeypatch.setattr(analyser, "bin_data", bin_data)
+
+    def fit_power_law(x, y):
+        fit_inputs["x"] = x
+        fit_inputs["y"] = y
+        return fit_result
+
+    monkeypatch.setattr(analyser, "fit_power_law_nonlinear", fit_power_law)
+
+    result, lag = analyser.fit_power_law_model(
+        timeseries_label_1=fixture_series_x.label,
+        timeseries_label_2=fixture_series_y.label,
+        max_lag=2,
+        n_bins=4,
+        method="quantile",
+    )
+
+    assert result == fit_result
+    assert lag == 2
+    np.testing.assert_array_equal(fit_inputs["x"], np.array([2.0, 4.0]))
+    np.testing.assert_array_equal(fit_inputs["y"], np.array([30.0, 40.0]))
+
+
+def test_predict_power_law():
+    x = np.array([0.0, 1.0, 2.0])
+    model = {"a": 3.0, "b": 2.0}
+
+    result = CovariateAnalyser.predict_power_law(x=x, model=model)
+
+    np.testing.assert_allclose(result, np.array([0.0, 3.0, 12.0]))
+
+
+def test_predict_power_law_rejects_negative_x():
+    with pytest.raises(ValueError, match="x must be >= 0"):
+        CovariateAnalyser.predict_power_law(x=np.array([-1.0, 1.0]), model={"a": 2.0, "b": 1.5})

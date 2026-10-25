@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy import stats
+from scipy.optimize import curve_fit
 from scipy.signal import correlate, correlation_lags
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression, RANSACRegressor
@@ -392,7 +394,7 @@ class CovariateAnalyser:
         timeseries_label_2 : str
             The label for the second timeseries.
         max_lag : int | None
-            The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+            The maximum lag to consider, note this will apply this maximum lag in both the positive and the negative
             directions. If set to None there is no maximum lag, by default None
 
         Returns
@@ -412,9 +414,9 @@ class CovariateAnalyser:
         freq = self.timeseries_container.aggregation_period
 
         offset_map = {
-            AggregationPeriod.MONTH: pd.offsets.MonthEnd,
-            AggregationPeriod.QUARTER: pd.offsets.QuarterEnd,
-            AggregationPeriod.YEAR: pd.offsets.YearEnd,
+            AggregationPeriod.MONTH: pd.offsets.MonthBegin,
+            AggregationPeriod.QUARTER: pd.offsets.QuarterBegin,
+            AggregationPeriod.YEAR: pd.offsets.YearBegin,
             AggregationPeriod.DAY: pd.offsets.Day,
         }
 
@@ -571,6 +573,229 @@ class CovariateAnalyser:
             reg_2.estimator_.coef_[0],
             reg_2.estimator_.intercept_,
         )
+
+    @staticmethod
+    def bin_data(x: pd.Series, y: pd.Series, n_bins: int, method: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Bin paired observations and calculate the mean values in each bin.
+
+        Drop rows with missing values before binning. Use equal-width bins
+        by default, or equal-frequency bins when ``method`` is ``"quantile"``.
+
+        Parameters
+        ----------
+        x : pd.Series
+            Provide the values used to determine bin membership.
+        y : pd.Series
+            Provide the paired values to average within each bin.
+        n_bins : int
+            Set the number of bins to create.
+        method : str
+            Choose ``"width"`` for equal-width bins or ``"quantile"`` for
+            equal-frequency bins.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray, np.ndarray]
+            Return the mean x values, mean y values, and observation counts
+            for each non-empty bin.
+
+        Raises
+        ------
+        TypeError
+            Raise when either input is not a pandas Series.
+        ValueError
+            Raise when fewer than ``n_bins`` valid pairs are available or
+            ``method`` is unsupported.
+        """
+        if not isinstance(x, pd.Series) or not isinstance(y, pd.Series):
+            raise TypeError("x and y must be pandas Series")
+        df = pd.DataFrame({"x": x, "y": y}) if x.index.equals(y.index) else pd.concat([x, y], axis=1, keys=["x", "y"])
+        df = df.astype(float).dropna()
+        if len(df) < n_bins:
+            raise ValueError("fewer valid points than n_bins")
+        x = df["x"].to_numpy()
+        y = df["y"].to_numpy()
+
+        if method == "width":
+            edges = np.linspace(x.min(), x.max(), n_bins + 1)
+        elif method == "quantile":
+            edges = np.quantile(x, np.linspace(0, 1, n_bins + 1))
+        else:
+            raise ValueError("method must be 'width' or 'quantile'")
+
+        idx = np.clip(np.digitize(x, edges[1:-1]), 0, n_bins - 1)
+
+        xb, yb, nb = [], [], []
+        for k in range(n_bins):
+            s = idx == k
+            if s.any():
+                xb.append(x[s].mean())
+                yb.append(y[s].mean())
+                nb.append(int(s.sum()))
+        return np.array(xb), np.array(yb), np.array(nb)
+
+    @staticmethod
+    def _power_model(x: np.ndarray, a: float, b: float) -> np.ndarray:
+        """
+        Evaluate the power-law model for the given input values.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the independent variable values.
+        a : float
+            Set the multiplicative coefficient.
+        b : float
+            Set the exponent.
+
+        Returns
+        -------
+        np.ndarray
+            Return values calculated as ``a * x**b``.
+        """
+        return a * x**b
+
+    @staticmethod
+    def fit_power_law_nonlinear(x: np.ndarray, y: np.ndarray, alpha: float = 0.05) -> dict:
+        """
+        Fit a nonlinear power-law model and estimate confidence intervals.
+
+        Fit the model ``y = a * x**b`` using several initial estimates for
+        the exponent, then select the fit with the lowest residual sum of
+        squares.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the independent variable values.
+        y : np.ndarray
+            Provide the dependent variable values.
+        alpha : float
+            Set the significance level used to calculate confidence
+            intervals for the model parameters.
+
+        Returns
+        -------
+        dict
+            Return the fitted parameters ``a`` and ``b``, their confidence
+            intervals, residual sum of squares (``rss``), coefficient of
+            determination (``r2``), and sample count (``n``).
+
+        Raises
+        ------
+        ValueError
+            Raise when any ``x`` value is negative or there are not more
+            than two data points.
+        RuntimeError
+            Raise when the fit fails for every initial exponent estimate.
+        """
+        x = np.asarray(x, float)
+        y = np.asarray(y, float)
+        if np.any(x < 0):
+            raise ValueError("x must be >= 0 for a power law")
+        n_par = 2
+        if len(x) <= n_par:
+            raise ValueError(f"need more than {n_par} points")
+
+        scale = np.ptp(y) / max(np.ptp(x), 1e-12)
+        best = None
+        for b0 in (0.25, 0.5, 1.0, 1.5, 2.0):
+            p0 = [scale, b0]
+            try:
+                p, cov = curve_fit(CovariateAnalyser._power_model, x, y, p0=p0, maxfev=50000)
+            except (RuntimeError, ValueError):
+                continue
+            rss = float(np.sum((y - CovariateAnalyser._power_model(x, *p)) ** 2))
+            if best is None or rss < best[0]:
+                best = (rss, p, cov)
+        if best is None:
+            raise RuntimeError("fit did not converge from any starting point")
+
+        rss, p, cov = best
+        se = np.sqrt(np.diag(cov))
+        t = stats.t.ppf(1 - alpha / 2, len(x) - n_par)
+        tss = float(np.sum((y - y.mean()) ** 2))
+        return {
+            "a": float(p[0]),
+            "b": float(p[1]),
+            "a_ci": (float(p[0] - t * se[0]), float(p[0] + t * se[0])),
+            "b_ci": (float(p[1] - t * se[1]), float(p[1] + t * se[1])),
+            "rss": rss,
+            "r2": float(1 - rss / tss) if tss > 0 else float("nan"),
+            "n": len(x),
+        }
+
+    def fit_power_law_model(
+        self: CovariateAnalyser,
+        timeseries_label_1: str,
+        timeseries_label_2: str,
+        max_lag: int = 6,
+        n_bins: int = 8,
+        method: str = "width",
+    ) -> tuple[dict, int]:
+        """
+        Align two time series and fit a power-law model to their binned data.
+
+        Remove bins with non-positive mean x values before fitting.
+
+        Parameters
+        ----------
+        timeseries_label_1 : str
+            Select the time series used as the independent variable.
+        timeseries_label_2 : str
+            Select the time series used as the dependent variable.
+        max_lag : int
+            Limit the lag considered when aligning the time series.
+        n_bins : int
+            Set the number of bins used to summarize paired observations.
+        method : str
+            Choose the binning method passed to `bin_data`.
+
+        Returns
+        -------
+        tuple[dict, int]
+            Return the fitted model statistics and the lag used to align
+            the time series.
+        """
+        corr_lag, _ = self._align_timeseries(timeseries_label_1, timeseries_label_2, max_lag=max_lag)
+
+        x = self._timeseries_altered[timeseries_label_1].measurements
+        y = self._timeseries_altered[timeseries_label_2].measurements
+
+        x_bin, y_bin, _ = self.bin_data(x=x, y=y, n_bins=n_bins, method=method)
+
+        filt_mask = x_bin > 0
+        x_bin, y_bin = x_bin[filt_mask], y_bin[filt_mask]
+
+        return self.fit_power_law_nonlinear(x_bin, y_bin), corr_lag
+
+    @staticmethod
+    def predict_power_law(x: np.ndarray, model: dict) -> np.ndarray:
+        """
+        Predict values from a fitted power-law model.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the independent variable values at which to predict.
+        model : dict
+            Provide fitted model parameters with ``a`` and ``b`` keys.
+
+        Returns
+        -------
+        np.ndarray
+            Return predictions calculated as ``a * x**b``.
+
+        Raises
+        ------
+        ValueError
+            Raise when any input ``x`` value is negative.
+        """
+        arr = np.asarray(x, float)
+        if np.any(arr < 0):
+            raise ValueError("x must be >= 0 for a power law")
+        return model["a"] * arr ** model["b"]
 
     def jointplot(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True
