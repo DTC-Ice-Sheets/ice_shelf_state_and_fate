@@ -726,6 +726,41 @@ class CovariateAnalyser:
             "n": len(x),
         }
 
+    @staticmethod
+    def detrend(s: pd.Series) -> pd.Series:
+        """
+        Remove a robust linear trend from a time series.
+
+        Sort the series by its datetime index, fit a RANSAC linear model
+        against elapsed time in years, and subtract the fitted trend.
+
+        Parameters
+        ----------
+        s : pd.Series
+            Provide the time series to detrend.
+
+        Returns
+        -------
+        pd.Series
+            Return the detrended values with a sorted datetime index and
+            the input series name.
+        """
+        s = s.sort_index()
+
+        t0 = s.index[0]
+        x = ((s.index - t0) / pd.Timedelta(days=365.25)).to_numpy().reshape(-1, 1)
+        y = s.to_numpy()
+
+        ransac = RANSACRegressor(
+            estimator=LinearRegression(),
+            residual_threshold=None,
+            random_state=0,
+        )
+        ransac.fit(x, y)
+
+        trend = pd.Series(ransac.predict(x), index=s.index, name="trend")
+        return (s - trend).rename(s.name)
+
     def fit_power_law_model(
         self: CovariateAnalyser,
         timeseries_label_1: str,
@@ -733,6 +768,8 @@ class CovariateAnalyser:
         max_lag: int = 6,
         n_bins: int = 8,
         method: str = "width",
+        x_anomalies: bool = False,
+        y_anomalies: bool = False,
     ) -> tuple[dict, int]:
         """
         Align two time series and fit a power-law model to their binned data.
@@ -751,6 +788,10 @@ class CovariateAnalyser:
             Set the number of bins used to summarize paired observations.
         method : str
             Choose the binning method passed to `bin_data`.
+        x_anomalies : bool
+            Indicate whether to detrend the independent variable time series.
+        y_anomalies : bool
+            Indicate whether to detrend the dependent variable time series.
 
         Returns
         -------
@@ -760,15 +801,31 @@ class CovariateAnalyser:
         """
         corr_lag, _ = self._align_timeseries(timeseries_label_1, timeseries_label_2, max_lag=max_lag)
 
-        x = self._timeseries_altered[timeseries_label_1].measurements
-        y = self._timeseries_altered[timeseries_label_2].measurements
+        x = (
+            self._timeseries_altered[timeseries_label_1].measurements
+            if not x_anomalies
+            else self.detrend(self._timeseries_altered[timeseries_label_1].measurements)
+        )
+        y = (
+            self._timeseries_altered[timeseries_label_2].measurements
+            if not y_anomalies
+            else self.detrend(self._timeseries_altered[timeseries_label_2].measurements)
+        )
 
         x_bin, y_bin, _ = self.bin_data(x=x, y=y, n_bins=n_bins, method=method)
 
         filt_mask = x_bin > 0
         x_bin, y_bin = x_bin[filt_mask], y_bin[filt_mask]
 
-        return self.fit_power_law_nonlinear(x_bin, y_bin), corr_lag
+        model_results = self.fit_power_law_nonlinear(x_bin, y_bin)
+        model_results["x_bin"] = x_bin
+        model_results["y_bin"] = y_bin
+        model_results["corr_lag"] = corr_lag
+        model_results["x"] = x.to_numpy()
+        model_results["y"] = y.to_numpy()
+        model_results["datetime"] = x.index.to_numpy()
+
+        return model_results, corr_lag
 
     @staticmethod
     def predict_power_law(x: np.ndarray, model: dict) -> np.ndarray:

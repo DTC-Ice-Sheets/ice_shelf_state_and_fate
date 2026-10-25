@@ -666,6 +666,34 @@ def test_power_model():
     np.testing.assert_allclose(result, np.array([2.0, 8.0, 18.0]))
 
 
+def test_detrend_removes_linear_trend():
+    dates = pd.date_range("2019-01-01", periods=6, freq="YS")
+    elapsed_years = (dates - dates[0]) / pd.Timedelta(days=365.25)
+    measurements = pd.Series(4.0 * elapsed_years + 12.0, index=dates, name="measurement")
+
+    detrended = CovariateAnalyser.detrend(measurements)
+
+    np.testing.assert_allclose(detrended.to_numpy(), 0.0, atol=1e-8)
+    pd.testing.assert_index_equal(detrended.index, dates)
+    assert detrended.name == measurements.name
+
+
+def test_detrend_sorts_unsorted_input():
+    dates = pd.date_range("2019-01-01", periods=4, freq="YS")
+    elapsed_years = (dates - dates[0]) / pd.Timedelta(days=365.25)
+    measurements = pd.Series(
+        (4.0 * elapsed_years + 12.0)[[3, 0, 2, 1]],
+        index=dates[[3, 0, 2, 1]],
+        name="measurement",
+    )
+
+    detrended = CovariateAnalyser.detrend(measurements)
+
+    np.testing.assert_allclose(detrended.to_numpy(), 0.0, atol=1e-8)
+    pd.testing.assert_index_equal(detrended.index, dates)
+    assert detrended.name == measurements.name
+
+
 def test_fit_power_law_nonlinear():
     x = np.linspace(1.0, 10.0, 10)
     y = 2.5 * x**1.75
