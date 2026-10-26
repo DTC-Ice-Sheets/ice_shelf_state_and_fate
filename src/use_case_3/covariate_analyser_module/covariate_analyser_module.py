@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from textwrap import wrap
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +29,9 @@ from use_case_3.timeseries_module.timeseries_enums import (
     JointPlotAnalysisType,
     ModelEvaluationMetric,
 )
+
+SUBGLACIAL_LAKE_LABELS = ["volume_change", "lake_discharge"]
+BASAL_MELT_RATE_LABELS = ["land_ice_basal_melt_rate", "basal_melt_anomalies"]
 
 
 class CovariateAnalyser:
@@ -770,7 +774,7 @@ class CovariateAnalyser:
         method: str = "width",
         x_anomalies: bool = False,
         y_anomalies: bool = False,
-    ) -> tuple[dict, int]:
+    ) -> dict:
         """
         Align two time series and fit a power-law model to their binned data.
 
@@ -795,8 +799,8 @@ class CovariateAnalyser:
 
         Returns
         -------
-        tuple[dict, int]
-            Return the fitted model statistics and the lag used to align
+        dict
+            Return the fitted model statistics, including the lag used to align
             the time series.
         """
         corr_lag, _ = self._align_timeseries(timeseries_label_1, timeseries_label_2, max_lag=max_lag)
@@ -824,8 +828,10 @@ class CovariateAnalyser:
         model_results["x"] = x.to_numpy()
         model_results["y"] = y.to_numpy()
         model_results["datetime"] = x.index.to_numpy()
+        model_results["timeseries_label_1"] = timeseries_label_1
+        model_results["timeseries_label_2"] = timeseries_label_2
 
-        return model_results, corr_lag
+        return model_results
 
     @staticmethod
     def predict_power_law(x: np.ndarray, model: dict) -> np.ndarray:
@@ -987,7 +993,67 @@ class CovariateAnalyser:
                         "P-Value": p_value,
                     }
                 out["covariate_stats"][key] = stats
+
+                # Conduct the power analysis, we only do this for specific combinations of variables. I think in the
+                # future this should be added as part of the variables yaml, but currently this is fine to hardcode.
+                # label 1 --> Related to subglacial lake discharge
+                # label 2 --> Related to basal melt rate
+                label_1_flag = self._determine_if_label_in_power_law(ts_a.label, "x")
+                label_2_flag = self._determine_if_label_in_power_law(ts_b.label, "y")
+
+                if label_1_flag and label_2_flag:
+                    power_law_results = self.fit_power_law_model(
+                        timeseries_label_1=ts_a.label,
+                        timeseries_label_2=ts_b.label,
+                    )
+                    power_law_results = {key: self._safe_serialise(value) for key, value in power_law_results.items()}
+
+                    out["power_law_analysis"] = power_law_results
+
         return out
+
+    @staticmethod
+    def _safe_serialise(x: Any) -> Any:  # noqa: ANN401
+        if isinstance(x, np.ndarray):
+            if np.issubdtype(x.dtype, np.datetime64):
+                return x.astype("datetime64[s]").astype(str).tolist()
+            return x.tolist()
+        if isinstance(x, np.datetime64):
+            return str(x)
+        if isinstance(x, np.generic):
+            return x.item()
+        return x
+
+    def _determine_if_label_in_power_law(self, label: str, axis: str) -> bool:
+        """Check whether a timeseries label is eligible for power-law analysis.
+
+        The x axis accepts labels containing a subglacial-lake variable name;
+        the y axis accepts labels containing a basal-melt-rate variable name.
+
+        Parameters
+        ----------
+        label : str
+            Timeseries label to check.
+        axis : str
+            Power-law axis to check: ``"x"`` for subglacial-lake labels or
+            ``"y"`` for basal-melt-rate labels.
+
+        Returns
+        -------
+        bool
+            Whether the label contains a variable name associated with the
+            specified axis.
+        """
+        label_flag = False
+        if axis == "x":
+            labels = SUBGLACIAL_LAKE_LABELS
+        elif axis == "y":
+            labels = BASAL_MELT_RATE_LABELS
+        for label_ds in labels:
+            if label_ds in label:
+                label_flag = True
+                break
+        return label_flag
 
     def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list | None = None) -> tuple[plt.figure, plt.axes]:
         """

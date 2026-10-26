@@ -761,7 +761,7 @@ def test_fit_power_law_model_filters_nonpositive_bins(fixture_series_x, fixture_
 
     monkeypatch.setattr(analyser, "fit_power_law_nonlinear", fit_power_law)
 
-    result, lag = analyser.fit_power_law_model(
+    result = analyser.fit_power_law_model(
         timeseries_label_1=fixture_series_x.label,
         timeseries_label_2=fixture_series_y.label,
         max_lag=2,
@@ -770,7 +770,7 @@ def test_fit_power_law_model_filters_nonpositive_bins(fixture_series_x, fixture_
     )
 
     assert result == fit_result
-    assert lag == 2
+    assert result["corr_lag"] == 2
     np.testing.assert_array_equal(fit_inputs["x"], np.array([2.0, 4.0]))
     np.testing.assert_array_equal(fit_inputs["y"], np.array([30.0, 40.0]))
 
@@ -787,3 +787,49 @@ def test_predict_power_law():
 def test_predict_power_law_rejects_negative_x():
     with pytest.raises(ValueError, match="x must be >= 0"):
         CovariateAnalyser.predict_power_law(x=np.array([-1.0, 1.0]), model={"a": 2.0, "b": 1.5})
+
+
+@pytest.mark.parametrize(
+    ("label", "axis", "expected"),
+    [
+        ("lake_volume_change", "x", True),
+        ("subglacial_lake_discharge", "x", True),
+        ("land_ice_basal_melt_rate", "y", True),
+        ("basal_melt_anomalies_2020", "y", True),
+        ("land_ice_basal_melt_rate", "x", False),
+        ("lake_discharge", "y", False),
+        ("unrelated_variable", "x", False),
+        ("unrelated_variable", "y", False),
+    ],
+)
+def test_determine_if_label_in_power_law(label, axis, expected):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[],
+        time_period=AggregationPeriod.MONTH,
+        process_timeseries=False,
+    )
+    analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    assert analyser._determine_if_label_in_power_law(label=label, axis=axis) is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (np.array([1, 2, 3]), [1, 2, 3]),
+        (
+            np.array(["2024-01-02T03:04:05"], dtype="datetime64[ns]"),
+            ["2024-01-02T03:04:05"],
+        ),
+        (np.datetime64("2024-01-02T03:04:05"), "2024-01-02T03:04:05"),
+        (np.int64(42), 42),
+    ],
+)
+def test_safe_serialise_numpy_values(value, expected):
+    assert CovariateAnalyser._safe_serialise(value) == expected
+
+
+def test_safe_serialise_returns_other_values_unchanged():
+    value = {"already": "serialisable"}
+
+    assert CovariateAnalyser._safe_serialise(value) is value
