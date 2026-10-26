@@ -811,6 +811,11 @@ class CovariateAnalyser:
             if not x_anomalies
             else self.detrend(self._timeseries_altered[timeseries_label_1].measurements)
         )
+
+        # We invert the sign as we are interested in the rate of lake discharge which is the inverse of volume change.
+        if "volume_change" in self._timeseries_altered[timeseries_label_1].measurement_name:
+            x = -1 * x
+
         y = (
             self._timeseries_altered[timeseries_label_2].measurements
             if not y_anomalies
