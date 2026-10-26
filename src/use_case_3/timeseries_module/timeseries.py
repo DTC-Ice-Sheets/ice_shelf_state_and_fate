@@ -1816,8 +1816,14 @@ class Timeseries:
 
         return total_outlier, upper_outlier, lower_outlier
 
+    @staticmethod
+    def _estimate_noise_sigma(x: np.ndarray) -> float:
+        """Robust noise std, insensitive to mean shifts (MAD of first differences)."""
+        d = np.diff(x[np.isfinite(x)])
+        return np.median(np.abs(d - np.median(d))) / (0.6745 * np.sqrt(2))
+
     def detect_changes(
-        self: Timeseries, model: str = "l2", penalty: float = 50.0, min_size: int = 3, jump: int = 1
+        self: Timeseries, model: str = "l2", penalty: float = 2, min_size: int = 3, jump: int = 1
     ) -> tuple[pd.Series, list[int]]:
         """Detect change points in timeseries using PELT algorithm.
 
@@ -1829,7 +1835,7 @@ class Timeseries:
         model : str
             Cost function for change detection. Default is "l2".
         penalty : float
-            Penalty value for change detection. Default is 50.0.
+            Penalty value for change detection. Default is 2.
         min_size : int
             Minimum segment size. Default is 3.
         jump : int
@@ -1843,15 +1849,21 @@ class Timeseries:
             change_points : list[int]
                 Indices of detected change points.
         """
-        algo = rpt.Pelt(model=model, min_size=min_size, jump=jump).fit(self.measurements.to_numpy().ravel())
-        change_points = algo.predict(pen=penalty * np.log(self.measurements.to_numpy().ravel().shape[0]))
+        x = self.measurements.to_numpy().ravel()
+        n = x.shape[0]
+
+        sigma = self._estimate_noise_sigma(x)
+        if not np.isfinite(sigma) or sigma <= 0:
+            sigma = np.std(x)
+        if not np.isfinite(sigma) or sigma <= 0:
+            sigma = 1.0
+        x_std = x / sigma
+
+        algo = rpt.Pelt(model=model, min_size=min_size, jump=jump).fit(x_std)
+        change_points = algo.predict(pen=penalty * np.log(n))
 
         change_regions = pd.Series(
-            np.zeros(self.measurements.to_numpy().ravel().shape[0]), index=self.measurements.index
+            np.searchsorted(change_points, np.arange(n), side="right"),
+            index=self.measurements.index,
         )
-        cp_past = 0
-        for r, cp in enumerate(change_points):
-            change_regions.iloc[cp_past:cp] = r
-            cp_past = cp
-
         return change_regions, change_points

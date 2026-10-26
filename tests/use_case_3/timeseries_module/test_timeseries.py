@@ -1032,17 +1032,17 @@ def test_detect_anomalies_respects_stationarity_check(monkeypatch, p_value, expe
 
 def test_detect_changes_identifies_step_change():
     dates = pd.date_range("2020-01-01", periods=20, freq="MS")
-    measurements = pd.Series([0.0] * 10 + [10.0] * 10, index=dates)
+    measurements = pd.Series([0.0] * 10 + [100.0] * 10, index=dates)
     timeseries = Timeseries(
         label="test",
         timeseries_type=TimeseriesType.CUMULATIVE,
         measurements=measurements,
     )
 
-    change_regions, change_points = timeseries.detect_changes(penalty=1.0)
+    change_regions, change_points = timeseries.detect_changes(penalty=1)
 
     assert change_points == [10, 20]
     pd.testing.assert_series_equal(
         change_regions,
-        pd.Series([0.0] * 10 + [1.0] * 10, index=dates),
+        pd.Series([0] * 10 + [1] * 10, index=dates),
     )
