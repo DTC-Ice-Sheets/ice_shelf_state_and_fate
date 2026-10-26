@@ -835,12 +835,14 @@ def test_predict_power_law_rejects_negative_x():
 
 
 @pytest.mark.parametrize(
-    ("label_1", "label_2", "axis", "expected"),
+    ("measurement_name_a", "measurement_name_b", "axis", "expected"),
     [
-        ("lake_volume_change", "basal_melt_anomalies", "x", (True, "lake_volume_change")),
-        ("unrelated_variable", "subglacial_lake_discharge", "x", (True, "subglacial_lake_discharge")),
-        ("land_ice_basal_melt_rate", "unrelated_variable", "y", (True, "land_ice_basal_melt_rate")),
-        ("unrelated_variable", "basal_melt_anomalies_2020", "y", (True, "basal_melt_anomalies_2020")),
+        ("lake_volume_change", "basal_melt_anomalies", "x", (True, "first")),
+        ("unrelated_variable", "subglacial_lake_discharge", "x", (True, "second")),
+        ("land_ice_basal_melt_rate", "unrelated_variable", "y", (True, "first")),
+        ("unrelated_variable", "basal_melt_anomalies_2020", "y", (True, "second")),
+        ("volume_change", "lake_discharge", "x", (True, "first")),
+        ("land_ice_basal_melt_rate", "basal_melt_anomalies", "y", (True, "first")),
         ("land_ice_basal_melt_rate", "basal_melt_anomalies", "x", (False, "")),
         ("lake_volume_change", "lake_discharge", "y", (False, "")),
         ("unrelated_variable", "another_unrelated_variable", "x", (False, "")),
@@ -848,15 +850,28 @@ def test_predict_power_law_rejects_negative_x():
         ("lake_volume_change", "basal_melt_anomalies", "z", (False, "")),
     ],
 )
-def test_determine_if_label_in_power_law(label_1, label_2, axis, expected):
+def test_determine_if_label_in_power_law(measurement_name_a, measurement_name_b, axis, expected):
+    dates = pd.date_range("2020-01-01", periods=3, freq="MS")
+    ts_a = Timeseries(
+        label="first",
+        measurement_name=measurement_name_a,
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=pd.Series([1.0, 2.0, 3.0], index=dates),
+    )
+    ts_b = Timeseries(
+        label="second",
+        measurement_name=measurement_name_b,
+        timeseries_type=TimeseriesType.CUMULATIVE,
+        measurements=pd.Series([1.0, 2.0, 3.0], index=dates),
+    )
     timeseries_container = TimeSeriesPreprocessor(
-        timeseries=[],
+        timeseries=[ts_a, ts_b],
         time_period=AggregationPeriod.MONTH,
         process_timeseries=False,
     )
     analyser = CovariateAnalyser(timeseries_container=timeseries_container)
 
-    assert analyser._determine_if_label_in_power_law(label_1=label_1, label_2=label_2, axis=axis) == expected
+    assert analyser._determine_if_label_in_power_law(ts_a=ts_a, ts_b=ts_b, axis=axis) == expected
 
 
 @pytest.mark.parametrize(
