@@ -23,6 +23,7 @@ from statsmodels.tsa.tsatools import lagmat2ds
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
     TimeSeriesPreprocessor,
 )
+from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
@@ -433,9 +434,7 @@ class CovariateAnalyser:
 
         timeseries_2.measurements.index = timeseries_2.measurements.index + offset
         if timeseries_2.measurement_uncertainties is not None:
-            timeseries_2.measurement_uncertainties.index = (
-                timeseries_2.measurement_uncertainties.index + offset
-            )
+            timeseries_2.measurement_uncertainties.index = timeseries_2.measurement_uncertainties.index + offset
 
         # Find the latest start datetime for all the input timeseries
         start_date = np.max([np.min(timeseries_1.measurements.index), np.min(timeseries_2.measurements.index)])
@@ -1001,8 +1000,8 @@ class CovariateAnalyser:
                 # label 1 --> Related to subglacial lake discharge
                 # label 2 --> Related to basal melt rate
                 try:
-                    x_flag, label_x = self._determine_if_label_in_power_law(ts_a.label, ts_b.label, "x")
-                    y_flag, label_y = self._determine_if_label_in_power_law(ts_a.label, ts_b.label, "y")
+                    x_flag, label_x = self._determine_if_label_in_power_law(ts_a, ts_b, "x")
+                    y_flag, label_y = self._determine_if_label_in_power_law(ts_a, ts_b, "y")
 
                     if x_flag and y_flag:
                         power_law_results = self.fit_power_law_model(
@@ -1031,7 +1030,7 @@ class CovariateAnalyser:
             return x.item()
         return x
 
-    def _determine_if_label_in_power_law(self, label_1: str, label_2: str, axis: str) -> tuple[bool, str]:
+    def _determine_if_label_in_power_law(self, ts_a: Timeseries, ts_b: Timeseries, axis: str) -> tuple[bool, str]:
         """Check whether a timeseries label is eligible for power-law analysis.
 
         The x axis accepts labels containing a subglacial-lake variable name;
@@ -1039,10 +1038,10 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        label_1 : str
-            First timeseries label to check.
-        label_2 : str
-            Second timeseries label to check.
+        ts_a : Timeseries
+            First timeseries to check.
+        ts_b : Timeseries
+            Second timeseries to check.
         axis : str
             Power-law axis to check: ``"x"`` for subglacial-lake labels or
             ``"y"`` for basal-melt-rate labels.
@@ -1061,9 +1060,9 @@ class CovariateAnalyser:
         else:
             return False, ""
 
-        for candidate in (label_1, label_2):
-            if any(variable in candidate for variable in variable_labels):
-                return True, candidate
+        for candidate in (ts_a, ts_b):
+            if any(variable in candidate.measurement_name for variable in variable_labels):
+                return True, candidate.label
         return False, ""
 
     def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list | None = None) -> tuple[plt.figure, plt.axes]:
