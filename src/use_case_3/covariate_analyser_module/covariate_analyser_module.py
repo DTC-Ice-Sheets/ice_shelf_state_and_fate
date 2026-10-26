@@ -425,11 +425,16 @@ class CovariateAnalyser:
         }
 
         offset_func = offset_map[freq]
+        offset = (
+            pd.offsets.QuarterBegin(corr_lag, startingMonth=1)
+            if freq == AggregationPeriod.QUARTER
+            else offset_func(corr_lag)
+        )
 
-        timeseries_2.measurements.index = timeseries_2.measurements.index + offset_func(corr_lag)
+        timeseries_2.measurements.index = timeseries_2.measurements.index + offset
         if timeseries_2.measurement_uncertainties is not None:
-            timeseries_2.measurement_uncertainties.index = timeseries_2.measurement_uncertainties.index + offset_func(
-                corr_lag
+            timeseries_2.measurement_uncertainties.index = (
+                timeseries_2.measurement_uncertainties.index + offset
             )
 
         # Find the latest start datetime for all the input timeseries

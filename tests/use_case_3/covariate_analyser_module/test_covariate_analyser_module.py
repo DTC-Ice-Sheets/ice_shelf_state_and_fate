@@ -506,6 +506,51 @@ def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
     assert corr_lag_units == AggregationPeriod.MONTH
 
 
+@pytest.mark.parametrize("lag", [-1, 0, 1])
+def test_align_timeseries_preserves_calendar_quarters(lag, monkeypatch):
+    dates = pd.date_range("2020-01-15", periods=12, freq="MS")
+    timeseries = [
+        Timeseries(
+            label=label,
+            timeseries_type=TimeseriesType.CUMULATIVE,
+            measurements=pd.Series(np.arange(len(dates), dtype=float), index=dates),
+            measurement_uncertainties=pd.Series(np.ones(len(dates)), index=dates),
+        )
+        for label in ("first", "second")
+    ]
+    container = TimeSeriesPreprocessor(timeseries=timeseries, time_period=AggregationPeriod.QUARTER)
+    analyser = CovariateAnalyser(timeseries_container=container)
+
+    def fake_max_crosscorrelation(**kwargs):  # noqa: ARG001
+        return 1.0, lag
+
+    monkeypatch.setattr(analyser, "max_crosscorrelation", fake_max_crosscorrelation)
+
+    actual_lag, units = analyser._align_timeseries("first", "second", max_lag=1)
+
+    first = container.timeseries["first"].measurements
+    second = container.timeseries["second"].measurements
+    shifted_dates = (second.index.to_period("Q") + lag).to_timestamp()
+    common_dates = first.index.intersection(shifted_dates)
+    expected_second = second.copy()
+    expected_second.index = shifted_dates
+    pd.testing.assert_series_equal(analyser._timeseries_altered["first"].measurements, first.loc[common_dates])
+    pd.testing.assert_series_equal(
+        analyser._timeseries_altered["second"].measurements,
+        expected_second.loc[common_dates],
+        check_freq=False,
+    )
+    expected_uncertainties = container.timeseries["second"].measurement_uncertainties.copy()
+    expected_uncertainties.index = shifted_dates
+    pd.testing.assert_series_equal(
+        analyser._timeseries_altered["second"].measurement_uncertainties,
+        expected_uncertainties.loc[common_dates],
+        check_freq=False,
+    )
+    assert actual_lag == lag
+    assert units == AggregationPeriod.QUARTER
+
+
 def test_temporal_offset(timeseries_1_fixture, timeseries_6_fixture):
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[
