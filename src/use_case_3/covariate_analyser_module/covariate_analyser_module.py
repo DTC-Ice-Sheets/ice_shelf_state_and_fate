@@ -609,15 +609,12 @@ class CovariateAnalyser:
         TypeError
             Raise when either input is not a pandas Series.
         ValueError
-            Raise when fewer than ``n_bins`` valid pairs are available or
-            ``method`` is unsupported.
+            Raise if method must be 'width' or 'quantile'
         """
         if not isinstance(x, pd.Series) or not isinstance(y, pd.Series):
             raise TypeError("x and y must be pandas Series")
         df = pd.DataFrame({"x": x, "y": y}) if x.index.equals(y.index) else pd.concat([x, y], axis=1, keys=["x", "y"])
         df = df.astype(float).dropna()
-        if len(df) < n_bins:
-            raise ValueError("fewer valid points than n_bins")
         x = df["x"].to_numpy()
         y = df["y"].to_numpy()
 
@@ -906,7 +903,7 @@ class CovariateAnalyser:
 
         return joint
 
-    def run_analysis(
+    def run_analysis(  # noqa: C901
         self: CovariateAnalyser,
         max_lag: int | None = 6,
         analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
@@ -998,17 +995,22 @@ class CovariateAnalyser:
                 # future this should be added as part of the variables yaml, but currently this is fine to hardcode.
                 # label 1 --> Related to subglacial lake discharge
                 # label 2 --> Related to basal melt rate
-                label_1_flag = self._determine_if_label_in_power_law(ts_a.label, "x")
-                label_2_flag = self._determine_if_label_in_power_law(ts_b.label, "y")
+                try:
+                    x_flag, label_x = self._determine_if_label_in_power_law(ts_a.label, ts_b.label, "x")
+                    y_flag, label_y = self._determine_if_label_in_power_law(ts_a.label, ts_b.label, "y")
 
-                if label_1_flag and label_2_flag:
-                    power_law_results = self.fit_power_law_model(
-                        timeseries_label_1=ts_a.label,
-                        timeseries_label_2=ts_b.label,
-                    )
-                    power_law_results = {key: self._safe_serialise(value) for key, value in power_law_results.items()}
+                    if x_flag and y_flag:
+                        power_law_results = self.fit_power_law_model(
+                            timeseries_label_1=label_x,
+                            timeseries_label_2=label_y,
+                        )
+                        power_law_results = {
+                            key: self._safe_serialise(value) for key, value in power_law_results.items()
+                        }
 
-                    out["power_law_analysis"] = power_law_results
+                        out.setdefault("power_law_analysis", {})[key] = power_law_results
+                except Exception as e:  # noqa: BLE001
+                    out.setdefault("power_law_analysis", {})[key] = {"error": str(e)}
 
         return out
 
@@ -1024,7 +1026,7 @@ class CovariateAnalyser:
             return x.item()
         return x
 
-    def _determine_if_label_in_power_law(self, label: str, axis: str) -> bool:
+    def _determine_if_label_in_power_law(self, label_1: str, label_2: str, axis: str) -> tuple[bool, str]:
         """Check whether a timeseries label is eligible for power-law analysis.
 
         The x axis accepts labels containing a subglacial-lake variable name;
@@ -1032,28 +1034,32 @@ class CovariateAnalyser:
 
         Parameters
         ----------
-        label : str
-            Timeseries label to check.
+        label_1 : str
+            First timeseries label to check.
+        label_2 : str
+            Second timeseries label to check.
         axis : str
             Power-law axis to check: ``"x"`` for subglacial-lake labels or
             ``"y"`` for basal-melt-rate labels.
 
         Returns
         -------
-        bool
-            Whether the label contains a variable name associated with the
-            specified axis.
+        tuple[bool, str]
+            A tuple where the first element indicates whether the label contains a variable name associated with the
+            specified axis, and the second element is the label that matches the axis criteria (or an empty string if
+            none match).
         """
-        label_flag = False
         if axis == "x":
-            labels = SUBGLACIAL_LAKE_LABELS
+            variable_labels = SUBGLACIAL_LAKE_LABELS
         elif axis == "y":
-            labels = BASAL_MELT_RATE_LABELS
-        for label_ds in labels:
-            if label_ds in label:
-                label_flag = True
-                break
-        return label_flag
+            variable_labels = BASAL_MELT_RATE_LABELS
+        else:
+            return False, ""
+
+        for candidate in (label_1, label_2):
+            if any(variable in candidate for variable in variable_labels):
+                return True, candidate
+        return False, ""
 
     def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list | None = None) -> tuple[plt.figure, plt.axes]:
         """

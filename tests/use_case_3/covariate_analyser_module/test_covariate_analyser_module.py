@@ -790,19 +790,20 @@ def test_predict_power_law_rejects_negative_x():
 
 
 @pytest.mark.parametrize(
-    ("label", "axis", "expected"),
+    ("label_1", "label_2", "axis", "expected"),
     [
-        ("lake_volume_change", "x", True),
-        ("subglacial_lake_discharge", "x", True),
-        ("land_ice_basal_melt_rate", "y", True),
-        ("basal_melt_anomalies_2020", "y", True),
-        ("land_ice_basal_melt_rate", "x", False),
-        ("lake_discharge", "y", False),
-        ("unrelated_variable", "x", False),
-        ("unrelated_variable", "y", False),
+        ("lake_volume_change", "basal_melt_anomalies", "x", (True, "lake_volume_change")),
+        ("unrelated_variable", "subglacial_lake_discharge", "x", (True, "subglacial_lake_discharge")),
+        ("land_ice_basal_melt_rate", "unrelated_variable", "y", (True, "land_ice_basal_melt_rate")),
+        ("unrelated_variable", "basal_melt_anomalies_2020", "y", (True, "basal_melt_anomalies_2020")),
+        ("land_ice_basal_melt_rate", "basal_melt_anomalies", "x", (False, "")),
+        ("lake_volume_change", "lake_discharge", "y", (False, "")),
+        ("unrelated_variable", "another_unrelated_variable", "x", (False, "")),
+        ("unrelated_variable", "another_unrelated_variable", "y", (False, "")),
+        ("lake_volume_change", "basal_melt_anomalies", "z", (False, "")),
     ],
 )
-def test_determine_if_label_in_power_law(label, axis, expected):
+def test_determine_if_label_in_power_law(label_1, label_2, axis, expected):
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[],
         time_period=AggregationPeriod.MONTH,
@@ -810,7 +811,7 @@ def test_determine_if_label_in_power_law(label, axis, expected):
     )
     analyser = CovariateAnalyser(timeseries_container=timeseries_container)
 
-    assert analyser._determine_if_label_in_power_law(label=label, axis=axis) is expected
+    assert analyser._determine_if_label_in_power_law(label_1=label_1, label_2=label_2, axis=axis) == expected
 
 
 @pytest.mark.parametrize(
