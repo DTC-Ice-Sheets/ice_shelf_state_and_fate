@@ -506,6 +506,51 @@ def test_align_timeseries(timeseries_7_fixture, timeseries_7_lag_fixture):
     assert corr_lag_units == AggregationPeriod.MONTH
 
 
+@pytest.mark.parametrize("lag", [-1, 0, 1])
+def test_align_timeseries_preserves_calendar_quarters(lag, monkeypatch):
+    dates = pd.date_range("2020-01-15", periods=12, freq="MS")
+    timeseries = [
+        Timeseries(
+            label=label,
+            timeseries_type=TimeseriesType.CUMULATIVE,
+            measurements=pd.Series(np.arange(len(dates), dtype=float), index=dates),
+            measurement_uncertainties=pd.Series(np.ones(len(dates)), index=dates),
+        )
+        for label in ("first", "second")
+    ]
+    container = TimeSeriesPreprocessor(timeseries=timeseries, time_period=AggregationPeriod.QUARTER)
+    analyser = CovariateAnalyser(timeseries_container=container)
+
+    def fake_max_crosscorrelation(**kwargs):  # noqa: ARG001
+        return 1.0, lag
+
+    monkeypatch.setattr(analyser, "max_crosscorrelation", fake_max_crosscorrelation)
+
+    actual_lag, units = analyser._align_timeseries("first", "second", max_lag=1)
+
+    first = container.timeseries["first"].measurements
+    second = container.timeseries["second"].measurements
+    shifted_dates = (second.index.to_period("Q") + lag).to_timestamp()
+    common_dates = first.index.intersection(shifted_dates)
+    expected_second = second.copy()
+    expected_second.index = shifted_dates
+    pd.testing.assert_series_equal(analyser._timeseries_altered["first"].measurements, first.loc[common_dates])
+    pd.testing.assert_series_equal(
+        analyser._timeseries_altered["second"].measurements,
+        expected_second.loc[common_dates],
+        check_freq=False,
+    )
+    expected_uncertainties = container.timeseries["second"].measurement_uncertainties.copy()
+    expected_uncertainties.index = shifted_dates
+    pd.testing.assert_series_equal(
+        analyser._timeseries_altered["second"].measurement_uncertainties,
+        expected_uncertainties.loc[common_dates],
+        check_freq=False,
+    )
+    assert actual_lag == lag
+    assert units == AggregationPeriod.QUARTER
+
+
 def test_temporal_offset(timeseries_1_fixture, timeseries_6_fixture):
     timeseries_container = TimeSeriesPreprocessor(
         timeseries=[
@@ -656,3 +701,181 @@ def test_granger_causality_test(fixture_series_x, fixture_series_y):
 
     np.testing.assert_almost_equal(f_score, 2.6001062494609055)
     np.testing.assert_almost_equal(p_value, 0.18902718453358755)
+
+
+def test_power_model():
+    x = np.array([1.0, 2.0, 3.0])
+
+    result = CovariateAnalyser._power_model(x=x, a=2.0, b=2.0)
+
+    np.testing.assert_allclose(result, np.array([2.0, 8.0, 18.0]))
+
+
+def test_detrend_removes_linear_trend():
+    dates = pd.date_range("2019-01-01", periods=6, freq="YS")
+    elapsed_years = (dates - dates[0]) / pd.Timedelta(days=365.25)
+    measurements = pd.Series(4.0 * elapsed_years + 12.0, index=dates, name="measurement")
+
+    detrended = CovariateAnalyser.detrend(measurements)
+
+    np.testing.assert_allclose(detrended.to_numpy(), 0.0, atol=1e-8)
+    pd.testing.assert_index_equal(detrended.index, dates)
+    assert detrended.name == measurements.name
+
+
+def test_detrend_sorts_unsorted_input():
+    dates = pd.date_range("2019-01-01", periods=4, freq="YS")
+    elapsed_years = (dates - dates[0]) / pd.Timedelta(days=365.25)
+    measurements = pd.Series(
+        (4.0 * elapsed_years + 12.0)[[3, 0, 2, 1]],
+        index=dates[[3, 0, 2, 1]],
+        name="measurement",
+    )
+
+    detrended = CovariateAnalyser.detrend(measurements)
+
+    np.testing.assert_allclose(detrended.to_numpy(), 0.0, atol=1e-8)
+    pd.testing.assert_index_equal(detrended.index, dates)
+    assert detrended.name == measurements.name
+
+
+def test_fit_power_law_nonlinear():
+    x = np.linspace(1.0, 10.0, 10)
+    y = 2.5 * x**1.75
+
+    result = CovariateAnalyser.fit_power_law_nonlinear(x=x, y=y)
+
+    assert result["a"] == pytest.approx(2.5)
+    assert result["b"] == pytest.approx(1.75)
+    assert result["rss"] == pytest.approx(0.0, abs=1e-10)
+    assert result["r2"] == pytest.approx(1.0)
+    assert result["n"] == len(x)
+    assert result["a_ci"][0] <= result["a"] <= result["a_ci"][1]
+    assert result["b_ci"][0] <= result["b"] <= result["b_ci"][1]
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "message"),
+    [
+        (np.array([-1.0, 1.0, 2.0]), np.array([1.0, 2.0, 3.0]), "x must be >= 0"),
+        (np.array([1.0, 2.0]), np.array([1.0, 2.0]), "need more than 2 points"),
+    ],
+)
+def test_fit_power_law_nonlinear_rejects_invalid_data(x, y, message):
+    with pytest.raises(ValueError, match=message):
+        CovariateAnalyser.fit_power_law_nonlinear(x=x, y=y)
+
+
+def test_fit_power_law_model_filters_nonpositive_bins(fixture_series_x, fixture_series_y, monkeypatch):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[fixture_series_x, fixture_series_y],
+        time_period=AggregationPeriod.MONTH,
+        aggregation=AggregationStrategy.MEAN,
+        process_timeseries=False,
+    )
+    analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+    analyser._timeseries_altered = {
+        fixture_series_x.label: fixture_series_x,
+        fixture_series_y.label: fixture_series_y,
+    }
+    binned_x = np.array([-1.0, 0.0, 2.0, 4.0])
+    binned_y = np.array([10.0, 20.0, 30.0, 40.0])
+    fit_result = {"a": 3.0, "b": 1.5}
+    fit_inputs = {}
+
+    def align_timeseries(timeseries_label_1, timeseries_label_2, max_lag):
+        assert timeseries_label_1 == fixture_series_x.label
+        assert timeseries_label_2 == fixture_series_y.label
+        assert max_lag == 2
+        return 2, AggregationPeriod.MONTH
+
+    def bin_data(x, y, n_bins, method):
+        assert x is fixture_series_x.measurements
+        assert y is fixture_series_y.measurements
+        assert n_bins == 4
+        assert method == "quantile"
+        return binned_x, binned_y, np.ones(len(binned_x))
+
+    monkeypatch.setattr(analyser, "_align_timeseries", align_timeseries)
+    monkeypatch.setattr(analyser, "bin_data", bin_data)
+
+    def fit_power_law(x, y):
+        fit_inputs["x"] = x
+        fit_inputs["y"] = y
+        return fit_result
+
+    monkeypatch.setattr(analyser, "fit_power_law_nonlinear", fit_power_law)
+
+    result = analyser.fit_power_law_model(
+        timeseries_label_1=fixture_series_x.label,
+        timeseries_label_2=fixture_series_y.label,
+        max_lag=2,
+        n_bins=4,
+        method="quantile",
+    )
+
+    assert result == fit_result
+    assert result["corr_lag"] == 2
+    np.testing.assert_array_equal(fit_inputs["x"], np.array([2.0, 4.0]))
+    np.testing.assert_array_equal(fit_inputs["y"], np.array([30.0, 40.0]))
+
+
+def test_predict_power_law():
+    x = np.array([0.0, 1.0, 2.0])
+    model = {"a": 3.0, "b": 2.0}
+
+    result = CovariateAnalyser.predict_power_law(x=x, model=model)
+
+    np.testing.assert_allclose(result, np.array([0.0, 3.0, 12.0]))
+
+
+def test_predict_power_law_rejects_negative_x():
+    with pytest.raises(ValueError, match="x must be >= 0"):
+        CovariateAnalyser.predict_power_law(x=np.array([-1.0, 1.0]), model={"a": 2.0, "b": 1.5})
+
+
+@pytest.mark.parametrize(
+    ("label_1", "label_2", "axis", "expected"),
+    [
+        ("lake_volume_change", "basal_melt_anomalies", "x", (True, "lake_volume_change")),
+        ("unrelated_variable", "subglacial_lake_discharge", "x", (True, "subglacial_lake_discharge")),
+        ("land_ice_basal_melt_rate", "unrelated_variable", "y", (True, "land_ice_basal_melt_rate")),
+        ("unrelated_variable", "basal_melt_anomalies_2020", "y", (True, "basal_melt_anomalies_2020")),
+        ("land_ice_basal_melt_rate", "basal_melt_anomalies", "x", (False, "")),
+        ("lake_volume_change", "lake_discharge", "y", (False, "")),
+        ("unrelated_variable", "another_unrelated_variable", "x", (False, "")),
+        ("unrelated_variable", "another_unrelated_variable", "y", (False, "")),
+        ("lake_volume_change", "basal_melt_anomalies", "z", (False, "")),
+    ],
+)
+def test_determine_if_label_in_power_law(label_1, label_2, axis, expected):
+    timeseries_container = TimeSeriesPreprocessor(
+        timeseries=[],
+        time_period=AggregationPeriod.MONTH,
+        process_timeseries=False,
+    )
+    analyser = CovariateAnalyser(timeseries_container=timeseries_container)
+
+    assert analyser._determine_if_label_in_power_law(label_1=label_1, label_2=label_2, axis=axis) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (np.array([1, 2, 3]), [1, 2, 3]),
+        (
+            np.array(["2024-01-02T03:04:05"], dtype="datetime64[ns]"),
+            ["2024-01-02T03:04:05"],
+        ),
+        (np.datetime64("2024-01-02T03:04:05"), "2024-01-02T03:04:05"),
+        (np.int64(42), 42),
+    ],
+)
+def test_safe_serialise_numpy_values(value, expected):
+    assert CovariateAnalyser._safe_serialise(value) == expected
+
+
+def test_safe_serialise_returns_other_values_unchanged():
+    value = {"already": "serialisable"}
+
+    assert CovariateAnalyser._safe_serialise(value) is value
