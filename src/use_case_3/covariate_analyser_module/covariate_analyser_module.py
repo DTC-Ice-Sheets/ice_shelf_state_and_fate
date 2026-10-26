@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from copy import deepcopy
 from textwrap import wrap
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy import stats
+from scipy.optimize import curve_fit
 from scipy.signal import correlate, correlation_lags
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression, RANSACRegressor
@@ -20,12 +23,16 @@ from statsmodels.tsa.tsatools import lagmat2ds
 from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
     TimeSeriesPreprocessor,
 )
+from use_case_3.timeseries_module.timeseries import Timeseries
 from use_case_3.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     JointPlotAnalysisType,
     ModelEvaluationMetric,
 )
+
+SUBGLACIAL_LAKE_LABELS = ["volume_change", "lake_discharge"]
+BASAL_MELT_RATE_LABELS = ["land_ice_basal_melt_rate", "basal_melt_anomalies"]
 
 
 class CovariateAnalyser:
@@ -392,7 +399,7 @@ class CovariateAnalyser:
         timeseries_label_2 : str
             The label for the second timeseries.
         max_lag : int | None
-            The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+            The maximum lag to consider, note this will apply this maximum lag in both the positive and the negative
             directions. If set to None there is no maximum lag, by default None
 
         Returns
@@ -412,19 +419,22 @@ class CovariateAnalyser:
         freq = self.timeseries_container.aggregation_period
 
         offset_map = {
-            AggregationPeriod.MONTH: pd.offsets.MonthEnd,
-            AggregationPeriod.QUARTER: pd.offsets.QuarterEnd,
-            AggregationPeriod.YEAR: pd.offsets.YearEnd,
+            AggregationPeriod.MONTH: pd.offsets.MonthBegin,
+            AggregationPeriod.QUARTER: pd.offsets.QuarterBegin,
+            AggregationPeriod.YEAR: pd.offsets.YearBegin,
             AggregationPeriod.DAY: pd.offsets.Day,
         }
 
         offset_func = offset_map[freq]
+        offset = (
+            pd.offsets.QuarterBegin(corr_lag, startingMonth=1)
+            if freq == AggregationPeriod.QUARTER
+            else offset_func(corr_lag)
+        )
 
-        timeseries_2.measurements.index = timeseries_2.measurements.index + offset_func(corr_lag)
+        timeseries_2.measurements.index = timeseries_2.measurements.index + offset
         if timeseries_2.measurement_uncertainties is not None:
-            timeseries_2.measurement_uncertainties.index = timeseries_2.measurement_uncertainties.index + offset_func(
-                corr_lag
-            )
+            timeseries_2.measurement_uncertainties.index = timeseries_2.measurement_uncertainties.index + offset
 
         # Find the latest start datetime for all the input timeseries
         start_date = np.max([np.min(timeseries_1.measurements.index), np.min(timeseries_2.measurements.index)])
@@ -571,6 +581,290 @@ class CovariateAnalyser:
             reg_2.estimator_.coef_[0],
             reg_2.estimator_.intercept_,
         )
+
+    @staticmethod
+    def bin_data(x: pd.Series, y: pd.Series, n_bins: int, method: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Bin paired observations and calculate the mean values in each bin.
+
+        Drop rows with missing values before binning. Use equal-width bins
+        by default, or equal-frequency bins when ``method`` is ``"quantile"``.
+
+        Parameters
+        ----------
+        x : pd.Series
+            Provide the values used to determine bin membership.
+        y : pd.Series
+            Provide the paired values to average within each bin.
+        n_bins : int
+            Set the number of bins to create.
+        method : str
+            Choose ``"width"`` for equal-width bins or ``"quantile"`` for
+            equal-frequency bins.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray, np.ndarray]
+            Return the mean x values, mean y values, and observation counts
+            for each non-empty bin.
+
+        Raises
+        ------
+        TypeError
+            Raise when either input is not a pandas Series.
+        ValueError
+            Raise if method must be 'width' or 'quantile'
+        """
+        if not isinstance(x, pd.Series) or not isinstance(y, pd.Series):
+            raise TypeError("x and y must be pandas Series")
+        df = pd.DataFrame({"x": x, "y": y}) if x.index.equals(y.index) else pd.concat([x, y], axis=1, keys=["x", "y"])
+        df = df.astype(float).dropna()
+        x = df["x"].to_numpy()
+        y = df["y"].to_numpy()
+
+        if method == "width":
+            edges = np.linspace(x.min(), x.max(), n_bins + 1)
+        elif method == "quantile":
+            edges = np.quantile(x, np.linspace(0, 1, n_bins + 1))
+        else:
+            raise ValueError("method must be 'width' or 'quantile'")
+
+        idx = np.clip(np.digitize(x, edges[1:-1]), 0, n_bins - 1)
+
+        xb, yb, nb = [], [], []
+        for k in range(n_bins):
+            s = idx == k
+            if s.any():
+                xb.append(x[s].mean())
+                yb.append(y[s].mean())
+                nb.append(int(s.sum()))
+        return np.array(xb), np.array(yb), np.array(nb)
+
+    @staticmethod
+    def _power_model(x: np.ndarray, a: float, b: float) -> np.ndarray:
+        """
+        Evaluate the power-law model for the given input values.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the independent variable values.
+        a : float
+            Set the multiplicative coefficient.
+        b : float
+            Set the exponent.
+
+        Returns
+        -------
+        np.ndarray
+            Return values calculated as ``a * x**b``.
+        """
+        return a * x**b
+
+    @staticmethod
+    def fit_power_law_nonlinear(x: np.ndarray, y: np.ndarray, alpha: float = 0.05) -> dict:
+        """
+        Fit a nonlinear power-law model and estimate confidence intervals.
+
+        Fit the model ``y = a * x**b`` using several initial estimates for
+        the exponent, then select the fit with the lowest residual sum of
+        squares.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the independent variable values.
+        y : np.ndarray
+            Provide the dependent variable values.
+        alpha : float
+            Set the significance level used to calculate confidence
+            intervals for the model parameters.
+
+        Returns
+        -------
+        dict
+            Return the fitted parameters ``a`` and ``b``, their confidence
+            intervals, residual sum of squares (``rss``), coefficient of
+            determination (``r2``), and sample count (``n``).
+
+        Raises
+        ------
+        ValueError
+            Raise when any ``x`` value is negative or there are not more
+            than two data points.
+        RuntimeError
+            Raise when the fit fails for every initial exponent estimate.
+        """
+        x = np.asarray(x, float)
+        y = np.asarray(y, float)
+        if np.any(x < 0):
+            raise ValueError("x must be >= 0 for a power law")
+        n_par = 2
+        if len(x) <= n_par:
+            raise ValueError(f"need more than {n_par} points")
+
+        scale = np.ptp(y) / max(np.ptp(x), 1e-12)
+        best = None
+        for b0 in (0.25, 0.5, 1.0, 1.5, 2.0):
+            p0 = [scale, b0]
+            try:
+                p, cov = curve_fit(CovariateAnalyser._power_model, x, y, p0=p0, maxfev=50000)
+            except (RuntimeError, ValueError):
+                continue
+            rss = float(np.sum((y - CovariateAnalyser._power_model(x, *p)) ** 2))
+            if best is None or rss < best[0]:
+                best = (rss, p, cov)
+        if best is None:
+            raise RuntimeError("fit did not converge from any starting point")
+
+        rss, p, cov = best
+        se = np.sqrt(np.diag(cov))
+        t = stats.t.ppf(1 - alpha / 2, len(x) - n_par)
+        tss = float(np.sum((y - y.mean()) ** 2))
+        return {
+            "a": float(p[0]),
+            "b": float(p[1]),
+            "a_ci": (float(p[0] - t * se[0]), float(p[0] + t * se[0])),
+            "b_ci": (float(p[1] - t * se[1]), float(p[1] + t * se[1])),
+            "rss": rss,
+            "r2": float(1 - rss / tss) if tss > 0 else float("nan"),
+            "n": len(x),
+        }
+
+    @staticmethod
+    def detrend(s: pd.Series) -> pd.Series:
+        """
+        Remove a robust linear trend from a time series.
+
+        Sort the series by its datetime index, fit a RANSAC linear model
+        against elapsed time in years, and subtract the fitted trend.
+
+        Parameters
+        ----------
+        s : pd.Series
+            Provide the time series to detrend.
+
+        Returns
+        -------
+        pd.Series
+            Return the detrended values with a sorted datetime index and
+            the input series name.
+        """
+        s = s.sort_index()
+
+        t0 = s.index[0]
+        x = ((s.index - t0) / pd.Timedelta(days=365.25)).to_numpy().reshape(-1, 1)
+        y = s.to_numpy()
+
+        ransac = RANSACRegressor(
+            estimator=LinearRegression(),
+            residual_threshold=None,
+            random_state=0,
+        )
+        ransac.fit(x, y)
+
+        trend = pd.Series(ransac.predict(x), index=s.index, name="trend")
+        return (s - trend).rename(s.name)
+
+    def fit_power_law_model(
+        self: CovariateAnalyser,
+        timeseries_label_1: str,
+        timeseries_label_2: str,
+        max_lag: int = 6,
+        n_bins: int = 8,
+        method: str = "width",
+        x_anomalies: bool = False,
+        y_anomalies: bool = False,
+    ) -> dict:
+        """
+        Align two time series and fit a power-law model to their binned data.
+
+        Remove bins with non-positive mean x values before fitting.
+
+        Parameters
+        ----------
+        timeseries_label_1 : str
+            Select the time series used as the independent variable.
+        timeseries_label_2 : str
+            Select the time series used as the dependent variable.
+        max_lag : int
+            Limit the lag considered when aligning the time series.
+        n_bins : int
+            Set the number of bins used to summarize paired observations.
+        method : str
+            Choose the binning method passed to `bin_data`.
+        x_anomalies : bool
+            Indicate whether to detrend the independent variable time series.
+        y_anomalies : bool
+            Indicate whether to detrend the dependent variable time series.
+
+        Returns
+        -------
+        dict
+            Return the fitted model statistics, including the lag used to align
+            the time series.
+        """
+        corr_lag, _ = self._align_timeseries(timeseries_label_1, timeseries_label_2, max_lag=max_lag)
+
+        x = (
+            self._timeseries_altered[timeseries_label_1].measurements
+            if not x_anomalies
+            else self.detrend(self._timeseries_altered[timeseries_label_1].measurements)
+        )
+
+        # We invert the sign as we are interested in the rate of lake discharge which is the inverse of volume change.
+        if "volume_change" in self._timeseries_altered[timeseries_label_1].measurement_name:
+            x = -1 * x
+
+        y = (
+            self._timeseries_altered[timeseries_label_2].measurements
+            if not y_anomalies
+            else self.detrend(self._timeseries_altered[timeseries_label_2].measurements)
+        )
+
+        x_bin, y_bin, _ = self.bin_data(x=x, y=y, n_bins=n_bins, method=method)
+
+        filt_mask = x_bin > 0
+        x_bin, y_bin = x_bin[filt_mask], y_bin[filt_mask]
+
+        model_results = self.fit_power_law_nonlinear(x_bin, y_bin)
+        model_results["x_bin"] = x_bin
+        model_results["y_bin"] = y_bin
+        model_results["corr_lag"] = corr_lag
+        model_results["x"] = x.to_numpy()
+        model_results["y"] = y.to_numpy()
+        model_results["datetime"] = x.index.to_numpy()
+        model_results["timeseries_label_1"] = timeseries_label_1
+        model_results["timeseries_label_2"] = timeseries_label_2
+
+        return model_results
+
+    @staticmethod
+    def predict_power_law(x: np.ndarray, model: dict) -> np.ndarray:
+        """
+        Predict values from a fitted power-law model.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the independent variable values at which to predict.
+        model : dict
+            Provide fitted model parameters with ``a`` and ``b`` keys.
+
+        Returns
+        -------
+        np.ndarray
+            Return predictions calculated as ``a * x**b``.
+
+        Raises
+        ------
+        ValueError
+            Raise when any input ``x`` value is negative.
+        """
+        arr = np.asarray(x, float)
+        if np.any(arr < 0):
+            raise ValueError("x must be >= 0 for a power law")
+        return model["a"] * arr ** model["b"]
 
     def jointplot(
         self: CovariateAnalyser, timeseries_label_1: str, timeseries_label_2: str, linear: bool = True
@@ -721,7 +1015,76 @@ class CovariateAnalyser:
                         "P-Value": p_value,
                     }
                 out["covariate_stats"][key] = stats
+
+                # Conduct the power analysis, we only do this for specific combinations of variables. I think in the
+                # future this should be added as part of the variables yaml, but currently this is fine to hardcode.
+                # label 1 --> Related to subglacial lake discharge
+                # label 2 --> Related to basal melt rate
+                try:
+                    x_flag, label_x = self._determine_if_label_in_power_law(ts_a, ts_b, "x")
+                    y_flag, label_y = self._determine_if_label_in_power_law(ts_a, ts_b, "y")
+
+                    if x_flag and y_flag:
+                        power_law_results = self.fit_power_law_model(
+                            timeseries_label_1=label_x,
+                            timeseries_label_2=label_y,
+                        )
+                        power_law_results = {
+                            key: self._safe_serialise(value) for key, value in power_law_results.items()
+                        }
+
+                        out.setdefault("power_law_analysis", {})[key] = power_law_results
+                except Exception as e:  # noqa: BLE001
+                    out.setdefault("power_law_analysis", {})[key] = {"error": str(e)}
+
         return out
+
+    @staticmethod
+    def _safe_serialise(x: Any) -> Any:  # noqa: ANN401
+        if isinstance(x, np.ndarray):
+            if np.issubdtype(x.dtype, np.datetime64):
+                return x.astype("datetime64[s]").astype(str).tolist()
+            return x.tolist()
+        if isinstance(x, np.datetime64):
+            return str(x)
+        if isinstance(x, np.generic):
+            return x.item()
+        return x
+
+    def _determine_if_label_in_power_law(self, ts_a: Timeseries, ts_b: Timeseries, axis: str) -> tuple[bool, str]:
+        """Check whether a timeseries label is eligible for power-law analysis.
+
+        The x axis accepts labels containing a subglacial-lake variable name;
+        the y axis accepts labels containing a basal-melt-rate variable name.
+
+        Parameters
+        ----------
+        ts_a : Timeseries
+            First timeseries to check.
+        ts_b : Timeseries
+            Second timeseries to check.
+        axis : str
+            Power-law axis to check: ``"x"`` for subglacial-lake labels or
+            ``"y"`` for basal-melt-rate labels.
+
+        Returns
+        -------
+        tuple[bool, str]
+            A tuple where the first element indicates whether the label contains a variable name associated with the
+            specified axis, and the second element is the label that matches the axis criteria (or an empty string if
+            none match).
+        """
+        if axis == "x":
+            variable_labels = SUBGLACIAL_LAKE_LABELS
+        elif axis == "y":
+            variable_labels = BASAL_MELT_RATE_LABELS
+        else:
+            return False, ""
+
+        for candidate in (ts_a, ts_b):
+            if any(variable in candidate.measurement_name for variable in variable_labels):
+                return True, candidate.label
+        return False, ""
 
     def plot_timeseries(self: CovariateAnalyser, yaxis_labels: list | None = None) -> tuple[plt.figure, plt.axes]:
         """
