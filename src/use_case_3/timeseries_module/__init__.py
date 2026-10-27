@@ -1,4 +1,4 @@
-"""Package init."""
+"""Timeseries module."""
 
 from use_case_3.monitoring import setup_logging
 

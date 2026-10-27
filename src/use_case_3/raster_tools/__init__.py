@@ -1,1 +1,1 @@
-"""Sub package init."""
+"""Raster tools module."""
