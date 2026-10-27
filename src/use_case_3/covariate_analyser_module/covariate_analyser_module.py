@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from copy import deepcopy
 from textwrap import wrap
 from typing import Any
@@ -10,12 +11,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from ruptures.exceptions import BadSegmentationParameters
 from scipy import stats
 from scipy.optimize import curve_fit
 from scipy.signal import correlate, correlation_lags
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression, RANSACRegressor
 from statsmodels.regression.linear_model import OLS
+from statsmodels.tools.sm_exceptions import MissingDataError
 from statsmodels.tools.tools import add_constant
 from statsmodels.tsa.stattools import grangercausalitytests
 from statsmodels.tsa.tsatools import lagmat2ds
@@ -30,6 +33,8 @@ from use_case_3.timeseries_module.timeseries_enums import (
     JointPlotAnalysisType,
     ModelEvaluationMetric,
 )
+
+log = logging.getLogger(__name__)
 
 SUBGLACIAL_LAKE_LABELS = ["volume_change", "lake_discharge"]
 BASAL_MELT_RATE_LABELS = ["land_ice_basal_melt_rate", "basal_melt_anomalies"]
@@ -709,7 +714,8 @@ class CovariateAnalyser:
             p0 = [scale, b0]
             try:
                 p, cov = curve_fit(CovariateAnalyser._power_model, x, y, p0=p0, maxfev=50000)
-            except (RuntimeError, ValueError):
+            except (RuntimeError, ValueError) as e:
+                log.warning("Power law fit failed for initial exponent %s: %s", b0, e)
                 continue
             rss = float(np.sum((y - CovariateAnalyser._power_model(x, *p)) ** 2))
             if best is None or rss < best[0]:
@@ -955,15 +961,16 @@ class CovariateAnalyser:
             try:
                 change_points, _ = ts.detect_changes(jump=1, min_size=1)
                 out["variables"][ts.label]["change_points"] = change_points.to_list()
-            except Exception:  # noqa: BLE001
+            except BadSegmentationParameters as e:
+                log.warning("Change point detection failed for timeseries %s: %s", ts.label, e)
                 out["variables"][ts.label]["change_points"] = []
             try:
                 anomolies, anomalies_upper, anomalies_lower = ts.detect_anomalies()
                 out["variables"][ts.label]["anomolies"] = anomolies.to_list()
                 out["variables"][ts.label]["anomalies_upper"] = anomalies_upper.to_list()
                 out["variables"][ts.label]["anomalies_lower"] = anomalies_lower.to_list()
-
-            except Exception:  # noqa: BLE001
+            except (ValueError, MissingDataError) as e:
+                log.warning("Anomaly detection failed for timeseries %s: %s", ts.label, e)
                 out["variables"][ts.label]["anomolies"] = []
                 out["variables"][ts.label]["anomalies_upper"] = []
                 out["variables"][ts.label]["anomalies_lower"] = []
@@ -1020,22 +1027,19 @@ class CovariateAnalyser:
                 # future this should be added as part of the variables yaml, but currently this is fine to hardcode.
                 # label 1 --> Related to subglacial lake discharge
                 # label 2 --> Related to basal melt rate
-                try:
-                    x_flag, label_x = self._determine_if_label_in_power_law(ts_a, ts_b, "x")
-                    y_flag, label_y = self._determine_if_label_in_power_law(ts_a, ts_b, "y")
+                x_flag, label_x = self._determine_if_label_in_power_law(ts_a, ts_b, "x")
+                y_flag, label_y = self._determine_if_label_in_power_law(ts_a, ts_b, "y")
 
-                    if x_flag and y_flag:
-                        power_law_results = self.fit_power_law_model(
-                            timeseries_label_1=label_x,
-                            timeseries_label_2=label_y,
-                        )
-                        power_law_results = {
-                            key: self._safe_serialise(value) for key, value in power_law_results.items()
-                        }
+                if x_flag and y_flag:
+                    power_law_results = self.fit_power_law_model(
+                        timeseries_label_1=label_x,
+                        timeseries_label_2=label_y,
+                    )
+                    power_law_results = {key: self._safe_serialise(value) for key, value in power_law_results.items()}
 
-                        out.setdefault("power_law_analysis", {})[key] = power_law_results
-                except Exception as e:  # noqa: BLE001
-                    out.setdefault("power_law_analysis", {})[key] = {"error": str(e)}
+                    out.setdefault("power_law_analysis", {})[key] = power_law_results
+                else:
+                    out.setdefault("power_law_analysis", {})[key] = {}
 
         return out
 

@@ -1859,6 +1859,10 @@ class Timeseries:
             sigma = 1.0
         x_std = x / sigma
 
+        # fill any missing values in the standardized series, doing both ffill and bfil ensures nans at start and end
+        # are filled. Only if the series is all nan will this not work.
+        x_std = pd.Series(x_std).ffill().bfill().to_numpy()
+
         algo = rpt.Pelt(model=model, min_size=min_size, jump=jump).fit(x_std)
         change_points = algo.predict(pen=penalty * np.log(n))
 
