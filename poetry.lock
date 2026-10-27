@@ -6584,7 +6584,7 @@ version = "1.1.10"
 description = "Change point detection for signals in Python."
 optional = false
 python-versions = "<3.14,>=3.9"
-groups = ["dashboard"]
+groups = ["main", "dashboard"]
 files = [
     {file = "ruptures-1.1.10-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d2dae4173db1ffab6cf1eead44825b360e354b3c37f7316b7a827dea6a34b577"},
     {file = "ruptures-1.1.10-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:20ea4ce1e7503bef60aa879196343acea660905f85692c9612d1a1f787e21da6"},
@@ -8059,4 +8059,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "aca672065a285087b4ac9b92136040c9e2342c7c4cf3a881d0885a230bbc3ebf"
+content-hash = "d2680027913d81ed3422f4e080cd3729a5754fe4b71973cd9fdcfdff6fb7bdd4"
