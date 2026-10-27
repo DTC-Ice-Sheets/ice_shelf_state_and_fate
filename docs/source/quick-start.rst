@@ -66,8 +66,8 @@ timeseries Zarr stores into the format expected by covariate analysis. Repeat
       --aggregation mean
 
 If ``--time_period`` is omitted, the lowest frequency in the input timeseries
-is used. The aggregation defaults to ``mean`` and accepts the same strategies
-listed above.
+is used. The aggregation defaults to ``mean`` and accepts ``mean``, ``median``,
+``max``, ``min``, and ``std``.
 
 Covariate analysis
 ------------------
