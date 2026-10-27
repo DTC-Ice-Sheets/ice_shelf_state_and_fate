@@ -65,8 +65,7 @@ jobs:
           DOCKER_BUILDKIT=1 docker build \
             --cache-from ${{ steps.name_container.outputs.image_name }} \
             --secret id=github_token,src=.gh_token.txt \
-            --tag ${{ steps.name_container.outputs.image_name }} \
-            -f Dockerfile .
+            --tag ${{ steps.name_container.outputs.image_name }} -f Dockerfile .
           docker push "${{ steps.name_container.outputs.image_name }}"
 
       - name: Build and push this package's dashboard image
@@ -75,8 +74,7 @@ jobs:
           DOCKER_BUILDKIT=1 docker build \
             --cache-from ${{ steps.name_container.outputs.dashboard_image_name }} \
             --secret id=github_token,src=.gh_token.txt \
-            --tag ${{ steps.name_container.outputs.dashboard_image_name }} \
-            -f dashboard.dockerfile .
+            --tag ${{ steps.name_container.outputs.dashboard_image_name }} -f dashboard.dockerfile .
           docker push "${{ steps.name_container.outputs.dashboard_image_name }}"
 
       - name: Clean up secrets
@@ -119,13 +117,25 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Copy checked out repo to /app
-        # Poetry determines whether to create a new venv or use an existing one based on the location of the package
-        # code in the file system. In the container Dockerfile, we already created a venv with this package's
-        # dependencies. We need to copy over the repository code into the Dockerfile WORKDIR (/app) so that the next
-        # step reuses the venv that already exists.
-        run: |
-          cp -r ${GITHUB_WORKSPACE}/. /app/
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Load cached venv
+        id: load-cached-poetry-venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-3.12-${{ hashFiles('**/poetry.lock') }}
 
       - name: Prepare repository for interaction
         # we have to manually set the username and email before we can commit and push
@@ -142,12 +152,12 @@ jobs:
           git tag -d $(git tag -l)
           git fetch --tags
 
+      - name: Install dependencies
+        if: steps.load-cached-poetry-venv.outputs.cache-hit != 'true'
+        run: poetry install --with dev --no-root
+
       - name: Install package
-        # The Dockerfile installs only the package dependencies, not the package itself (allowing us to only rebuild the
-        # container if the dependencies change, rather than every time the package code changes). In the CI/CD, we copy
-        # repository code into the container and install just the package itself!
-        run: |
-          poetry install --only-root
+        run: poetry install --with dev
 
       - name: Build package
         run: |
