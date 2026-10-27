@@ -953,7 +953,7 @@ class CovariateAnalyser:
             }
 
             try:
-                change_points, _ = ts.detect_changes(jump=1, penalty=25000.0, min_size=1)
+                change_points, _ = ts.detect_changes(jump=1, min_size=1)
                 out["variables"][ts.label]["change_points"] = change_points.to_list()
             except Exception:  # noqa: BLE001
                 out["variables"][ts.label]["change_points"] = []
