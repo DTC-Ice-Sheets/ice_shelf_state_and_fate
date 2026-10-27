@@ -102,11 +102,14 @@ dataset. ``--max_res`` controls the maximum summary resolution and defaults to
 Convert a timeseries Zarr store to JSON
 ---------------------------------------
 
-Run ``timeseries_zarr_to_json_module_entrypoint`` to convert a timeseries Zarr
-store into its JSON representation:
+Run ``timeseries_zarr_to_json_module_entrypoint`` on a store whose variable
+names match the ``timeseries_summary`` metadata in
+``src/use_case_3/timeseries_zarr_to_json_module/variable_mappings_local.yml``
+(for example, ``mass_balance`` or ``discharge``). The generic extraction
+store produced above is not compatible with this converter.
 
 .. code-block:: console
 
    poetry run python -m use_case_3.timeseries_zarr_to_json_module_entrypoint \
-      --input_path output/velocity.zarr \
-      --output_path output/velocity.json
+      --input_path data/ice_shelf_timeseries.zarr \
+      --output_path output/ice_shelf_timeseries.json
