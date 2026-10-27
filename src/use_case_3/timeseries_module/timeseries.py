@@ -9,11 +9,13 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import ruptures as rpt
 import seaborn as sns
 import xarray as xr
 from scipy.stats import bootstrap
 from shapely.geometry import MultiPolygon, Polygon
 from sklearn.linear_model import LinearRegression
+from statsmodels.tsa.stattools import adfuller
 
 from use_case_3.raster_tools.raster_np import RasterNp
 from use_case_3.timeseries_module.timeseries_enums import (
@@ -1766,3 +1768,106 @@ class Timeseries:
             }
         except Exception as e:  # noqa: BLE001
             self.summary_stats = {"Error": [str(e), np.nan, np.nan]}
+
+    def detect_anomalies(self: Timeseries, stationary_check: bool = False) -> tuple[pd.Series, pd.Series, pd.Series]:
+        """Identify outlier events using Tukey's method.
+
+        Detect statistical outliers in timeseries using interquartile range,
+        with optional stationarity testing.
+
+        Parameters
+        ----------
+        stationary_check : bool
+            Whether to test for stationarity. Default is False.
+
+        Returns
+        -------
+        tuple[pd.Series, pd.Series, pd.Series]
+            Boolean arrays for total outliers, upper outliers, and lower outliers.
+        """
+        if stationary_check:
+            dftest = adfuller(self.measurements.to_numpy().ravel(), autolag="AIC")[1]
+            stationary = dftest <= 0.05
+        else:
+            dftest = 0
+            stationary = True
+
+        if stationary:
+            var_q1 = self.measurements.quantile(0.25)
+            var_q3 = self.measurements.quantile(0.75)
+            var_iqr = var_q3 - var_q1
+
+            tukey_upper = var_q3 + (1.5 * var_iqr)
+            tukey_lower = var_q1 - (1.5 * var_iqr)
+
+            upper_outlier = self.measurements.to_numpy().ravel() > tukey_upper
+            lower_outlier = self.measurements.to_numpy().ravel() < tukey_lower
+
+            total_outlier = upper_outlier + lower_outlier
+        else:
+            upper_outlier = self.measurements.to_numpy().ravel() > 1e99
+            lower_outlier = self.measurements.to_numpy().ravel() < -1e99
+
+            total_outlier = upper_outlier + lower_outlier
+
+        total_outlier = pd.Series(total_outlier, index=self.measurements.index)
+        upper_outlier = pd.Series(upper_outlier, index=self.measurements.index)
+        lower_outlier = pd.Series(lower_outlier, index=self.measurements.index)
+
+        return total_outlier, upper_outlier, lower_outlier
+
+    @staticmethod
+    def _estimate_noise_sigma(x: np.ndarray) -> float:
+        """Robust noise std, insensitive to mean shifts (MAD of first differences)."""
+        d = np.diff(x[np.isfinite(x)])
+        return np.median(np.abs(d - np.median(d))) / (0.6745 * np.sqrt(2))
+
+    def detect_changes(
+        self: Timeseries, model: str = "l2", penalty: float = 2, min_size: int = 3, jump: int = 1
+    ) -> tuple[pd.Series, list[int]]:
+        """Detect change points in timeseries using PELT algorithm.
+
+        Apply Pruned Exact Linear Time algorithm to identify abrupt changes
+        in timeseries mean.
+
+        Parameters
+        ----------
+        model : str
+            Cost function for change detection. Default is "l2".
+        penalty : float
+            Penalty value for change detection. Default is 2.
+        min_size : int
+            Minimum segment size. Default is 3.
+        jump : int
+            Subsample factor for speed. Default is 1.
+
+        Returns
+        -------
+        tuple[pd.Series, list[int]]
+            change_regions : pd.Series
+                Series indicating the region each point belongs to.
+            change_points : list[int]
+                Indices of detected change points.
+        """
+        x = self.measurements.to_numpy().ravel()
+        n = x.shape[0]
+
+        sigma = self._estimate_noise_sigma(x)
+        if not np.isfinite(sigma) or sigma <= 0:
+            sigma = np.std(x)
+        if not np.isfinite(sigma) or sigma <= 0:
+            sigma = 1.0
+        x_std = x / sigma
+
+        # fill any missing values in the standardized series, doing both ffill and bfil ensures nans at start and end
+        # are filled. Only if the series is all nan will this not work.
+        x_std = pd.Series(x_std).ffill().bfill().to_numpy()
+
+        algo = rpt.Pelt(model=model, min_size=min_size, jump=jump).fit(x_std)
+        change_points = algo.predict(pen=penalty * np.log(n))
+
+        change_regions = pd.Series(
+            np.searchsorted(change_points, np.arange(n), side="right"),
+            index=self.measurements.index,
+        )
+        return change_regions, change_points
