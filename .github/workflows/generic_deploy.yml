@@ -107,7 +107,7 @@ jobs:
         # TODO: swap this out for a better base container.
         run: |
           apt-get update
-          apt-get install -y git
+          apt-get install -y git make
         # Bumping versions with github app token: https://github.com/orgs/community/discussions/25305
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -171,8 +171,7 @@ jobs:
               version=$(poetry version --short)
               git commit -am "Bump version to $version"
               git tag "$version" || exit 1
-              git push --tags
-              git push origin main
+              git push --atomic origin main "refs/tags/$version"
           else
               git tag "$version" || exit 1
               git push --tags
@@ -189,13 +188,12 @@ jobs:
       # - name: Publish package to PyPI
       #   run: |
       #     poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
+      #     poetry build
       #     poetry publish
 
       - name: Build documentation
         run: |
           cd docs/
-          apt-get update
-          apt-get install -y build-essential
           poetry run make html
 
       - name: Deploy documentation to GitHub Pages
