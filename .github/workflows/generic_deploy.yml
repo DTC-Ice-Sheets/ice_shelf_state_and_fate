@@ -84,7 +84,7 @@ jobs:
 
   deploy_package_and_cleanup:
     needs: generate_container_name
-    if: ${{ github.ref_name == 'main' }}
+    # if: ${{ github.ref_name == 'main' }}
     # delete docker images that are no longer needed (notionally because we just merged the associated branch into main)
     runs-on: ubuntu-latest
     container:
@@ -116,6 +116,14 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
+      - name: Copy checked out repo to /app
+        # Poetry determines whether to create a new venv or use an existing one based on the location of the package
+        # code in the file system. In the container Dockerfile, we already created a venv with this package's
+        # dependencies. We need to copy over the repository code into the Dockerfile WORKDIR (/app) so that the next
+        # step reuses the venv that already exists.
+        run: |
+          cp -r ${GITHUB_WORKSPACE}/. /app/
 
       - name: Set up Python
         id: setup-python
@@ -151,6 +159,11 @@ jobs:
           git config --global pull.rebase false
           git tag -d $(git tag -l)
           git fetch --tags
+
+      # - name: Configure git authentication
+      #   env:
+      #     GH_ADMIN_PAT: ${{ secrets.GH_ADMIN_PAT }}
+      #   run: git config --global url."https://${GH_ADMIN_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Install dependencies
         if: steps.load-cached-poetry-venv.outputs.cache-hit != 'true'
