@@ -49,7 +49,7 @@ jobs:
       - name: Define container names
         id: name_container
         run: |
-          echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_production" >> $GITHUB_OUTPUT
+          echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_${{ inputs.container_suffix }}" | awk '{print tolower($0)}' >> $GITHUB_OUTPUT
           echo "dashboard_image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_dashboard" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v5
