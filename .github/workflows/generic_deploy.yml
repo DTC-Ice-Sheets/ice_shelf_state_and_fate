@@ -83,7 +83,7 @@ jobs:
           rm -f .env
 
   deploy_package_and_cleanup:
-    needs: generate_container_name
+    needs: [generate_container_name, build_and_push_production_container]
     # if: ${{ github.ref_name == 'main' }}
     # delete docker images that are no longer needed (notionally because we just merged the associated branch into main)
     runs-on: ubuntu-latest
