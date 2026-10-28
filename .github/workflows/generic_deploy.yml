@@ -56,7 +56,7 @@ jobs:
 
   deploy_package_and_cleanup:
     # releases should only happen from main
-    # if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     defaults:
       run:
