@@ -28,10 +28,13 @@ jobs:
       - id: specify
         run: |
           echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_${{ inputs.container_suffix }}" | awk '{print tolower($0)}' >> $GITHUB_OUTPUT
+          echo "dashboard_image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_dashboard" >> $GITHUB_OUTPUT
     outputs:
       image_name: ${{ steps.specify.outputs.image_name }}
+      dashboard_image_name: ${{ steps.specify.outputs.dashboard_image_name }}
 
   build_and_push_production_container:
+    needs: generate_container_name
     runs-on: ubuntu-latest
     container:
       image: docker:27.4
@@ -46,12 +49,6 @@ jobs:
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_PASSWORD }}
 
-      - name: Define container names
-        id: name_container
-        run: |
-          echo "image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_${{ inputs.container_suffix }}" | awk '{print tolower($0)}' >> $GITHUB_OUTPUT
-          echo "dashboard_image_name=7sy3luly.c1.de1.container-registry.ovh.net/dtc-ice-sheets/${{ inputs.package_name }}_dashboard" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@v5
         with:
           fetch-depth: "2"
@@ -63,19 +60,19 @@ jobs:
         # We use Docker BuildKit to ensure the GitHub token remains a secret and is not shown in plaintext in build logs
         run: |
           DOCKER_BUILDKIT=1 docker build \
-            --cache-from ${{ steps.name_container.outputs.image_name }} \
+            --cache-from ${{ needs.generate_container_name.outputs.image_name }} \
             --secret id=github_token,src=.gh_token.txt \
-            --tag ${{ steps.name_container.outputs.image_name }} -f Dockerfile .
-          docker push "${{ steps.name_container.outputs.image_name }}"
+            --tag ${{ needs.generate_container_name.outputs.image_name }} -f Dockerfile .
+          docker push "${{ needs.generate_container_name.outputs.image_name }}"
 
       - name: Build and push this package's dashboard image
         # We use Docker BuildKit to ensure the GitHub token remains a secret and is not shown in plaintext in build logs
         run: |
           DOCKER_BUILDKIT=1 docker build \
-            --cache-from ${{ steps.name_container.outputs.dashboard_image_name }} \
+            --cache-from ${{ needs.generate_container_name.outputs.dashboard_image_name }} \
             --secret id=github_token,src=.gh_token.txt \
-            --tag ${{ steps.name_container.outputs.dashboard_image_name }} -f dashboard.dockerfile .
-          docker push "${{ steps.name_container.outputs.dashboard_image_name }}"
+            --tag ${{ needs.generate_container_name.outputs.dashboard_image_name }} -f dashboard.dockerfile .
+          docker push "${{ needs.generate_container_name.outputs.dashboard_image_name }}"
 
       - name: Clean up secrets
         run: |
@@ -160,10 +157,10 @@ jobs:
           git tag -d $(git tag -l)
           git fetch --tags
 
-      # - name: Configure git authentication
-      #   env:
-      #     GH_ADMIN_PAT: ${{ secrets.GH_ADMIN_PAT }}
-      #   run: git config --global url."https://${GH_ADMIN_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+      - name: Configure git authentication
+        env:
+          GH_ADMIN_PAT: ${{ secrets.GH_ADMIN_PAT }}
+        run: git config --global url."https://${GH_ADMIN_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Install dependencies
         if: steps.load-cached-poetry-venv.outputs.cache-hit != 'true'
