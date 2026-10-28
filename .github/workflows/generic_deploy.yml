@@ -72,7 +72,7 @@ jobs:
           app-id: ${{ secrets.VERSION_BUMPER_APPID }}
           private-key: ${{ secrets.VERSION_BUMPER_SECRET }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
