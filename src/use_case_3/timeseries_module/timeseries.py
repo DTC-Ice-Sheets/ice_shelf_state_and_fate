@@ -110,8 +110,16 @@ class Timeseries:
 
         # If the input data has two or more dimensions, then it is necessary to aggregate, otherwise we assume it is a
         # 1d timeseries and simple add these to the timeseries object.
-        # print(self.label, data_observations.shape)
-        if len(data_observations.shape) > 1 and data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
+        if "point" in data[measurement_name].dims:
+            self._process_timeseries_point(
+                ds=data,
+                period=period,
+                aggregate=aggregate,
+                measurement_name=measurement_name,
+                dims=tuple(data[measurement_name].dims),
+                measurement_uncertainty_name=measurement_uncertainty_name,
+            )
+        elif len(data_observations.shape) > 1 and data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
             self._process_timeseries_nd(
                 data_observations=data_observations,
                 data_uncertainties=data_uncertainties,
@@ -183,6 +191,356 @@ class Timeseries:
         else:
             self.measurement_coverage = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
             self.measurement_coverage_n = pd.Series([np.nan] * len(self.measurements), index=self.measurements.index)
+
+    def _process_timeseries_point(
+        self: Timeseries,
+        ds: xr.Dataset,
+        period: AggregationPeriod,
+        aggregate: AggregationStrategy,
+        measurement_name: str,
+        dims: tuple[str, ...],
+        measurement_uncertainty_name: str | None = None,
+        mc_n_samples: int = 500,
+        seed: int = 42,
+    ) -> None:
+        """Aggregate point-based observations into a regular time series.
+
+        Group measurements by period, reduce them across ``dims``, and store
+        the aggregated values and their uncertainties on this instance.
+
+        Parameters
+        ----------
+        ds : xr.Dataset
+            Provide the point-based observations and their time, x, and y
+            coordinates.
+        period : AggregationPeriod
+            Select the time period used to group observations.
+        aggregate : AggregationStrategy
+            Select the statistic used to reduce measurements. Do not use
+            ``AggregationStrategy.NONE``.
+        measurement_name : str
+            Name the dataset variable containing measurements.
+        dims : tuple[str, ...]
+            Specify the dimensions over which to aggregate.
+        measurement_uncertainty_name : str | None
+            Name the variable containing measurement uncertainties, or pass
+            ``None`` when uncertainties are unavailable.
+        mc_n_samples : int
+            Set the number of Monte Carlo samples used to estimate uncertainty
+            for aggregation strategies without a direct uncertainty formula.
+        seed : int
+            Set the random seed used to generate Monte Carlo samples.
+
+        Raises
+        ------
+        ValueError
+            Raise when ``aggregate`` is ``AggregationStrategy.NONE``, a
+            required coordinate is missing, or the aggregation strategy is
+            unsupported.
+        """
+        if aggregate is AggregationStrategy.NONE:
+            raise ValueError("AggregationStrategy.NONE cannot produce a time-only series; pick a reduction.")
+
+        if "time" not in ds:
+            raise ValueError("Dataset must contain a 'time' coordinate.")
+        if "x" not in ds:
+            raise ValueError("Dataset must contain an 'x' coordinate.")
+        if "y" not in ds:
+            raise ValueError("Dataset must contain a 'y' coordinate.")
+
+        times = pd.DatetimeIndex(ds["time"].values)
+        valid = ~times.isna()
+        times = times[valid]
+
+        # Floor each timestamp to the start of its period
+        period_start = times.to_period(AggregationPeriod.pd_period_freq(period)).to_timestamp()
+
+        # Make sure the data is on a regular time axis
+        full_index = pd.date_range(
+            period_start.min(),
+            period_start.max(),
+            freq=AggregationPeriod.pd_date_range_freq(period),
+            name="time",
+        )
+
+        # Mask out invalid points and assign the period coordinate to each measurement
+        measurements = ds[measurement_name].isel(point=valid).assign_coords(period=("point", period_start.to_numpy()))
+
+        data_agg = self._process_point_measurements(
+            measurements=measurements,
+            aggregate=aggregate,
+            dims=dims,
+            full_index=full_index,
+        )
+
+        # Return only the processed measurement aggrefations if no measurement uncertainty is not provided
+        if measurement_uncertainty_name is None:
+            self._store_processed_data(data_agg, None)
+            return
+
+        # In case a measurement is Nan, but the uncertainty is not
+        measurements_unc = (
+            ds[measurement_uncertainty_name]
+            .isel(point=valid)
+            .assign_coords(period=("point", period_start.to_numpy()))
+            .where(measurements.notnull())  # noqa: PD004
+        )
+
+        data_uncertainties_agg = self._process_point_measurement_uncertainties(
+            measurements=measurements,
+            measurements_unc=measurements_unc,
+            aggregate=aggregate,
+            dims=dims,
+            full_index=full_index,
+            seed=seed,
+            mc_n_samples=mc_n_samples,
+        )
+        self._store_processed_data(data_agg, data_uncertainties_agg)
+
+    @staticmethod
+    def _process_point_measurements(
+        measurements: xr.DataArray,
+        aggregate: AggregationStrategy,
+        dims: list[str],
+        full_index: pd.DatetimeIndex,
+    ) -> pd.DataFrame:
+        """Aggregate point measurements into a regular time series.
+
+        Group measurements by period, calculate the requested statistic and
+        associated counts and standard deviations, then align the results to
+        ``full_index``.
+
+        Parameters
+        ----------
+        measurements : xr.DataArray
+            Provide point measurements with a ``period`` coordinate.
+        aggregate : AggregationStrategy
+            Select the statistic to calculate for each period.
+        dims : list[str]
+            Specify the dimensions over which to aggregate.
+        full_index : pd.DatetimeIndex
+            Provide the complete time index for the output.
+
+        Returns
+        -------
+        pd.DataFrame
+            Return the period-indexed aggregation, standard deviation, and
+            non-null observation count.
+
+        Raises
+        ------
+        ValueError
+            Raise when ``aggregate`` is unsupported.
+        """
+        grouped = measurements.groupby("period")
+
+        match aggregate:
+            case AggregationStrategy.MEAN:
+                measurements_agg = grouped.mean(dim=dims, skipna=True)
+            case AggregationStrategy.MEDIAN:
+                measurements_agg = grouped.median(dim=dims, skipna=True)
+            case AggregationStrategy.MAX:
+                measurements_agg = grouped.max(dim=dims, skipna=True)
+            case AggregationStrategy.MIN:
+                measurements_agg = grouped.min(dim=dims, skipna=True)
+            case AggregationStrategy.STD:
+                measurements_agg = grouped.std(dim=dims, skipna=True)
+            case AggregationStrategy.IQR:
+                q = grouped.quantile([0.25, 0.75], dim=dims, skipna=True)
+                measurements_agg = (q.sel(quantile=0.75) - q.sel(quantile=0.25)).drop_vars("quantile")
+            case _:
+                raise ValueError(f"Unsupported strategy: {aggregate}")
+
+        std = grouped.std(dim=dims, skipna=True)
+        n = measurements.notnull().groupby("period").sum(dim=dims)  # noqa: PD004
+
+        data_agg = pd.DataFrame(
+            {
+                "aggregation": measurements_agg.to_series(),
+                "data_std": std.to_series(),
+                "aggregation_n": n.to_series(),
+            }
+        ).reindex(full_index)
+        data_agg["aggregation_n"] = data_agg["aggregation_n"].fillna(0).astype("int64")
+
+        return data_agg
+
+    def _process_point_measurement_uncertainties(
+        self,
+        measurements: xr.DataArray,
+        measurements_unc: xr.DataArray,
+        aggregate: AggregationStrategy,
+        dims: list[str],
+        full_index: pd.DatetimeIndex,
+        seed: int,
+        mc_n_samples: int,
+    ) -> pd.DataFrame:
+        """Aggregate point measurement uncertainties by period.
+
+        Align measurements and uncertainties, estimate each period's
+        aggregated uncertainty, and calculate uncertainty standard deviations
+        and counts.
+
+        Parameters
+        ----------
+        measurements : xr.DataArray
+            Provide point measurements with a ``period`` coordinate.
+        measurements_unc : xr.DataArray
+            Provide corresponding uncertainties with a ``period`` coordinate.
+        aggregate : AggregationStrategy
+            Select the measurement aggregation strategy for uncertainty
+            propagation.
+        dims : list[str]
+            Specify the dimensions over which to aggregate.
+        full_index : pd.DatetimeIndex
+            Provide the complete time index for the output.
+        seed : int
+            Set the random seed for uncertainty estimates that use Monte Carlo
+            sampling.
+        mc_n_samples : int
+            Set the number of Monte Carlo samples for uncertainty estimates.
+
+        Returns
+        -------
+        pd.DataFrame
+            Return the period-indexed aggregate uncertainty, uncertainty
+            standard deviation, and non-null uncertainty count.
+        """
+        measurements_unc_grouped = measurements_unc.groupby("period")
+
+        measurements_unc_n = measurements_unc.notnull().groupby("period").sum(dim=dims)  # noqa: PD004
+        measurements_unc_std = measurements_unc_grouped.std(dim=dims, skipna=True)
+
+        # Depending on the point data dims, these may be different. Boradcast to align.
+        measurement_reshaped, measurement_unc_reshaped, period_reshaped = xr.broadcast(
+            measurements, measurements_unc, measurements["period"]
+        )
+        # Flatten across dims.
+        flat = pd.DataFrame(
+            {
+                "measurement": measurement_reshaped.transpose(*measurements.dims).to_numpy().ravel(),
+                "measurement_unc": measurement_unc_reshaped.transpose(*measurements.dims).to_numpy().ravel(),
+                "period": period_reshaped.transpose(*measurements.dims).to_numpy().ravel(),
+            }
+        ).dropna(subset=["measurement", "measurement_unc"])
+
+        # Calculate the uncertainty for each group
+        rng = np.random.default_rng(seed)
+        measurements_unc_agg = pd.Series(
+            {
+                period: self._group_uncertainty(
+                    group["measurement"].to_numpy(), group["measurement_unc"].to_numpy(), aggregate, mc_n_samples, rng
+                )
+                for period, group in flat.groupby("period")
+            },
+            dtype=float,
+            name="uncertainty",
+        )
+        measurements_unc_agg.index.name = "period"
+
+        data_uncertainties_agg = pd.DataFrame(
+            {
+                "uncertainty": measurements_unc_agg,
+                "uncertainty_std": measurements_unc_std.to_series(),
+                "uncertainty_n": measurements_unc_n.to_series(),
+            }
+        ).reindex(full_index)
+        data_uncertainties_agg["uncertainty_n"] = data_uncertainties_agg["uncertainty_n"].fillna(0).astype("int64")
+
+        return data_uncertainties_agg
+
+    @staticmethod
+    def _stat(x: np.ndarray, strategy: AggregationStrategy, axis: int = -1) -> np.ndarray | float:
+        """Compute a statistic along an array axis.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the values to summarize.
+        strategy : AggregationStrategy
+            Select the statistic to compute.
+        axis : int
+            Select the axis along which to compute the statistic.
+
+        Returns
+        -------
+        np.ndarray | float
+            Return the computed statistic.
+
+        Raises
+        ------
+        ValueError
+            Raise when ``strategy`` is unsupported.
+        """
+        match strategy:
+            case AggregationStrategy.MEAN:
+                return x.mean(axis=axis)
+            case AggregationStrategy.MEDIAN:
+                return np.median(x, axis=axis)
+            case AggregationStrategy.MAX:
+                return x.max(axis=axis)
+            case AggregationStrategy.MIN:
+                return x.min(axis=axis)
+            case AggregationStrategy.STD:
+                return x.std(axis=axis, ddof=1)
+            case AggregationStrategy.IQR:
+                q75, q25 = np.percentile(x, [75, 25], axis=axis)
+                return q75 - q25
+        raise ValueError(f"Unsupported strategy: {strategy}")
+
+    @staticmethod
+    def _group_uncertainty(
+        x: np.ndarray,
+        s: np.ndarray,
+        strategy: AggregationStrategy,
+        mc_n_samples: int,
+        rng: np.random.Generator,
+    ) -> float:
+        """Estimate uncertainty for an aggregated group.
+
+        Use the paired finite values from ``x`` and ``s``. Apply a direct
+        propagation formula when available; otherwise estimate uncertainty
+        from Monte Carlo samples.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Provide the measurements in the group.
+        s : np.ndarray
+            Provide the corresponding measurement uncertainties.
+        strategy : AggregationStrategy
+            Select the aggregation statistic whose uncertainty to estimate.
+        mc_n_samples : int
+            Set the number of Monte Carlo samples for the estimate.
+        rng : np.random.Generator
+            Provide the random number generator used to draw samples.
+
+        Returns
+        -------
+        float
+            Return the estimated uncertainty, or ``numpy.nan`` when the group
+            contains no finite measurement-uncertainty pairs.
+        """
+        mask_finite = np.isfinite(x) & np.isfinite(s)
+        x, s = x[mask_finite], s[mask_finite]
+        n = x.size
+        if n == 0:
+            return np.nan
+
+        match strategy:
+            case AggregationStrategy.MEAN:
+                return np.sqrt(np.sum(s**2)) / n
+            case AggregationStrategy.MAX:
+                return s[np.argmax(x)]
+            case AggregationStrategy.MIN:
+                return s[np.argmin(x)]
+            case AggregationStrategy.STD:
+                sd = np.nanstd(x)
+                return np.sqrt(np.sum(((x - np.nanmean(x)) * s) ** 2)) / ((n - 1) * sd)
+
+        mc_samples = x + rng.normal(size=(mc_n_samples, n)) * s
+        stats = Timeseries._stat(mc_samples, strategy=strategy, axis=1)
+        return stats.std()
 
     def _process_timeseries_nd(
         self: Timeseries,
@@ -1652,6 +2010,19 @@ class Timeseries:
 
     @staticmethod
     def _safe_serialise(x: Any) -> Any:  # noqa: ANN401
+        """Convert a NumPy scalar to its Python scalar value.
+
+        Parameters
+        ----------
+        x : Any
+            Provide the value to convert.
+
+        Returns
+        -------
+        Any
+            Return the corresponding Python scalar for a NumPy scalar;
+            otherwise, return ``x`` unchanged.
+        """
         return x.item() if isinstance(x, np.generic) else x
 
     def summary_statistics(self: Timeseries) -> None:
