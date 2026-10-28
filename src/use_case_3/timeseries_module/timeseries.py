@@ -269,7 +269,7 @@ class Timeseries:
         data_agg = self._process_point_measurements(
             measurements=measurements,
             aggregate=aggregate,
-            dims=dims,
+            dims=list(dims),
             full_index=full_index,
         )
 
@@ -290,7 +290,7 @@ class Timeseries:
             measurements=measurements,
             measurements_unc=measurements_unc,
             aggregate=aggregate,
-            dims=dims,
+            dims=list(dims),
             full_index=full_index,
             seed=seed,
             mc_n_samples=mc_n_samples,
@@ -450,7 +450,7 @@ class Timeseries:
         return data_uncertainties_agg
 
     @staticmethod
-    def _stat(x: np.ndarray, strategy: AggregationStrategy, axis: int = -1) -> np.ndarray | float:
+    def _compute_stats(x: np.ndarray, strategy: AggregationStrategy, axis: int = -1) -> np.ndarray | float:
         """Compute a statistic along an array axis.
 
         Parameters
@@ -539,7 +539,7 @@ class Timeseries:
                 return np.sqrt(np.sum(((x - np.nanmean(x)) * s) ** 2)) / ((n - 1) * sd)
 
         mc_samples = x + rng.normal(size=(mc_n_samples, n)) * s
-        stats = Timeseries._stat(mc_samples, strategy=strategy, axis=1)
+        stats = Timeseries._compute_stats(mc_samples, strategy=strategy, axis=1)
         return stats.std()
 
     def _process_timeseries_nd(
