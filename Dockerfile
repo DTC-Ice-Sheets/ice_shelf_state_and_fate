@@ -24,5 +24,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 COPY . /app/
 RUN poetry install --only-root
 
-ENV DTC_WRAPPER_MODULE_NAME=use_case_3
+ENV DTC_WRAPPER_MODULE_NAME=ice_shelf_state_and_fate
 CMD ["poetry", "run", "dtc-wrapper"]
