@@ -28,8 +28,8 @@ Timeseries extraction
 ---------------------
 
 Run ``timeseries_module_entrypoint`` to extract a measurement from each input
-dataset and save a timeseries Zarr store. Repeat ``--dataset_paths`` for each
-input dataset:
+dataset and save a timeseries Zarr store in a standardised format. Repeat ``--dataset_paths``
+for each input dataset:
 
 .. code-block:: console
 
