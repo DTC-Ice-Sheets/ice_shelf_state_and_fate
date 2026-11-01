@@ -449,13 +449,15 @@ class Timeseries:
             measurements, measurements_unc, measurements["period"]
         )
         # Flatten across dims.
+        # Keep rows with missing uncertainties so MAX/MIN select the extremum
+        # over the full measurement support; _group_uncertainty handles them.
         flat = pd.DataFrame(
             {
                 "measurement": measurement_reshaped.transpose(*measurements.dims).to_numpy().ravel(),
                 "measurement_unc": measurement_unc_reshaped.transpose(*measurements.dims).to_numpy().ravel(),
                 "period": period_reshaped.transpose(*measurements.dims).to_numpy().ravel(),
             }
-        ).dropna(subset=["measurement", "measurement_unc"])
+        ).dropna(subset=["measurement"])
 
         # Calculate the uncertainty for each group
         rng = np.random.default_rng(seed)
@@ -599,7 +601,10 @@ class Timeseries:
     ) -> float:
         """Estimate uncertainty for an aggregated group.
 
-        Use the paired finite values from ``x`` and ``s``. Apply a direct
+        For ``MAX`` and ``MIN``, select the extremum over all finite
+        measurements and return its uncertainty, or ``numpy.nan`` when the
+        selected extremum has no finite uncertainty. For other strategies,
+        use the paired finite values from ``x`` and ``s``: apply a direct
         propagation formula when available; otherwise estimate uncertainty
         from Monte Carlo samples.
 
@@ -619,10 +624,23 @@ class Timeseries:
         Returns
         -------
         float
-            Return the estimated uncertainty, or ``numpy.nan`` when the group
-            contains no finite measurement-uncertainty pairs.
+            Return the estimated uncertainty, or ``numpy.nan`` when it cannot
+            be determined.
         """
-        mask_finite = np.isfinite(x) & np.isfinite(s)
+        mask_x_finite = np.isfinite(x)
+
+        # Select MAX/MIN over the full measurement support so the reported
+        # uncertainty belongs to the actual extremum, even when other
+        # measurements lack uncertainties.
+        if strategy in (AggregationStrategy.MAX, AggregationStrategy.MIN):
+            if not mask_x_finite.any():
+                return np.nan
+            x_finite, s_finite = x[mask_x_finite], s[mask_x_finite]
+            idx = np.argmax(x_finite) if strategy is AggregationStrategy.MAX else np.argmin(x_finite)
+            unc = s_finite[idx]
+            return float(unc) if np.isfinite(unc) else np.nan
+
+        mask_finite = mask_x_finite & np.isfinite(s)
         x, s = x[mask_finite], s[mask_finite]
         n = x.size
         if n == 0:
@@ -631,10 +649,6 @@ class Timeseries:
         match strategy:
             case AggregationStrategy.MEAN:
                 return np.sqrt(np.sum(s**2)) / n
-            case AggregationStrategy.MAX:
-                return s[np.argmax(x)]
-            case AggregationStrategy.MIN:
-                return s[np.argmin(x)]
             case AggregationStrategy.STD:
                 sd = np.nanstd(x)
                 return np.sqrt(np.sum(((x - np.nanmean(x)) * s) ** 2)) / (n * sd)

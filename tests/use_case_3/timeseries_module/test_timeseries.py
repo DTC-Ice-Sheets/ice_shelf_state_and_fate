@@ -594,6 +594,52 @@ def test__group_uncertainty_filters_nonfinite_pairs_and_returns_nan_for_empty_gr
     assert np.isnan(empty_result)
 
 
+@pytest.mark.parametrize(
+    ("strategy", "uncertainties", "expected"),
+    [
+        # Extremum has no uncertainty: report unknown, not a neighbour's value
+        (AggregationStrategy.MAX, [0.4, np.nan], np.nan),
+        (AggregationStrategy.MIN, [np.nan, 0.5], np.nan),
+        # Extremum has an uncertainty even though another measurement does not
+        (AggregationStrategy.MAX, [np.nan, 0.5], 0.5),
+        (AggregationStrategy.MIN, [0.4, np.nan], 0.4),
+    ],
+)
+def test__group_uncertainty_extremum_keeps_measurement_support(strategy, uncertainties, expected):
+    result = Timeseries._group_uncertainty(
+        x=np.array([1.0, 3.0]),
+        s=np.array(uncertainties),
+        strategy=strategy,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected)
+
+
+def test__group_uncertainty_extremum_ignores_nan_measurements():
+    result = Timeseries._group_uncertainty(
+        x=np.array([1.0, np.nan, 3.0]),
+        s=np.array([0.4, 0.9, 0.5]),
+        strategy=AggregationStrategy.MAX,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+    empty_result = Timeseries._group_uncertainty(
+        x=np.array([np.nan]),
+        s=np.array([0.5]),
+        strategy=AggregationStrategy.MAX,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+
+    assert result == pytest.approx(0.5)
+    assert np.isnan(empty_result)
+
+
 def test__group_uncertainty_uses_monte_carlo_for_other_statistics():
     values = np.array([1.0, 2.0, 4.0, 5.0])
     uncertainties = np.array([0.1, 0.2, 0.3, 0.4])
