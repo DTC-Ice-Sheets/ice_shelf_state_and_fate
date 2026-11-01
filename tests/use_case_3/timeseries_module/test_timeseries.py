@@ -374,7 +374,7 @@ def test__process_timeseries_point_rejects_no_aggregation(timeseries_obj_fixture
         )
 
 
-def test__process_point_measurements_aggregates_and_aligns_periods():
+def test__process_point_measurements_aggregates_and_aligns_periods(timeseries_obj_fixture):
     periods = pd.to_datetime(["2020-01-01", "2020-01-01", "2020-03-01"])
     measurements = xr.DataArray(
         [1.0, 3.0, 5.0],
@@ -383,7 +383,7 @@ def test__process_point_measurements_aggregates_and_aligns_periods():
     )
     full_index = pd.date_range("2020-01-01", "2020-03-01", freq="MS", name="time")
 
-    result = Timeseries._process_point_measurements(
+    result = timeseries_obj_fixture._process_point_measurements(
         measurements=measurements,
         aggregate=AggregationStrategy.MEAN,
         dims=["point"],
@@ -396,7 +396,7 @@ def test__process_point_measurements_aggregates_and_aligns_periods():
     np.testing.assert_allclose(result["aggregation_n"], [2, 0, 1])
 
 
-def test__process_point_measurements_rejects_unsupported_strategy():
+def test__process_point_measurements_rejects_unsupported_strategy(timeseries_obj_fixture):
     periods = pd.to_datetime(["2020-01-01"])
     measurements = xr.DataArray(
         [1.0],
@@ -405,12 +405,94 @@ def test__process_point_measurements_rejects_unsupported_strategy():
     )
 
     with pytest.raises(ValueError, match="Unsupported strategy"):
-        Timeseries._process_point_measurements(
+        timeseries_obj_fixture._process_point_measurements(
             measurements=measurements,
             aggregate=AggregationStrategy.NONE,
             dims=["point"],
             full_index=pd.date_range("2020-01-01", periods=1, freq="MS", name="time"),
         )
+
+
+@pytest.fixture
+def point_dataset_fixture():
+    # Points: inside (1, 1), on boundary (0, 1), outside (3, 3)
+    return xr.Dataset(
+        {"measurement": ("point", [10.0, 20.0, 30.0])},
+        coords={
+            "x": ("point", [1.0, 0.0, 3.0]),
+            "y": ("point", [1.0, 1.0, 3.0]),
+        },
+    )
+
+
+@pytest.fixture
+def square_geometry_fixture():
+    return Polygon(((0, 0), (0, 2), (2, 2), (2, 0), (0, 0)))
+
+
+def test__mask_point_dataset_keeps_points_inside_geometry(point_dataset_fixture, square_geometry_fixture):
+    masked = Timeseries._mask_point_dataset(point_dataset_fixture, square_geometry_fixture)
+
+    assert masked.sizes["point"] == 2
+    np.testing.assert_allclose(masked["measurement"].values, [10.0, 20.0])
+    np.testing.assert_allclose(masked["x"].values, [1.0, 0.0])
+    np.testing.assert_allclose(masked["y"].values, [1.0, 1.0])
+
+
+def test__mask_point_dataset_excludes_boundary_points(point_dataset_fixture, square_geometry_fixture):
+    masked = Timeseries._mask_point_dataset(point_dataset_fixture, square_geometry_fixture, include_boundary=False)
+
+    assert masked.sizes["point"] == 1
+    np.testing.assert_allclose(masked["measurement"].values, [10.0])
+
+
+def test__mask_point_dataset_no_points_in_geometry(point_dataset_fixture):
+    geometry = Polygon(((10, 10), (10, 11), (11, 11), (11, 10), (10, 10)))
+
+    masked = Timeseries._mask_point_dataset(point_dataset_fixture, geometry)
+
+    assert masked.sizes["point"] == 0
+
+
+def test__mask_point_dataset_custom_coordinate_names(square_geometry_fixture):
+    ds = xr.Dataset(
+        {"measurement": ("point", [10.0, 30.0])},
+        coords={
+            "easting": ("point", [1.0, 3.0]),
+            "northing": ("point", [1.0, 3.0]),
+        },
+    )
+
+    masked = Timeseries._mask_point_dataset(ds, square_geometry_fixture, x_col="easting", y_col="northing")
+
+    np.testing.assert_allclose(masked["measurement"].values, [10.0])
+
+
+def test__mask_point_dataset_missing_coordinate_raises(square_geometry_fixture):
+    ds = xr.Dataset(
+        {"measurement": ("point", [10.0])},
+        coords={"x": ("point", [1.0])},
+    )
+
+    with pytest.raises(ValueError, match="must contain a 'y' coordinate"):
+        Timeseries._mask_point_dataset(ds, square_geometry_fixture)
+
+
+def test__mask_point_dataset_mismatched_dims_raises(square_geometry_fixture):
+    ds = xr.Dataset(
+        coords={
+            "x": ("point", [1.0, 2.0]),
+            "y": ("other", [1.0, 2.0]),
+        },
+    )
+
+    with pytest.raises(ValueError, match="1-D along the same point dimension"):
+        Timeseries._mask_point_dataset(ds, square_geometry_fixture)
+
+
+def test__mask_point_dataset_empty_geometry_raises(point_dataset_fixture):
+    with pytest.raises(ValueError, match="Mask geometry is empty"):
+        Timeseries._mask_point_dataset(point_dataset_fixture, Polygon())
 
 
 def test__process_point_measurement_uncertainties_aggregates_and_aligns_periods():
@@ -477,7 +559,7 @@ def test__compute_stats_rejects_unsupported_strategy():
         (AggregationStrategy.MEAN, np.sqrt(0.4**2 + 0.5**2) / 2),
         (AggregationStrategy.MAX, 0.5),
         (AggregationStrategy.MIN, 0.4),
-        (AggregationStrategy.STD, np.sqrt(0.4**2 + 0.5**2)),
+        (AggregationStrategy.STD, np.sqrt(0.4**2 + 0.5**2) / 2),
     ],
 )
 def test__group_uncertainty_uses_direct_propagation(strategy, expected):

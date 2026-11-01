@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import ruptures as rpt
 import seaborn as sns
+import shapely
 import xarray as xr
 from scipy.stats import bootstrap
 from shapely.geometry import MultiPolygon, Polygon
@@ -118,6 +119,9 @@ class Timeseries:
                 measurement_name=measurement_name,
                 dims=tuple(data[measurement_name].dims),
                 measurement_uncertainty_name=measurement_uncertainty_name,
+                apply_mask=apply_mask,
+                t0_normalisation=t0_normalisation,
+                mask_geometry=mask_geometry,
             )
         elif len(data_observations.shape) > 1 and data_observations.shape[1] > 1 and data_observations.shape[2] > 1:
             self._process_timeseries_nd(
@@ -202,6 +206,9 @@ class Timeseries:
         measurement_uncertainty_name: str | None = None,
         mc_n_samples: int = 500,
         seed: int = 42,
+        t0_normalisation: bool = False,
+        apply_mask: bool = False,
+        mask_geometry: Polygon | MultiPolygon | None = None,
     ) -> None:
         """Aggregate point-based observations into a regular time series.
 
@@ -230,6 +237,12 @@ class Timeseries:
             for aggregation strategies without a direct uncertainty formula.
         seed : int
             Set the random seed used to generate Monte Carlo samples.
+        t0_normalisation : bool
+            Normalise the time series to start at 0.
+        apply_mask : bool
+            Whether to mask the point data to a given geometry
+        mask_geometry : Polygon | MultiPolygon | None
+            The geometry with which to use as a mask.
 
         Raises
         ------
@@ -248,11 +261,16 @@ class Timeseries:
         if "y" not in ds:
             raise ValueError("Dataset must contain a 'y' coordinate.")
 
+        if mask_geometry is not None and apply_mask:
+            ds = self._mask_point_dataset(ds, mask_geometry, x_col="x", y_col="y")
+
         times = pd.DatetimeIndex(ds["time"].values)
         valid = ~times.isna()
         times = times[valid]
 
         # Floor each timestamp to the start of its period
+        if period is None:
+            period = AggregationPeriod.MONTH
         period_start = times.to_period(AggregationPeriod.pd_period_freq(period)).to_timestamp()
 
         # Make sure the data is on a regular time axis
@@ -271,6 +289,7 @@ class Timeseries:
             aggregate=aggregate,
             dims=list(dims),
             full_index=full_index,
+            t0_normalisation=t0_normalisation,
         )
 
         # Return only the processed measurement aggrefations if no measurement uncertainty is not provided
@@ -294,15 +313,17 @@ class Timeseries:
             full_index=full_index,
             seed=seed,
             mc_n_samples=mc_n_samples,
+            t0_normalisation=t0_normalisation,
         )
         self._store_processed_data(data_agg, data_uncertainties_agg)
 
-    @staticmethod
     def _process_point_measurements(
+        self: Timeseries,
         measurements: xr.DataArray,
         aggregate: AggregationStrategy,
         dims: list[str],
         full_index: pd.DatetimeIndex,
+        t0_normalisation: bool = False,
     ) -> pd.DataFrame:
         """Aggregate point measurements into a regular time series.
 
@@ -320,6 +341,8 @@ class Timeseries:
             Specify the dimensions over which to aggregate.
         full_index : pd.DatetimeIndex
             Provide the complete time index for the output.
+        t0_normalisation : bool
+            Whether to normalise the measurements to the initial time point.
 
         Returns
         -------
@@ -354,6 +377,13 @@ class Timeseries:
         std = grouped.std(dim=dims, skipna=True)
         n = measurements.notnull().groupby("period").sum(dim=dims)  # noqa: PD004
 
+        if t0_normalisation:
+            normalised = self._t0_normalisation(
+                measurements_agg.to_numpy(),
+                normalisation_type=NormalisationType.FIRST,
+            )
+            measurements_agg = measurements_agg.copy(data=normalised)
+
         data_agg = pd.DataFrame(
             {
                 "aggregation": measurements_agg.to_series(),
@@ -366,7 +396,7 @@ class Timeseries:
         return data_agg
 
     def _process_point_measurement_uncertainties(
-        self,
+        self: Timeseries,
         measurements: xr.DataArray,
         measurements_unc: xr.DataArray,
         aggregate: AggregationStrategy,
@@ -374,6 +404,7 @@ class Timeseries:
         full_index: pd.DatetimeIndex,
         seed: int,
         mc_n_samples: int,
+        t0_normalisation: bool = False,
     ) -> pd.DataFrame:
         """Aggregate point measurement uncertainties by period.
 
@@ -399,6 +430,8 @@ class Timeseries:
             sampling.
         mc_n_samples : int
             Set the number of Monte Carlo samples for uncertainty estimates.
+        t0_normalisation : bool
+            Apply T0 normalisation to the aggregated uncertainties, by default False.
 
         Returns
         -------
@@ -438,6 +471,16 @@ class Timeseries:
         )
         measurements_unc_agg.index.name = "period"
 
+        if t0_normalisation and not measurements_unc_agg.empty:
+            measurements_unc_agg = pd.Series(
+                self._t0_normalisation_uncertainties(
+                    measurements_unc_agg.to_numpy(),
+                    normalisation_type=NormalisationType.FIRST,
+                ),
+                index=measurements_unc_agg.index,
+                name=measurements_unc_agg.name,
+            )
+
         data_uncertainties_agg = pd.DataFrame(
             {
                 "uncertainty": measurements_unc_agg,
@@ -448,6 +491,64 @@ class Timeseries:
         data_uncertainties_agg["uncertainty_n"] = data_uncertainties_agg["uncertainty_n"].fillna(0).astype("int64")
 
         return data_uncertainties_agg
+
+    @staticmethod
+    def _mask_point_dataset(
+        ds: xr.Dataset,
+        geometry: Polygon | MultiPolygon,
+        x_col: str = "x",
+        y_col: str = "y",
+        include_boundary: bool = True,
+    ) -> xr.Dataset:
+        """Subset a point dataset to the points falling within a geometry.
+
+        Parameters
+        ----------
+        ds : xr.Dataset
+            Provide the point dataset to mask.
+        geometry : Polygon | MultiPolygon
+            Provide the geometry used to select points.
+        x_col : str
+            Name the coordinate holding the point x positions.
+        y_col : str
+            Name the coordinate holding the point y positions.
+        include_boundary : bool
+            Keep points lying exactly on the geometry boundary when True;
+            keep only strictly interior points when False.
+
+        Returns
+        -------
+        xr.Dataset
+            Return the dataset subset along the point dimension to the
+            points inside the geometry.
+
+        Raises
+        ------
+        ValueError
+            Raise when ``x_col`` or ``y_col`` is missing from ``ds``, when
+            they are not 1-D along the same point dimension, or when
+            ``geometry`` is empty.
+        """
+        for name in (x_col, y_col):
+            if name not in ds:
+                raise ValueError(f"Dataset must contain a '{name}' coordinate.")
+
+        x = ds[x_col]
+        y = ds[y_col]
+
+        if x.ndim != 1 or y.ndim != 1 or x.dims != y.dims:
+            raise ValueError(f"'{x_col}' and '{y_col}' must be 1-D along the same point dimension.")
+        if geometry.is_empty:
+            raise ValueError("Mask geometry is empty.")
+
+        (point_dim,) = x.dims
+
+        shapely.prepare(geometry)
+
+        test = shapely.intersects_xy if include_boundary else shapely.contains_xy
+        keep = test(geometry, x.values, y.values)
+
+        return ds.isel({point_dim: np.flatnonzero(keep)})
 
     @staticmethod
     def _compute_stats(x: np.ndarray, strategy: AggregationStrategy, axis: int = -1) -> np.ndarray | float:
@@ -536,7 +637,7 @@ class Timeseries:
                 return s[np.argmin(x)]
             case AggregationStrategy.STD:
                 sd = np.nanstd(x)
-                return np.sqrt(np.sum(((x - np.nanmean(x)) * s) ** 2)) / ((n - 1) * sd)
+                return np.sqrt(np.sum(((x - np.nanmean(x)) * s) ** 2)) / (n * sd)
 
         mc_samples = x + rng.normal(size=(mc_n_samples, n)) * s
         stats = Timeseries._compute_stats(mc_samples, strategy=strategy, axis=1)
