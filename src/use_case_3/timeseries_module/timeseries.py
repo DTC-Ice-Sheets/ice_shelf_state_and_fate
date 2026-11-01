@@ -270,16 +270,16 @@ class Timeseries:
 
         # Floor each timestamp to the start of its period
         if period is None:
-            period = AggregationPeriod.MONTH
-        period_start = times.to_period(AggregationPeriod.pd_period_freq(period)).to_timestamp()
-
-        # Make sure the data is on a regular time axis
-        full_index = pd.date_range(
-            period_start.min(),
-            period_start.max(),
-            freq=AggregationPeriod.pd_date_range_freq(period),
-            name="time",
-        )
+            period_start = times
+            full_index = times.unique().sort_values().rename("time")
+        else:
+            period_start = times.to_period(AggregationPeriod.pd_period_freq(period)).to_timestamp()
+            full_index = pd.date_range(
+                period_start.min(),
+                period_start.max(),
+                freq=AggregationPeriod.pd_date_range_freq(period),
+                name="time",
+            )
 
         # Mask out invalid points and assign the period coordinate to each measurement
         measurements = ds[measurement_name].isel(point=valid).assign_coords(period=("point", period_start.to_numpy()))
