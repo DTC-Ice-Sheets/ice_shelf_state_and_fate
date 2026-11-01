@@ -347,7 +347,7 @@ class Timeseries:
                 measurements_agg = grouped.std(dim=dims, skipna=True)
             case AggregationStrategy.IQR:
                 q = grouped.quantile([0.25, 0.75], dim=dims, skipna=True)
-                measurements_agg = (q.sel(quantile=0.75) - q.sel(quantile=0.25)).drop_vars("quantile")
+                measurements_agg = q.sel(quantile=0.75, drop=True) - q.sel(quantile=0.25, drop=True)
             case _:
                 raise ValueError(f"Unsupported strategy: {aggregate}")
 
