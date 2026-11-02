@@ -2,7 +2,7 @@
 
 import pytest
 
-from use_case_3.raster_tools.bounding_box import BoundingBox
+from ice_shelf_state_and_fate.raster_tools.bounding_box import BoundingBox
 
 
 def test_bounding_box():

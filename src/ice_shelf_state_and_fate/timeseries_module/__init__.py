@@ -1,5 +1,5 @@
 """Timeseries module."""
 
-from use_case_3.monitoring import setup_logging
+from ice_shelf_state_and_fate.monitoring import setup_logging
 
 setup_logging()

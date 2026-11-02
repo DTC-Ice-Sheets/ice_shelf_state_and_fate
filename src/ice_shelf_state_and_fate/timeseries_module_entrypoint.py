@@ -7,9 +7,9 @@ import cyclopts
 import xarray as xr
 from shapely.geometry import MultiPolygon, Polygon, shape
 
-from use_case_3.entrypoint_helpers import ZarrType
-from use_case_3.timeseries_module.timeseries import Timeseries
-from use_case_3.timeseries_module.timeseries_enums import (
+from ice_shelf_state_and_fate.entrypoint_helpers import ZarrType
+from ice_shelf_state_and_fate.timeseries_module.timeseries import Timeseries
+from ice_shelf_state_and_fate.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,

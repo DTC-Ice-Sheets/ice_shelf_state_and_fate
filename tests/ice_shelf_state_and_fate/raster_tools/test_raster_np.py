@@ -10,8 +10,8 @@ import pytest
 from numpy.typing import DTypeLike, NDArray
 from shapely import Polygon
 
-from use_case_3.raster_tools.bounding_box import BoundingBox
-from use_case_3.raster_tools.raster_np import RasterNp
+from ice_shelf_state_and_fate.raster_tools.bounding_box import BoundingBox
+from ice_shelf_state_and_fate.raster_tools.raster_np import RasterNp
 
 PROJ4_CODE_FIXTURE = "+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs=True"
 

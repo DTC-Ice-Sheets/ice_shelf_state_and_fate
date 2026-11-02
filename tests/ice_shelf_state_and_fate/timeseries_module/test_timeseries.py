@@ -8,8 +8,8 @@ import pytest
 import xarray as xr
 from shapely import Polygon
 
-from use_case_3.timeseries_module.timeseries import Timeseries
-from use_case_3.timeseries_module.timeseries_enums import (
+from ice_shelf_state_and_fate.timeseries_module.timeseries import Timeseries
+from ice_shelf_state_and_fate.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,
@@ -1351,7 +1351,7 @@ def test_detect_anomalies_respects_stationarity_check(monkeypatch, p_value, expe
         assert autolag == "AIC"
         return 0.0, p_value
 
-    monkeypatch.setattr("use_case_3.timeseries_module.timeseries.adfuller", fake_adfuller)
+    monkeypatch.setattr("ice_shelf_state_and_fate.timeseries_module.timeseries.adfuller", fake_adfuller)
 
     total_outlier, upper_outlier, lower_outlier = timeseries.detect_anomalies(stationary_check=True)
 

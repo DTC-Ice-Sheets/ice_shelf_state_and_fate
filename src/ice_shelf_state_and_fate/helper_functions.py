@@ -1,4 +1,4 @@
-"""Helper functions for Use Case 3."""
+"""Helper functions for the 'Ice Shelf State and Fate' package."""
 
 from pathlib import Path
 

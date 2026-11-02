@@ -1,6 +1,6 @@
 # When a version tag is pushed, deploy using that tag.
-# When adapting this template for your own use, please rename "use_case_3" to your package name.
-name: use_case_3_deploy
+# When adapting this template for your own use, please rename "ice_shelf_state_and_fate" to your package name.
+name: ice_shelf_state_and_fate_deploy
 
 on:
   push:
@@ -13,5 +13,5 @@ jobs:
     if: github.actor != 'ew-version-bumper[bot]'
     uses: ./.github/workflows/generic_deploy.yml
     with:
-      package_name: use_case_3
+      package_name: ice_shelf_state_and_fate
     secrets: inherit

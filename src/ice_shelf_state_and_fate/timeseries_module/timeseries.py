@@ -18,8 +18,8 @@ from shapely.geometry import MultiPolygon, Polygon
 from sklearn.linear_model import LinearRegression
 from statsmodels.tsa.stattools import adfuller
 
-from use_case_3.raster_tools.raster_np import RasterNp
-from use_case_3.timeseries_module.timeseries_enums import (
+from ice_shelf_state_and_fate.raster_tools.raster_np import RasterNp
+from ice_shelf_state_and_fate.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     NormalisationType,

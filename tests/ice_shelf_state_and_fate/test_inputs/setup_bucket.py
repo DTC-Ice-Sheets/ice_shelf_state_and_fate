@@ -33,7 +33,7 @@ def create_dataset():
     )
 
 
-delete_directory_from_s3(bucket, "use_case_3/", client)
+delete_directory_from_s3(bucket, "ice_shelf_state_and_fate/", client)
 with TemporaryDirectory() as tmpdir:
     tmpdir = Path(tmpdir)
     for dataset in ["A", "B", "C"]:
@@ -42,6 +42,6 @@ with TemporaryDirectory() as tmpdir:
         upload_directory_to_s3(
             tmpdir / "test_dataset.zarr",
             bucket,
-            f"use_case_3/input_dataset_{dataset}.zarr",
+            f"ice_shelf_state_and_fate/input_dataset_{dataset}.zarr",
             client,
         )

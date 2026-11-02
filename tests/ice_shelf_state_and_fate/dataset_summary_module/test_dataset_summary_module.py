@@ -1,12 +1,12 @@
-"""Tests for dataset summary module in use case 3."""
+"""Tests for dataset summary module in the 'Ice Shelf State and Fate' package."""
 
 import xarray as xr
 
-from use_case_3.dataset_summary_module.dataset_summary_module import calculate_summary_grid
+from ice_shelf_state_and_fate.dataset_summary_module.dataset_summary_module import calculate_summary_grid
 
 
 def test_dataset_summary_module():
-    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
+    input_zarr_path = "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_dataset_A.zarr"
     ds = xr.open_zarr(input_zarr_path)
 
     out = calculate_summary_grid(ds, max_res=4)

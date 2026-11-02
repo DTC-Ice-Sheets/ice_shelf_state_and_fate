@@ -23,11 +23,11 @@ from statsmodels.tools.tools import add_constant
 from statsmodels.tsa.stattools import grangercausalitytests
 from statsmodels.tsa.tsatools import lagmat2ds
 
-from use_case_3.covariate_analyser_module.timeseries_preprocessor import (
+from ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor import (
     TimeSeriesPreprocessor,
 )
-from use_case_3.timeseries_module.timeseries import Timeseries
-from use_case_3.timeseries_module.timeseries_enums import (
+from ice_shelf_state_and_fate.timeseries_module.timeseries import Timeseries
+from ice_shelf_state_and_fate.timeseries_module.timeseries_enums import (
     AggregationPeriod,
     AggregationStrategy,
     JointPlotAnalysisType,

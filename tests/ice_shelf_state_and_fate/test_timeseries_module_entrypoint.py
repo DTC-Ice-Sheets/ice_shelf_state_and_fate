@@ -9,11 +9,11 @@ import cyclopts
 import pytest
 import xarray as xr
 
-from use_case_3.timeseries_module_entrypoint import app
+from ice_shelf_state_and_fate.timeseries_module_entrypoint import app
 
 
 def test_main(tmp_zarr_output_path: Path) -> None:
-    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
+    input_zarr_path = "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_dataset_A.zarr"
 
     argv = [
         "timeseries_module",
@@ -47,7 +47,7 @@ def test_main_valid_input_url(preprocessed_test_dataset_a_zarr: xr.Dataset, tmp_
     with (
         # to avoid making an actual HTTP request, we patch the open_zarr function to return our fixture dataset
         patch(
-            "use_case_3.timeseries_module_entrypoint.xr.open_zarr",
+            "ice_shelf_state_and_fate.timeseries_module_entrypoint.xr.open_zarr",
             return_value=preprocessed_test_dataset_a_zarr,
         ),
         patch.object(

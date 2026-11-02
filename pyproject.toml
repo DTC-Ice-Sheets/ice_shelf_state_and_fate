@@ -3,14 +3,14 @@ requires = ["poetry>=1.5"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "use_case_3"
+name = "ice_shelf_state_and_fate"
 version = "0.0.42"
 description = "DTC-IS State and fate of Antarctic Ice Shelves module enables users to gain insights into the State and fate of Antarctic Ice Shelves using earth observation, in-situ and model reanalysis datasets."
 authors = ["Earthwave Ltd <info@earthwave.co.uk>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/dtc-ice-sheets/use_case_3"
-packages = [{ include = "use_case_3", from = "src" }]
+homepage = "https://github.com/dtc-ice-sheets/ice_shelf_state_and_fate"
+packages = [{ include = "ice_shelf_state_and_fate", from = "src" }]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.14"
@@ -120,8 +120,8 @@ convention = "numpy" # Accepts: "google", "numpy", or "pep257"
 skips = ['*_test.py', '*/test_*.py']
 
 [tool.pytest.ini_options]
-addopts = "--disable-warnings --cov use_case_3 --cov-fail-under=80 --show-capture=stderr"
-typeguard-packages = """use_case_3"""
+addopts = "--disable-warnings --cov ice_shelf_state_and_fate --cov-fail-under=80 --show-capture=stderr"
+typeguard-packages = """ice_shelf_state_and_fate"""
 typeguard-debug-instrumentation = true
 typeguard-forward-ref-policy = "ERROR"
 typeguard-collection-check-strategy = "ALL_ITEMS"

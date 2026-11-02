@@ -1,20 +1,20 @@
-"""Integration test for use_case_3 module entrypoints."""
+"""Integration test for ice_shelf_state_and_fate module entrypoints."""
 
 import sys
 from unittest.mock import patch
 
 
 def test_integrated(tmp_path) -> None:
-    from use_case_3.covariate_analyser_module_entrypoint import (
+    from ice_shelf_state_and_fate.covariate_analyser_module_entrypoint import (
         app as covariate_analyser_app,
     )
-    from use_case_3.timeseries_module_entrypoint import app as timeseries_app
-    from use_case_3.timeseries_preprocessor_module_entrypoint import (
+    from ice_shelf_state_and_fate.timeseries_module_entrypoint import app as timeseries_app
+    from ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint import (
         app as preprocessor_app,
     )
 
-    input_zarr_path_1 = "tests/use_case_3/test_inputs/rasters/test_dataset_A.zarr"
-    input_zarr_path_2 = "tests/use_case_3/test_inputs/rasters/test_dataset_B.zarr"
+    input_zarr_path_1 = "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_dataset_A.zarr"
+    input_zarr_path_2 = "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_dataset_B.zarr"
     timeseries_path_1 = tmp_path / "timeseries_1.zarr"
     timeseries_path_2 = tmp_path / "timeseries_2.zarr"
     preprocessed_timeseries_path = tmp_path / "preprocessed.zarr"

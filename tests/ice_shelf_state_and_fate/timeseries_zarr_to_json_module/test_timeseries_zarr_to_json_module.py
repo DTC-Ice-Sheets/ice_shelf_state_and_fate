@@ -1,4 +1,4 @@
-"""Tests for dataset summary module in use case 3."""
+"""Tests for timeseries zarr to json module in the 'Ice Shelf State and Fate' package."""
 
 import subprocess
 import sys
@@ -7,14 +7,16 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from use_case_3.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module import timeseries_zarr_to_json
+from ice_shelf_state_and_fate.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module import (
+    timeseries_zarr_to_json,
+)
 
 
 @pytest.mark.parametrize(
     "module_name",
     [
-        "use_case_3.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module",
-        "use_case_3.timeseries_zarr_to_json_module_entrypoint",
+        "ice_shelf_state_and_fate.timeseries_zarr_to_json_module.timeseries_zarr_to_json_module",
+        "ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint",
     ],
 )
 def test_import_outside_repository_root(module_name, tmp_path):
@@ -30,7 +32,7 @@ def test_import_outside_repository_root(module_name, tmp_path):
 
 
 def test_summary_timeseries_zarr_to_json():
-    data_xr = xr.open_dataset(Path("tests/use_case_3/test_inputs/rasters/test_timeseries_calving.zarr"))
+    data_xr = xr.open_dataset(Path("tests/ice_shelf_state_and_fate/test_inputs/rasters/test_timeseries_calving.zarr"))
 
     out_dict = timeseries_zarr_to_json(data=data_xr)
 

@@ -16,8 +16,8 @@ from rasterio.features import geometry_mask
 from rasterio.windows import Window, from_bounds
 from shapely.geometry import MultiPolygon, Polygon
 
-from use_case_3.raster_tools.bounding_box import BoundingBox
-from use_case_3.raster_tools.helpers import make_grid_mesh_xy
+from ice_shelf_state_and_fate.raster_tools.bounding_box import BoundingBox
+from ice_shelf_state_and_fate.raster_tools.helpers import make_grid_mesh_xy
 
 
 class RasterNp(np.ndarray):

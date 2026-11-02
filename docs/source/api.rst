@@ -5,4 +5,4 @@ API Reference
    :toctree: _autosummary
    :recursive:
 
-   use_case_3
+   ice_shelf_state_and_fate

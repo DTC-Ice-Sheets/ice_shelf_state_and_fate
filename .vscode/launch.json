@@ -8,7 +8,7 @@
             "name": "Dashboard",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/use_case_3/dashboard/app.py",
+            "program": "${workspaceFolder}/src/ice_shelf_state_and_fate/dashboard/app.py",
             "console": "integratedTerminal"
         }
     ]

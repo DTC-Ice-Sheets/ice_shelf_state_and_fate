@@ -8,13 +8,13 @@ from unittest.mock import patch
 import cyclopts
 import pytest
 
-from use_case_3.timeseries_preprocessor_module_entrypoint import app
+from ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint import app
 
 
 def test_main_valid_paths(tmp_path) -> None:
     input_zarr_paths = [
-        "tests/use_case_3/test_inputs/rasters/test_timeseries_A.zarr",
-        "tests/use_case_3/test_inputs/rasters/test_timeseries_B.zarr",
+        "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_timeseries_A.zarr",
+        "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_timeseries_B.zarr",
     ]
     output_zarr_path = tmp_path / "output.zarr"
 
@@ -42,7 +42,7 @@ def test_main_valid_paths(tmp_path) -> None:
         # mixture of local and url paths
         (
             (
-                "tests/use_case_3/test_inputs/rasters/test_timeseries_A.zarr",
+                "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_timeseries_A.zarr",
                 "https://example.com/test_timeseries_B.zarr",
             ),
             ("timeseries_a_zarr", "timeseries_b_zarr"),
@@ -64,7 +64,7 @@ def test_main_valid_input_url(
     with (
         patch.object(sys, "argv", argv),
         patch(
-            "use_case_3.timeseries_preprocessor_module_entrypoint.xr.open_zarr",
+            "ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint.xr.open_zarr",
             side_effect=patch_target_list,
         ),
     ):

@@ -1,5 +1,5 @@
 # When pushing to a branch, test
-name: use_case_3_test
+name: ice_shelf_state_and_fate_test
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
   test:
     uses: ./.github/workflows/generic_test.yml
     with:
-      package_name: use_case_3
+      package_name: ice_shelf_state_and_fate
       notebooks_allowed: true
       file_size_limit_mb: 10
     secrets: inherit

@@ -9,11 +9,11 @@ import cyclopts
 import pytest
 from xarray import Dataset
 
-from use_case_3.timeseries_zarr_to_json_module_entrypoint import app
+from ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint import app
 
 
 def test_main_valid_path(tmp_json_output_path) -> None:
-    input_zarr_path = "tests/use_case_3/test_inputs/rasters/test_preprocessed_timeseries.zarr"
+    input_zarr_path = "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_preprocessed_timeseries.zarr"
 
     with patch.object(
         sys,
@@ -37,7 +37,7 @@ def test_main_valid_input_url(preprocessed_timeseries_zarr: Dataset, tmp_json_ou
     with (
         # to avoid making an actual HTTP request, we patch the open_dataset function to return our fixture dataset
         patch(
-            "use_case_3.timeseries_zarr_to_json_module_entrypoint.xr.open_dataset",
+            "ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint.xr.open_dataset",
             return_value=preprocessed_timeseries_zarr,
         ),
         patch.object(

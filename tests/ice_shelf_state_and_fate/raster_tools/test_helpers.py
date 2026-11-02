@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from use_case_3.raster_tools import helpers
+from ice_shelf_state_and_fate.raster_tools import helpers
 
 
 def test_make_grid_mesh_xy():
