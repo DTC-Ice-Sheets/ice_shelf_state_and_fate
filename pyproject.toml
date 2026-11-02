@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "ice_shelf_state_and_fate"
-version = "0.1.0"
+version = "0.1.1"
 description = "DTC-IS State and fate of Antarctic Ice Shelves module enables users to gain insights into the State and fate of Antarctic Ice Shelves using earth observation, in-situ and model reanalysis datasets."
 authors = ["Earthwave Ltd <info@earthwave.co.uk>"]
 license = "MIT"
