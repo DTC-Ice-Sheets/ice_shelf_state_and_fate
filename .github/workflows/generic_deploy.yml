@@ -65,13 +65,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - name: Install dependencies not included in image
-        # Note we need to install git first or actions/checkout@v5 will use GitHub's REST API instead.
-        # TODO: swap this out for a better base container.
-        run: |
-          apt-get update
-          apt-get install -y git make
-        # Bumping versions with github app token: https://github.com/orgs/community/discussions/25305
+      # Bumping versions with github app token: https://github.com/orgs/community/discussions/25305
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
