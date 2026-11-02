@@ -10,6 +10,11 @@ env/
 .venv/
 .env/
 
+# secrets
+.pypirc
+/.gh_token
+/.env
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
 
@@ -29,9 +34,12 @@ build/
 # ruff
 .ruff_cache/
 
-# Secrets
-/.env
-/.gh_token
+# Sphinx autosummary generated stubs
+docs/source/_autosummary/
+
+# local data
+.scrapy/
+.data/
 
 # Dash background callbacks cache
 /cache
