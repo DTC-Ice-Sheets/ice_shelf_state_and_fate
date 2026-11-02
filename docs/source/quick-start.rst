@@ -5,7 +5,7 @@ The package provides five command-line entrypoints. From a cloned repository wit
 the project dependencies installed (see the installation instructions in the
 project README), run each entrypoint with Poetry:
 
-.. code-block:: console
+.. code-block:: bash
 
    poetry run python -m ice_shelf_state_and_fate.timeseries_module_entrypoint --help
 
@@ -31,7 +31,7 @@ Run ``timeseries_module_entrypoint`` to extract a measurement from each input
 dataset and save a timeseries Zarr store in a standardised format. Repeat ``--dataset_paths``
 for each input dataset:
 
-.. code-block:: console
+.. code-block:: bash
 
    poetry run python -m ice_shelf_state_and_fate.timeseries_module_entrypoint \
       --label "Ice velocity" \
@@ -56,7 +56,7 @@ Run ``timeseries_preprocessor_module_entrypoint`` to combine one or more
 timeseries Zarr stores into the format expected by covariate analysis. Repeat
 ``--input_paths`` for each store:
 
-.. code-block:: console
+.. code-block:: bash
 
    poetry run python -m ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint \
       --input_paths output/velocity.zarr \
@@ -75,7 +75,7 @@ Covariate analysis
 Run ``covariate_analyser_module_entrypoint`` on the preprocessed store to write
 analysis results as JSON:
 
-.. code-block:: console
+.. code-block:: bash
 
    poetry run python -m ice_shelf_state_and_fate.covariate_analyser_module_entrypoint \
       --input_path output/preprocessed_timeseries.zarr \
@@ -92,7 +92,7 @@ Run ``dataset_summary_module_entrypoint`` to create a JSON summary of a GeoZarr
 dataset. ``--max_res`` controls the maximum summary resolution and defaults to
 ``20``:
 
-.. code-block:: console
+.. code-block:: bash
 
    poetry run python -m ice_shelf_state_and_fate.dataset_summary_module_entrypoint \
       --input_path data/dataset.zarr \
@@ -108,7 +108,7 @@ names match the ``timeseries_summary`` metadata in
 (for example, ``mass_balance`` or ``discharge``). The generic extraction
 store produced above is not compatible with this converter.
 
-.. code-block:: console
+.. code-block:: bash
 
    poetry run python -m ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint \
       --input_path data/ice_shelf_timeseries.zarr \
