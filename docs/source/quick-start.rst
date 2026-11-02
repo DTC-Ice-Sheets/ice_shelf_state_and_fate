@@ -7,7 +7,7 @@ project README), run each entrypoint with Poetry:
 
 .. code-block:: console
 
-   poetry run python -m use_case_3.timeseries_module_entrypoint --help
+   poetry run python -m ice_shelf_state_and_fate.timeseries_module_entrypoint --help
 
 Replace ``--help`` with the arguments shown below to run a command. If the
 package is installed in your active Python environment, you can omit
@@ -33,7 +33,7 @@ for each input dataset:
 
 .. code-block:: console
 
-   poetry run python -m use_case_3.timeseries_module_entrypoint \
+   poetry run python -m ice_shelf_state_and_fate.timeseries_module_entrypoint \
       --label "Ice velocity" \
       --dataset_paths data/velocity_2020.zarr \
       --dataset_paths data/velocity_2021.zarr \
@@ -58,7 +58,7 @@ timeseries Zarr stores into the format expected by covariate analysis. Repeat
 
 .. code-block:: console
 
-   poetry run python -m use_case_3.timeseries_preprocessor_module_entrypoint \
+   poetry run python -m ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint \
       --input_paths output/velocity.zarr \
       --input_paths output/temperature.zarr \
       --output_path output/preprocessed_timeseries.zarr \
@@ -77,7 +77,7 @@ analysis results as JSON:
 
 .. code-block:: console
 
-   poetry run python -m use_case_3.covariate_analyser_module_entrypoint \
+   poetry run python -m ice_shelf_state_and_fate.covariate_analyser_module_entrypoint \
       --input_path output/preprocessed_timeseries.zarr \
       --output_path output/covariate_analysis.json \
       --analysis_type corr
@@ -94,7 +94,7 @@ dataset. ``--max_res`` controls the maximum summary resolution and defaults to
 
 .. code-block:: console
 
-   poetry run python -m use_case_3.dataset_summary_module_entrypoint \
+   poetry run python -m ice_shelf_state_and_fate.dataset_summary_module_entrypoint \
       --input_path data/dataset.zarr \
       --output_path output/dataset_summary.json \
       --max_res 20
@@ -104,12 +104,12 @@ Convert a timeseries Zarr store to JSON
 
 Run ``timeseries_zarr_to_json_module_entrypoint`` on a store whose variable
 names match the ``timeseries_summary`` metadata in
-``src/use_case_3/timeseries_zarr_to_json_module/variable_mappings_local.yml``
+``src/ice_shelf_state_and_fate/timeseries_zarr_to_json_module/variable_mappings_local.yml``
 (for example, ``mass_balance`` or ``discharge``). The generic extraction
 store produced above is not compatible with this converter.
 
 .. code-block:: console
 
-   poetry run python -m use_case_3.timeseries_zarr_to_json_module_entrypoint \
+   poetry run python -m ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint \
       --input_path data/ice_shelf_timeseries.zarr \
       --output_path output/ice_shelf_timeseries.json
