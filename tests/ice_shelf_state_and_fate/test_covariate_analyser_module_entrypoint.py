@@ -1,0 +1,119 @@
+"""Testing the entrypoint."""
+
+import json
+import math
+import re
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+import cyclopts
+import pytest
+from xarray import Dataset
+
+from ice_shelf_state_and_fate.covariate_analyser_module_entrypoint import app
+
+
+def test_main_valid_input_path(tmp_json_output_path: Path) -> None:
+    input_zarr_path = "tests/ice_shelf_state_and_fate/test_inputs/rasters/test_preprocessed_timeseries.zarr"
+
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "covariate_analyser_module",
+            "--input_path",
+            input_zarr_path,
+            "--output_path",
+            str(tmp_json_output_path),
+        ],
+    ):
+        assert not tmp_json_output_path.exists()
+        app(result_action="return_value")
+        assert tmp_json_output_path.is_file()
+
+
+def test_main_valid_input_with_nans(tmp_json_output_path: Path) -> None:
+    input_zarr_path = "tests/ice_shelf_state_and_fate/test_inputs/cov_analysis_input_with_nans.zarr"
+
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "covariate_analyser_module",
+            "--input_path",
+            input_zarr_path,
+            "--output_path",
+            str(tmp_json_output_path),
+            "--analysis_type",
+            "corr",
+        ],
+    ):
+        assert not tmp_json_output_path.exists()
+        app(result_action="return_value")
+        assert tmp_json_output_path.is_file()
+
+    with tmp_json_output_path.open() as f:
+        results = json.load(f)
+
+    variables = results["variables"]
+    assert variables
+    for variable in variables.values():
+        # histogram counts should always be finite ints that sum to the number of non-NaN measurements
+        n_valid = sum(1 for value in variable["values"] if not math.isnan(value))
+        assert sum(variable["hist_values"]) == n_valid
+        assert all(math.isfinite(edge) for edge in variable["hist_edges"])
+
+    assert results["covariate_stats"]
+
+
+def test_main_valid_input_url(preprocessed_timeseries_zarr: Dataset, tmp_json_output_path: Path) -> None:
+    input_zarr_path = "https://example.com/test_preprocessed_timeseries.zarr"
+
+    with (
+        # to avoid making an actual HTTP request, we patch the open_zarr function to return our fixture dataset
+        patch(
+            "ice_shelf_state_and_fate.covariate_analyser_module_entrypoint.xr.open_zarr",
+            return_value=preprocessed_timeseries_zarr,
+        ),
+        patch.object(
+            sys,
+            "argv",
+            [
+                "covariate_analyser_module",
+                "--input_path",
+                input_zarr_path,
+                "--output_path",
+                str(tmp_json_output_path),
+            ],
+        ),
+    ):
+        assert not tmp_json_output_path.exists()
+        app(result_action="return_value")
+        assert tmp_json_output_path.is_file()
+
+
+@pytest.mark.parametrize(
+    "test_source",
+    ["invalid_file_path", "invalid_path", "invalid_url"],
+)
+def test_main_invalid_input_raises_validation_error(test_source: str, tmp_json_output_path: Path, request) -> None:
+    error_string = test_data = request.getfixturevalue(test_source)
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "covariate_analyser_module",
+                "--input_path",
+                str(test_data),
+                "--output_path",
+                str(tmp_json_output_path),
+            ],
+        ),
+        pytest.raises(
+            cyclopts.ValidationError,
+            match=re.escape(f"The provided path '{error_string}' is neither a valid local path nor a web URL."),
+        ),
+    ):
+        app(result_action="return_value", exit_on_error=False)

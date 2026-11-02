@@ -1,0 +1,78 @@
+"""Entrypoint for the covariate analyser module."""
+
+import json
+from pathlib import Path
+
+import cyclopts
+import xarray as xr
+
+from ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module import CovariateAnalyser
+from ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from ice_shelf_state_and_fate.entrypoint_helpers import ZarrType
+from ice_shelf_state_and_fate.timeseries_module.timeseries import Timeseries
+from ice_shelf_state_and_fate.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+    JointPlotAnalysisType,
+    TimeseriesType,
+)
+
+app = cyclopts.App()
+
+
+@app.default
+def main(
+    input_path: ZarrType,
+    output_path: Path,
+    analysis_type: JointPlotAnalysisType = JointPlotAnalysisType.CORR,
+) -> None:
+    """Plot covariate analysis from a set of pre-processed timeseries.
+
+    Parameters
+    ----------
+    input_path : ZarrType
+        Path to the input .zarr store containing pre-processed timeseries. Can be a local path or web URL.
+    output_path : Path
+        Path to save the output .json file.
+    analysis_type : JointPlotAnalysisType
+        Type of covariate analysis to perform.
+    """
+    timeseries = []
+    ds = xr.open_zarr(input_path)
+    for key, attr in ds.attrs["timeseries"].items():
+        label = attr["label"]
+        measurement_name = attr["measurement_name"]
+        timeseries.append(
+            Timeseries(
+                label=label,
+                timeseries_type=TimeseriesType(attr["timeseries_type"]),
+                measurement_name=measurement_name,
+                measurements=ds[key].to_series(),
+                **(
+                    {
+                        "measurement_uncertainties": ds[attr["uncertainty"]].to_series(),
+                    }
+                    if "uncertainty" in attr
+                    else {}
+                ),
+            )
+        )
+
+    preprocessor = TimeSeriesPreprocessor(
+        timeseries=timeseries,
+        time_period=AggregationPeriod(ds.attrs["time_period"]),
+        aggregation=AggregationStrategy(ds.attrs["aggregation"]),
+        process_timeseries=False,
+    )
+    analyser = CovariateAnalyser(preprocessor)
+
+    results = analyser.run_analysis(
+        analysis_type=analysis_type,
+    )
+
+    with output_path.open("w") as f:
+        json.dump(results, f)
+
+
+if __name__ == "__main__":
+    app()

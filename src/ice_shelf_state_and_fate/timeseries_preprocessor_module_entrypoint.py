@@ -1,0 +1,101 @@
+"""Module entrypoint for the timeseries pre-processor module."""
+
+from pathlib import Path
+
+import cyclopts
+import xarray as xr
+
+from ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor import TimeSeriesPreprocessor
+from ice_shelf_state_and_fate.entrypoint_helpers import ZarrType
+from ice_shelf_state_and_fate.timeseries_module.timeseries import Timeseries
+from ice_shelf_state_and_fate.timeseries_module.timeseries_enums import (
+    AggregationPeriod,
+    AggregationStrategy,
+    TimeseriesType,
+)
+
+app = cyclopts.App()
+
+
+@app.default
+def main(
+    input_paths: list[ZarrType],
+    output_path: Path,
+    time_period: AggregationPeriod | None = None,
+    aggregation: AggregationStrategy = AggregationStrategy.MEAN,
+) -> None:
+    """Pre-process a list of timeseries for covariate analysis.
+
+    Parameters
+    ----------
+    input_paths : list[ZarrType]
+        List of paths to the input timeseries .zarr files. Files can be local paths or URLs.
+    output_path : Path
+        Path to save the output .zarr file.
+    time_period : AggregationPeriod | None
+        Time period for aggregation. If None, the lowest frequency from the input timeseries is used.
+    aggregation : AggregationStrategy
+        Aggregation strategy to apply when multiple measurements fall within the same time bin.
+    """
+    timeseries = []
+    xarrays = {}
+    for path in input_paths:
+        ds = xr.open_zarr(path)
+        ts = Timeseries(
+            label=ds.attrs["label"],
+            timeseries_type=TimeseriesType(ds.attrs["timeseries_type"]),
+            measurement_name=ds.attrs["measurement_name"],
+            measurements=ds["measurement"].to_series(),
+            measurement_std=ds["std"].to_series(),
+            measurement_n=ds["n"].to_series(),
+            **(
+                {
+                    "measurement_uncertainties": ds["uncertainty"].to_series(),
+                    "measurement_uncertainties_std": ds["uncertainty_std"].to_series(),
+                    "measurement_uncertainties_n": ds["uncertainty_n"].to_series(),
+                }
+                if "uncertainty" in ds
+                else {}
+            ),
+        )
+        timeseries.append(ts)
+        xarrays[ts.label] = ds
+
+    preprocessor = TimeSeriesPreprocessor(
+        timeseries=timeseries,
+        time_period=time_period,
+        aggregation=aggregation,
+    )
+
+    data_vars = {}
+    timeseries_attrs = {}
+    for label, ts in preprocessor.timeseries.items():
+        key = f"{label}.{ts.measurement_name}"
+        data_vars[key] = (["time"], ts.measurements.values)
+        timeseries_attrs[key] = {
+            "label": ts.label,
+            "measurement_name": ts.measurement_name,
+            "timeseries_type": ts.timeseries_type,
+        }
+
+        if ts.measurement_uncertainties is not None:
+            uncertainty_key = f"{label}.{xarrays[label].attrs['measurement_uncertainty_name']}"
+            data_vars[uncertainty_key] = (["time"], ts.measurement_uncertainties.values)
+            timeseries_attrs[key]["uncertainty"] = uncertainty_key
+
+    output = xr.Dataset(
+        data_vars=data_vars,
+        coords={
+            "time": next(iter(preprocessor.timeseries.values())).measurements.index.values,
+        },
+        attrs={
+            "time_period": preprocessor.aggregation_period,
+            "aggregation": preprocessor.aggregation,
+            "timeseries": timeseries_attrs,
+        },
+    )
+    output.to_zarr(output_path, mode="w")
+
+
+if __name__ == "__main__":
+    app()

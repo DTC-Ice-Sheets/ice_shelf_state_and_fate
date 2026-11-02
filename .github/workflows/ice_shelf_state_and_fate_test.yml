@@ -1,0 +1,16 @@
+# When pushing to a branch, test
+name: ice_shelf_state_and_fate_test
+
+on:
+  push:
+    branches-ignore:
+      - main # all branches except main (and implicitly not tags)
+
+jobs:
+  test:
+    uses: ./.github/workflows/generic_test.yml
+    with:
+      package_name: ice_shelf_state_and_fate
+      notebooks_allowed: true
+      file_size_limit_mb: 10
+    secrets: inherit
