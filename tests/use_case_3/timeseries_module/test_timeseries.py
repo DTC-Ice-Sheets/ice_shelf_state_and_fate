@@ -327,6 +327,338 @@ def test_process_timeseries_3d(timeseries_dataset_3d_fixture):
     assert np.allclose(timeseries.measurement_uncertainties_n.to_numpy(), np.array([8, 7, 6]))
 
 
+def test__process_timeseries_point_aggregates_measurements_and_uncertainties(timeseries_obj_fixture):
+    dates = pd.to_datetime(["2020-01-02", "2020-01-20", "2020-03-05"])
+    dataset = xr.Dataset(
+        data_vars={
+            "measurement": ("point", [1.0, 3.0, 5.0]),
+            "measurement_uncertainty": ("point", [0.2, 0.4, 0.6]),
+        },
+        coords={
+            "time": ("point", dates),
+            "x": ("point", [0, 1, 2]),
+            "y": ("point", [0, 1, 2]),
+        },
+    )
+
+    timeseries_obj_fixture._process_timeseries_point(
+        ds=dataset,
+        period=AggregationPeriod.MONTH,
+        aggregate=AggregationStrategy.MEAN,
+        measurement_name="measurement",
+        dims=("point",),
+        measurement_uncertainty_name="measurement_uncertainty",
+        seed=7,
+    )
+
+    expected_index = pd.date_range("2020-01-01", "2020-03-01", freq="MS", name="time")
+    pd.testing.assert_index_equal(timeseries_obj_fixture.measurements.index, expected_index)
+    np.testing.assert_allclose(timeseries_obj_fixture.measurements, [2.0, np.nan, 5.0], equal_nan=True)
+    np.testing.assert_allclose(timeseries_obj_fixture.measurement_n, [2, 0, 1])
+    np.testing.assert_allclose(
+        timeseries_obj_fixture.measurement_uncertainties,
+        [np.sqrt(0.2**2 + 0.4**2) / 2, np.nan, 0.6],
+        equal_nan=True,
+    )
+    np.testing.assert_allclose(timeseries_obj_fixture.measurement_uncertainties_n, [2, 0, 1])
+
+
+def test__process_timeseries_point_rejects_no_aggregation(timeseries_obj_fixture):
+    with pytest.raises(ValueError, match="cannot produce a time-only series"):
+        timeseries_obj_fixture._process_timeseries_point(
+            ds=xr.Dataset(),
+            period=AggregationPeriod.MONTH,
+            aggregate=AggregationStrategy.NONE,
+            measurement_name="measurement",
+            dims=("point",),
+        )
+
+
+def test__process_point_measurements_aggregates_and_aligns_periods(timeseries_obj_fixture):
+    periods = pd.to_datetime(["2020-01-01", "2020-01-01", "2020-03-01"])
+    measurements = xr.DataArray(
+        [1.0, 3.0, 5.0],
+        dims=["point"],
+        coords={"period": ("point", periods)},
+    )
+    full_index = pd.date_range("2020-01-01", "2020-03-01", freq="MS", name="time")
+
+    result = timeseries_obj_fixture._process_point_measurements(
+        measurements=measurements,
+        aggregate=AggregationStrategy.MEAN,
+        dims=["point"],
+        full_index=full_index,
+    )
+
+    pd.testing.assert_index_equal(result.index, full_index)
+    np.testing.assert_allclose(result["aggregation"], [2.0, np.nan, 5.0], equal_nan=True)
+    np.testing.assert_allclose(result["data_std"].iloc[[0, 2]], [1.0, 0.0])
+    np.testing.assert_allclose(result["aggregation_n"], [2, 0, 1])
+
+
+def test__process_point_measurements_rejects_unsupported_strategy(timeseries_obj_fixture):
+    periods = pd.to_datetime(["2020-01-01"])
+    measurements = xr.DataArray(
+        [1.0],
+        dims=["point"],
+        coords={"period": ("point", periods)},
+    )
+
+    with pytest.raises(ValueError, match="Unsupported strategy"):
+        timeseries_obj_fixture._process_point_measurements(
+            measurements=measurements,
+            aggregate=AggregationStrategy.NONE,
+            dims=["point"],
+            full_index=pd.date_range("2020-01-01", periods=1, freq="MS", name="time"),
+        )
+
+
+@pytest.fixture
+def point_dataset_fixture():
+    # Points: inside (1, 1), on boundary (0, 1), outside (3, 3)
+    return xr.Dataset(
+        {"measurement": ("point", [10.0, 20.0, 30.0])},
+        coords={
+            "x": ("point", [1.0, 0.0, 3.0]),
+            "y": ("point", [1.0, 1.0, 3.0]),
+        },
+    )
+
+
+@pytest.fixture
+def square_geometry_fixture():
+    return Polygon(((0, 0), (0, 2), (2, 2), (2, 0), (0, 0)))
+
+
+def test__mask_point_dataset_keeps_points_inside_geometry(point_dataset_fixture, square_geometry_fixture):
+    masked = Timeseries._mask_point_dataset(point_dataset_fixture, square_geometry_fixture)
+
+    assert masked.sizes["point"] == 2
+    np.testing.assert_allclose(masked["measurement"].values, [10.0, 20.0])
+    np.testing.assert_allclose(masked["x"].values, [1.0, 0.0])
+    np.testing.assert_allclose(masked["y"].values, [1.0, 1.0])
+
+
+def test__mask_point_dataset_excludes_boundary_points(point_dataset_fixture, square_geometry_fixture):
+    masked = Timeseries._mask_point_dataset(point_dataset_fixture, square_geometry_fixture, include_boundary=False)
+
+    assert masked.sizes["point"] == 1
+    np.testing.assert_allclose(masked["measurement"].values, [10.0])
+
+
+def test__mask_point_dataset_no_points_in_geometry(point_dataset_fixture):
+    geometry = Polygon(((10, 10), (10, 11), (11, 11), (11, 10), (10, 10)))
+
+    masked = Timeseries._mask_point_dataset(point_dataset_fixture, geometry)
+
+    assert masked.sizes["point"] == 0
+
+
+def test__mask_point_dataset_custom_coordinate_names(square_geometry_fixture):
+    ds = xr.Dataset(
+        {"measurement": ("point", [10.0, 30.0])},
+        coords={
+            "easting": ("point", [1.0, 3.0]),
+            "northing": ("point", [1.0, 3.0]),
+        },
+    )
+
+    masked = Timeseries._mask_point_dataset(ds, square_geometry_fixture, x_col="easting", y_col="northing")
+
+    np.testing.assert_allclose(masked["measurement"].values, [10.0])
+
+
+def test__mask_point_dataset_missing_coordinate_raises(square_geometry_fixture):
+    ds = xr.Dataset(
+        {"measurement": ("point", [10.0])},
+        coords={"x": ("point", [1.0])},
+    )
+
+    with pytest.raises(ValueError, match="must contain a 'y' coordinate"):
+        Timeseries._mask_point_dataset(ds, square_geometry_fixture)
+
+
+def test__mask_point_dataset_mismatched_dims_raises(square_geometry_fixture):
+    ds = xr.Dataset(
+        coords={
+            "x": ("point", [1.0, 2.0]),
+            "y": ("other", [1.0, 2.0]),
+        },
+    )
+
+    with pytest.raises(ValueError, match="1-D along the same point dimension"):
+        Timeseries._mask_point_dataset(ds, square_geometry_fixture)
+
+
+def test__mask_point_dataset_empty_geometry_raises(point_dataset_fixture):
+    with pytest.raises(ValueError, match="Mask geometry is empty"):
+        Timeseries._mask_point_dataset(point_dataset_fixture, Polygon())
+
+
+def test__process_point_measurement_uncertainties_aggregates_and_aligns_periods():
+    periods = pd.to_datetime(["2020-01-01", "2020-01-01", "2020-03-01"])
+    measurements = xr.DataArray(
+        [1.0, 3.0, 5.0],
+        dims=["point"],
+        coords={"period": ("point", periods)},
+    )
+    measurement_uncertainties = xr.DataArray(
+        [0.2, 0.4, 0.6],
+        dims=["point"],
+        coords={"period": ("point", periods)},
+    )
+    full_index = pd.date_range("2020-01-01", "2020-03-01", freq="MS", name="time")
+    timeseries = Timeseries(label="test", timeseries_type=TimeseriesType.CUMULATIVE)
+
+    result = timeseries._process_point_measurement_uncertainties(
+        measurements=measurements,
+        measurements_unc=measurement_uncertainties,
+        aggregate=AggregationStrategy.MEAN,
+        dims=["point"],
+        full_index=full_index,
+        seed=7,
+        mc_n_samples=100,
+    )
+
+    pd.testing.assert_index_equal(result.index, full_index)
+    np.testing.assert_allclose(
+        result["uncertainty"],
+        [np.sqrt(0.2**2 + 0.4**2) / 2, np.nan, 0.6],
+        equal_nan=True,
+    )
+    np.testing.assert_allclose(result["uncertainty_n"], [2, 0, 1])
+
+
+@pytest.mark.parametrize(
+    ("strategy", "expected"),
+    [
+        (AggregationStrategy.MEAN, [2.0, 14 / 3]),
+        (AggregationStrategy.MEDIAN, [2.0, 4.0]),
+        (AggregationStrategy.MAX, [3.0, 8.0]),
+        (AggregationStrategy.MIN, [1.0, 2.0]),
+        (AggregationStrategy.STD, [1.0, np.std([2.0, 4.0, 8.0], ddof=1)]),
+        (AggregationStrategy.IQR, [1.0, 3.0]),
+    ],
+)
+def test__compute_stats(strategy, expected):
+    values = np.array([[1.0, 2.0, 3.0], [2.0, 4.0, 8.0]])
+
+    result = Timeseries._compute_stats(values, strategy, axis=1)
+
+    np.testing.assert_allclose(result, expected)
+
+
+def test__compute_stats_rejects_unsupported_strategy():
+    with pytest.raises(ValueError, match="Unsupported strategy"):
+        Timeseries._compute_stats(np.array([1.0, 2.0]), AggregationStrategy.NONE)
+
+
+@pytest.mark.parametrize(
+    ("strategy", "expected"),
+    [
+        (AggregationStrategy.MEAN, np.sqrt(0.4**2 + 0.5**2) / 2),
+        (AggregationStrategy.MAX, 0.5),
+        (AggregationStrategy.MIN, 0.4),
+        (AggregationStrategy.STD, np.sqrt(0.4**2 + 0.5**2) / 2),
+    ],
+)
+def test__group_uncertainty_uses_direct_propagation(strategy, expected):
+    result = Timeseries._group_uncertainty(
+        x=np.array([1.0, 3.0]),
+        s=np.array([0.4, 0.5]),
+        strategy=strategy,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+
+    assert result == pytest.approx(expected)
+
+
+def test__group_uncertainty_filters_nonfinite_pairs_and_returns_nan_for_empty_group():
+    result = Timeseries._group_uncertainty(
+        x=np.array([1.0, np.nan, 3.0]),
+        s=np.array([0.4, 0.5, 0.5]),
+        strategy=AggregationStrategy.MEAN,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+    empty_result = Timeseries._group_uncertainty(
+        x=np.array([np.nan]),
+        s=np.array([0.5]),
+        strategy=AggregationStrategy.MEAN,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+
+    assert result == pytest.approx(np.sqrt(0.4**2 + 0.5**2) / 2)
+    assert np.isnan(empty_result)
+
+
+@pytest.mark.parametrize(
+    ("strategy", "uncertainties", "expected"),
+    [
+        # Extremum has no uncertainty: report unknown, not a neighbour's value
+        (AggregationStrategy.MAX, [0.4, np.nan], np.nan),
+        (AggregationStrategy.MIN, [np.nan, 0.5], np.nan),
+        # Extremum has an uncertainty even though another measurement does not
+        (AggregationStrategy.MAX, [np.nan, 0.5], 0.5),
+        (AggregationStrategy.MIN, [0.4, np.nan], 0.4),
+    ],
+)
+def test__group_uncertainty_extremum_keeps_measurement_support(strategy, uncertainties, expected):
+    result = Timeseries._group_uncertainty(
+        x=np.array([1.0, 3.0]),
+        s=np.array(uncertainties),
+        strategy=strategy,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected)
+
+
+def test__group_uncertainty_extremum_ignores_nan_measurements():
+    result = Timeseries._group_uncertainty(
+        x=np.array([1.0, np.nan, 3.0]),
+        s=np.array([0.4, 0.9, 0.5]),
+        strategy=AggregationStrategy.MAX,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+    empty_result = Timeseries._group_uncertainty(
+        x=np.array([np.nan]),
+        s=np.array([0.5]),
+        strategy=AggregationStrategy.MAX,
+        mc_n_samples=100,
+        rng=np.random.default_rng(42),
+    )
+
+    assert result == pytest.approx(0.5)
+    assert np.isnan(empty_result)
+
+
+def test__group_uncertainty_uses_monte_carlo_for_other_statistics():
+    values = np.array([1.0, 2.0, 4.0, 5.0])
+    uncertainties = np.array([0.1, 0.2, 0.3, 0.4])
+    seed = 17
+    n_samples = 1000
+    samples = values + np.random.default_rng(seed).normal(size=(n_samples, values.size)) * uncertainties
+    expected = Timeseries._compute_stats(samples, AggregationStrategy.IQR, axis=1).std()
+
+    result = Timeseries._group_uncertainty(
+        x=values,
+        s=uncertainties,
+        strategy=AggregationStrategy.IQR,
+        mc_n_samples=n_samples,
+        rng=np.random.default_rng(seed),
+    )
+
+    assert result == pytest.approx(expected)
+
+
 def test_timeseries_type():
     assert TimeseriesType.CUMULATIVE.value == "cumulative"
     assert TimeseriesType.DERIVATIVE.value == "derivative"
