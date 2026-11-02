@@ -2,7 +2,7 @@
 ![Deployment](https://github.com/dtc-ice-sheets/ice_shelf_state_and_fate/actions/workflows/ice_shelf_state_and_fate_deploy.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/DTC-Ice-Sheets/ice_shelf_state_and_fate/blob/main/LICENSE)
 
-# DTC-IS Super Resolution Module
+# DTC-IS _Ice Shelf State and Fate_
 
 The `ice_shelf_state_and_fate` module is a sub-component of the
 [Digital Twin Component for Ice Sheets (DTC-IS)](https://dtc-ice-sheets.org/), an ESA-funded, EO-driven digital twin project.
