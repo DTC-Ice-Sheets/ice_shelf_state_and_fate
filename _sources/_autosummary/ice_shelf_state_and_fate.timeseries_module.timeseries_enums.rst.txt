@@ -1,0 +1,18 @@
+ice\_shelf\_state\_and\_fate.timeseries\_module.timeseries\_enums
+=================================================================
+
+.. automodule:: ice_shelf_state_and_fate.timeseries_module.timeseries_enums
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AggregationPeriod
+      AggregationStrategy
+      JointPlotAnalysisType
+      ModelEvaluationMetric
+      NormalisationType
+      TimeseriesType
+      UncertaintyType
+   

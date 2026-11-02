@@ -1,0 +1,14 @@
+ice\_shelf\_state\_and\_fate.timeseries\_module
+===============================================
+
+.. automodule:: ice_shelf_state_and_fate.timeseries_module
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   timeseries
+   timeseries_enums

@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.raster\_tools.raster\_np
+=====================================================
+
+.. automodule:: ice_shelf_state_and_fate.raster_tools.raster_np
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RasterNp
+   

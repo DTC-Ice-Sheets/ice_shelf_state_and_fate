@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.dataset\_summary\_module\_entrypoint
+=================================================================
+
+.. automodule:: ice_shelf_state_and_fate.dataset_summary_module_entrypoint
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   

@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.raster\_tools.helpers
+==================================================
+
+.. automodule:: ice_shelf_state_and_fate.raster_tools.helpers
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_grid_mesh_xy
+   

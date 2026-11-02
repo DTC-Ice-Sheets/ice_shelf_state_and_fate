@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.monitoring
+=======================================
+
+.. automodule:: ice_shelf_state_and_fate.monitoring
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      setup_logging
+   

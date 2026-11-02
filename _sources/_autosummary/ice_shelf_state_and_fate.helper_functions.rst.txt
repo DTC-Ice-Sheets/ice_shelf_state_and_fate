@@ -1,0 +1,15 @@
+ice\_shelf\_state\_and\_fate.helper\_functions
+==============================================
+
+.. automodule:: ice_shelf_state_and_fate.helper_functions
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_plot_base_path
+      get_plot_path
+      iceshelf_polygon
+      ocean_polygon
+   

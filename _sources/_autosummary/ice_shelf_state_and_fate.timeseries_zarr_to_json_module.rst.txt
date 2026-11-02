@@ -1,0 +1,13 @@
+ice\_shelf\_state\_and\_fate.timeseries\_zarr\_to\_json\_module
+===============================================================
+
+.. automodule:: ice_shelf_state_and_fate.timeseries_zarr_to_json_module
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   timeseries_zarr_to_json_module

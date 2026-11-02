@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.timeseries\_module.timeseries
+==========================================================
+
+.. automodule:: ice_shelf_state_and_fate.timeseries_module.timeseries
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Timeseries
+   

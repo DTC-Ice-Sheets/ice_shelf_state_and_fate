@@ -1,0 +1,18 @@
+ice\_shelf\_state\_and\_fate.entrypoint\_helpers
+================================================
+
+.. automodule:: ice_shelf_state_and_fate.entrypoint_helpers
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ZarrType
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      path_or_web_url_validator
+   

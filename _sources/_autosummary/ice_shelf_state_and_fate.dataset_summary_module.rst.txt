@@ -1,0 +1,13 @@
+ice\_shelf\_state\_and\_fate.dataset\_summary\_module
+=====================================================
+
+.. automodule:: ice_shelf_state_and_fate.dataset_summary_module
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   dataset_summary_module

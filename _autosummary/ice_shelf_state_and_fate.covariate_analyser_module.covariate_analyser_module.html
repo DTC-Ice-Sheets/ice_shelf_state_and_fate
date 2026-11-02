@@ -1,0 +1,586 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module &mdash; State and Fate of Antarctic Ice Shelves  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=94c7bfb3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor" href="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.html" />
+    <link rel="prev" title="ice_shelf_state_and_fate.covariate_analyser_module" href="ice_shelf_state_and_fate.covariate_analyser_module.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            State and Fate of Antarctic Ice Shelves
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="ice_shelf_state_and_fate.html">ice_shelf_state_and_fate</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="ice_shelf_state_and_fate.covariate_analyser_module.html">ice_shelf_state_and_fate.covariate_analyser_module</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.html">ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.covariate_analyser_module_entrypoint.html">ice_shelf_state_and_fate.covariate_analyser_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.dataset_summary_module.html">ice_shelf_state_and_fate.dataset_summary_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.dataset_summary_module_entrypoint.html">ice_shelf_state_and_fate.dataset_summary_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.entrypoint_helpers.html">ice_shelf_state_and_fate.entrypoint_helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.helper_functions.html">ice_shelf_state_and_fate.helper_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.monitoring.html">ice_shelf_state_and_fate.monitoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.raster_tools.html">ice_shelf_state_and_fate.raster_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.html">ice_shelf_state_and_fate.timeseries_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module_entrypoint.html">ice_shelf_state_and_fate.timeseries_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint.html">ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_zarr_to_json_module.html">ice_shelf_state_and_fate.timeseries_zarr_to_json_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint.html">ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">State and Fate of Antarctic Ice Shelves</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="ice_shelf_state_and_fate.html">ice_shelf_state_and_fate</a></li>
+          <li class="breadcrumb-item"><a href="ice_shelf_state_and_fate.covariate_analyser_module.html">ice_shelf_state_and_fate.covariate_analyser_module</a></li>
+      <li class="breadcrumb-item active">ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module">
+<span id="ice-shelf-state-and-fate-covariate-analyser-module-covariate-analyser-module"></span><h1>ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module<a class="headerlink" href="#module-ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module" title="Link to this heading"></a></h1>
+<p>Module for undertaking the covariate analysis.</p>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser" title="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CovariateAnalyser</span></code></a>(timeseries_container[, alpha])</p></td>
+<td><p>The covariate analysis module.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CovariateAnalyser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_container</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.html#ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.TimeSeriesPreprocessor" title="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.TimeSeriesPreprocessor"><span class="pre">TimeSeriesPreprocessor</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The covariate analysis module.</p>
+<p>TODO: None of the plotting functions are tested!</p>
+<p>NOTE: It is generally considered unsafe to use the timeseries in the self._timeseries_altered attribute as
+these have been altered with no history of how and when. There are no gaurentees that a timeseries label which
+is in self.timeseries is in self._timeseries_altered. Only use these timeseries if you know what is stored
+there!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_container</strong> (<a class="reference internal" href="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.html#ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.TimeSeriesPreprocessor" title="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.TimeSeriesPreprocessor"><em>TimeSeriesPreprocessor</em></a>) – The timeseries container.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – The default significance value used in any hypothesis tests, by default 0.05</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.bin_data">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bin_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.bin_data" title="Link to this definition"></a></dt>
+<dd><p>Bin paired observations and calculate the mean values in each bin.</p>
+<p>Drop rows with missing values before binning. Use equal-width bins
+by default, or equal-frequency bins when <code class="docutils literal notranslate"><span class="pre">method</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>pd.Series</em>) – Provide the values used to determine bin membership.</p></li>
+<li><p><strong>y</strong> (<em>pd.Series</em>) – Provide the paired values to average within each bin.</p></li>
+<li><p><strong>n_bins</strong> (<em>int</em>) – Set the number of bins to create.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – Choose <code class="docutils literal notranslate"><span class="pre">&quot;width&quot;</span></code> for equal-width bins or <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> for
+equal-frequency bins.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return the mean x values, mean y values, and observation counts
+for each non-empty bin.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[np.ndarray, np.ndarray, np.ndarray]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>TypeError</strong> – Raise when either input is not a pandas Series.</p></li>
+<li><p><strong>ValueError</strong> – Raise if method must be ‘width’ or ‘quantile’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.correlation_coefficient">
+<span class="sig-name descname"><span class="pre">correlation_coefficient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.correlation_coefficient" title="Link to this definition"></a></dt>
+<dd><p>Calculate the Pearson Correlation Coefficient between two time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – The first time series.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – The second time series.</p></li>
+<li><p><strong>altered</strong> (<em>bool</em>) – A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Pearson correlation coefficient and associated p-value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[float, float]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – “The labels specified are not in the altered timeseries container”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.covariance">
+<span class="sig-name descname"><span class="pre">covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.covariance" title="Link to this definition"></a></dt>
+<dd><p>Calculate the normalised covariance matrix between a set of timeseries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_labels</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – The list of timeseries labels to include in the covariance matrix.</p></li>
+<li><p><strong>normalisation</strong> (<em>str</em><em> | </em><em>None</em>) – The type of normalisation applied, this can be None, or corrcoef.</p></li>
+<li><p><strong>altered</strong> (<em>bool</em>) – A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The covariance matrix.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.covariate_analysis">
+<span class="sig-name descname"><span class="pre">covariate_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.html#ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType" title="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType"><span class="pre">JointPlotAnalysisType</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">JointPlotAnalysisType.CORR</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">figure</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">axes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.covariate_analysis" title="Link to this definition"></a></dt>
+<dd><p>Conduct the covariate analysis.</p>
+<p>This will be the main entrypoint to run the covariate analysis. Currently this
+only runs one method, but the final version will output multiple plots and statistics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis_labels</strong> (<em>list</em><em> | </em><em>None</em>) – A list of labels which can be used to customise the axis labels if required, by default None</p></li>
+<li><p><strong>max_lag</strong> (<em>int</em><em> | </em><em>None</em>) – The maximum allowable lag allowed to align the time series. This can be forward or backwards in time, by
+default None</p></li>
+<li><p><strong>analysis_type</strong> (<a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.html#ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType" title="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType"><em>JointPlotAnalysisType</em></a>) – Whether or not the crosscorrelation is used to align the series, by default JointPlotAnalysisType.CORR</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The grid joint plots of the covariate analysis.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[plt.figure, plt.axes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.crosscorrelation">
+<span class="sig-name descname"><span class="pre">crosscorrelation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.crosscorrelation" title="Link to this definition"></a></dt>
+<dd><p>Calculate the cross-correlation between two timeseries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – The first time series.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – The second time series.</p></li>
+<li><p><strong>altered</strong> (<em>bool</em>) – A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The cross-correlation with associated lags.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[np.ndarray, np.ndarray]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.detrend">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">detrend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.detrend" title="Link to this definition"></a></dt>
+<dd><p>Remove a robust linear trend from a time series.</p>
+<p>Sort the series by its datetime index, fit a RANSAC linear model
+against elapsed time in years, and subtract the fitted trend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> (<em>pd.Series</em>) – Provide the time series to detrend.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return the detrended values with a sorted datetime index and
+the input series name.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.find_causal_vars">
+<span class="sig-name descname"><span class="pre">find_causal_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_lags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.find_causal_vars" title="Link to this definition"></a></dt>
+<dd><p>Find variables which are causally related. This method finds causal variables using the p-value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_lags</strong> (<em>int</em><em> | </em><em>None</em>) – <dl class="simple">
+<dt>The maximum number of lags, if to large will be adjusted to floor((n - 1) / 3) - 1 where n is the no. rows</dt><dd><p>in data. In this context the maximum lags refers to the number of lags used to forecast, by default 10</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with the label pairs as the key with the associated fscore, and p_value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[tuple[str, str], tuple[float, float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.find_correlated_vars">
+<span class="sig-name descname"><span class="pre">find_correlated_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corr_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.find_correlated_vars" title="Link to this definition"></a></dt>
+<dd><p>Find timeseries which are correlated.</p>
+<p>This method finds correlated variables where the correlation is greater than a user defined threshold and is
+statistically significant. Note it returns statistcally significant correlations which are both positive and
+negative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>corr_thresh</strong> (<em>float</em>) – The correlation threshold, by default 0.5</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with the label pairs as the key with the associated correlation coefficent and p_value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[tuple[str, str], tuple[float, float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.find_crosscorrelated_vars">
+<span class="sig-name descname"><span class="pre">find_crosscorrelated_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corr_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int64</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.find_crosscorrelated_vars" title="Link to this definition"></a></dt>
+<dd><p>Find timeseries which are correlated with associated lag.</p>
+<p>This method finds correlated variables where the correlation is greater than a user defined threshold and is
+statistically significant. Note it returns statistcally significant correlations which are both positive and
+negative. The cross correlation is computed and correlation with the largest magnitude is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>corr_thresh</strong> (<em>float</em>) – The correlation threshold, by default 0.5</p></li>
+<li><p><strong>max_lag</strong> (<em>int</em><em> | </em><em>None</em>) – The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+directions, by default 3</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with the label pairs as the key with the associated correlation coefficent, p_value and lag.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[tuple[str, str], tuple[float, float, np.int64 | int | float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.fit_power_law_model">
+<span class="sig-name descname"><span class="pre">fit_power_law_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'width'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_anomalies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_anomalies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.fit_power_law_model" title="Link to this definition"></a></dt>
+<dd><p>Align two time series and fit a power-law model to their binned data.</p>
+<p>Remove bins with non-positive mean x values before fitting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – Select the time series used as the independent variable.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – Select the time series used as the dependent variable.</p></li>
+<li><p><strong>max_lag</strong> (<em>int</em>) – Limit the lag considered when aligning the time series.</p></li>
+<li><p><strong>n_bins</strong> (<em>int</em>) – Set the number of bins used to summarize paired observations.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – Choose the binning method passed to <cite>bin_data</cite>.</p></li>
+<li><p><strong>x_anomalies</strong> (<em>bool</em>) – Indicate whether to detrend the independent variable time series.</p></li>
+<li><p><strong>y_anomalies</strong> (<em>bool</em>) – Indicate whether to detrend the dependent variable time series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return the fitted model statistics, including the lag used to align
+the time series.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.fit_power_law_nonlinear">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fit_power_law_nonlinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.fit_power_law_nonlinear" title="Link to this definition"></a></dt>
+<dd><p>Fit a nonlinear power-law model and estimate confidence intervals.</p>
+<p>Fit the model <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">a</span> <span class="pre">*</span> <span class="pre">x**b</span></code> using several initial estimates for
+the exponent, then select the fit with the lowest residual sum of
+squares.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.ndarray</em>) – Provide the independent variable values.</p></li>
+<li><p><strong>y</strong> (<em>np.ndarray</em>) – Provide the dependent variable values.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – Set the significance level used to calculate confidence
+intervals for the model parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return the fitted parameters <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code>, their confidence
+intervals, residual sum of squares (<code class="docutils literal notranslate"><span class="pre">rss</span></code>), coefficient of
+determination (<code class="docutils literal notranslate"><span class="pre">r2</span></code>), and sample count (<code class="docutils literal notranslate"><span class="pre">n</span></code>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – Raise when any <code class="docutils literal notranslate"><span class="pre">x</span></code> value is negative or there are not more
+    than two data points.</p></li>
+<li><p><strong>RuntimeError</strong> – Raise when the fit fails for every initial exponent estimate.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.jointplot">
+<span class="sig-name descname"><span class="pre">jointplot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">plot</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.jointplot" title="Link to this definition"></a></dt>
+<dd><p>Visualise a joint plot between two time series. This returns a plot.</p>
+<p>TODO: Currently not necessarily used, but will lieky be useful so leaving currently.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – The label for the first timeseries.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – The label for the second timeseries.</p></li>
+<li><p><strong>linear</strong> (<em>bool</em>) – If true a linear fit is displayed using robust linear regression, by default True</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The plot object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>plt.plot</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.max_crosscorrelation">
+<span class="sig-name descname"><span class="pre">max_crosscorrelation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int64</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float64</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int64</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.max_crosscorrelation" title="Link to this definition"></a></dt>
+<dd><p>Find the maximum cross-correlation and associated lag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – The label for the first timeseries.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – The label for the second timeseries.</p></li>
+<li><p><strong>max_lag</strong> (<em>int</em><em> | </em><em>np.int64</em><em> | </em><em>None</em>) – The maximum lag to consider, not this will apply this maximum lag in both the positive and the negative
+directions. If set to None there is no maximum lag, by default None</p></li>
+<li><p><strong>altered</strong> (<em>bool</em>) – A boolean flag specifying whether the original timeseries or the temporarily altered timeseries are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The maximum cross-correlation and associated lag.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[np.float64, np.int64]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.plot_timeseries">
+<span class="sig-name descname"><span class="pre">plot_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yaxis_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">figure</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">axes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.plot_timeseries" title="Link to this definition"></a></dt>
+<dd><p>Plot all the timeseries in the timeseries container.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>yaxis_labels</strong> (<em>list</em><em> | </em><em>None</em>) – A list of labels which can be used to customise the y-axis labels if required, by default None.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The figure and axes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[plt.figure, plt.axes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.predict_power_law">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">predict_power_law</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.predict_power_law" title="Link to this definition"></a></dt>
+<dd><p>Predict values from a fitted power-law model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.ndarray</em>) – Provide the independent variable values at which to predict.</p></li>
+<li><p><strong>model</strong> (<em>dict</em>) – Provide fitted model parameters with <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> keys.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return predictions calculated as <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">x**b</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – Raise when any input <code class="docutils literal notranslate"><span class="pre">x</span></code> value is negative.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.run_analysis">
+<span class="sig-name descname"><span class="pre">run_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.html#ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType" title="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType"><span class="pre">JointPlotAnalysisType</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">JointPlotAnalysisType.CORR</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.run_analysis" title="Link to this definition"></a></dt>
+<dd><p>Perform an analysis of the covariate relationships between the timeseries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_lag</strong> (<em>int</em><em> | </em><em>None</em>) – The maximum lag to consider for the analysis, by default 6 time units.</p></li>
+<li><p><strong>analysis_type</strong> (<a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.html#ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType" title="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.JointPlotAnalysisType"><em>JointPlotAnalysisType</em></a>) – The type of analysis to perform, by default JointPlotAnalysisType.CORR.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the results of the analysis.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.temporal_offset">
+<span class="sig-name descname"><span class="pre">temporal_offset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.html#ice_shelf_state_and_fate.timeseries_module.timeseries_enums.AggregationStrategy" title="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.AggregationStrategy"><span class="pre">AggregationStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">AggregationStrategy.MEAN</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int64</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int64</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.temporal_offset" title="Link to this definition"></a></dt>
+<dd><p>Calculate a temporal offset.</p>
+<p>This is the difference between two series. This can be done using various
+statistics such as the mean, median, maximum and minimum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – The label for the first timeseries.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – The label for the second timeseries.</p></li>
+<li><p><strong>metric</strong> (<a class="reference internal" href="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.html#ice_shelf_state_and_fate.timeseries_module.timeseries_enums.AggregationStrategy" title="ice_shelf_state_and_fate.timeseries_module.timeseries_enums.AggregationStrategy"><em>AggregationStrategy</em></a>) – The statistic to quantify the difference between the two time series, by default “mean”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The temporal offset and if applicable the associated index.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[float | int | np.float64 | np.int64, np.ndarray | int | np.int64 | None] | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.temporal_slope">
+<span class="sig-name descname"><span class="pre">temporal_slope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries_label_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries_label_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ice_shelf_state_and_fate.covariate_analyser_module.covariate_analyser_module.CovariateAnalyser.temporal_slope" title="Link to this definition"></a></dt>
+<dd><p>Calculate the temporal slope of two time series using robust linear regression (RANSac).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeseries_label_1</strong> (<em>str</em>) – The label for the first timeseries.</p></li>
+<li><p><strong>timeseries_label_2</strong> (<em>str</em>) – The label for the second timeseries.</p></li>
+<li><p><strong>plot</strong> (<em>bool</em>) – True if you want a plot of the model fits, by default False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the ratio of gradients between timeseries 1 and timeseries 2, the slope of timeseries 1,
+the intercept of timeseries 1, the slope of timeseries 2, and the intercept of timeseries 2.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[float, float, float, float, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ice_shelf_state_and_fate.covariate_analyser_module.html" class="btn btn-neutral float-left" title="ice_shelf_state_and_fate.covariate_analyser_module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor.html" class="btn btn-neutral float-right" title="ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

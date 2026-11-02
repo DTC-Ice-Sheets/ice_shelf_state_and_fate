@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.covariate\_analyser\_module.timeseries\_preprocessor
+=================================================================================
+
+.. automodule:: ice_shelf_state_and_fate.covariate_analyser_module.timeseries_preprocessor
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TimeSeriesPreprocessor
+   

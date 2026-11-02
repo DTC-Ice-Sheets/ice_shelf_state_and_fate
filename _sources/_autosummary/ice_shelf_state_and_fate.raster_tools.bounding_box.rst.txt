@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.raster\_tools.bounding\_box
+========================================================
+
+.. automodule:: ice_shelf_state_and_fate.raster_tools.bounding_box
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BoundingBox
+   

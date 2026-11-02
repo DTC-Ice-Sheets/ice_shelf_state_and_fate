@@ -1,0 +1,14 @@
+ice\_shelf\_state\_and\_fate.covariate\_analyser\_module
+========================================================
+
+.. automodule:: ice_shelf_state_and_fate.covariate_analyser_module
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   covariate_analyser_module
+   timeseries_preprocessor

@@ -1,0 +1,12 @@
+ice\_shelf\_state\_and\_fate.dataset\_summary\_module.dataset\_summary\_module
+==============================================================================
+
+.. automodule:: ice_shelf_state_and_fate.dataset_summary_module.dataset_summary_module
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calculate_summary_grid
+   
