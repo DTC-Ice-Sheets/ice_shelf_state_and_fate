@@ -1,0 +1,12 @@
+use\_case\_3.dataset\_summary\_module.dataset\_summary\_module
+==============================================================
+
+.. automodule:: use_case_3.dataset_summary_module.dataset_summary_module
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calculate_summary_grid
+   

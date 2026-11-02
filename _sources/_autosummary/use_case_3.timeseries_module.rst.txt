@@ -1,0 +1,14 @@
+use\_case\_3.timeseries\_module
+===============================
+
+.. automodule:: use_case_3.timeseries_module
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   timeseries
+   timeseries_enums

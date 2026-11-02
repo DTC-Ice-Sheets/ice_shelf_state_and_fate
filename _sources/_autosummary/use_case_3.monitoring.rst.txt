@@ -1,0 +1,12 @@
+use\_case\_3.monitoring
+=======================
+
+.. automodule:: use_case_3.monitoring
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      setup_logging
+   

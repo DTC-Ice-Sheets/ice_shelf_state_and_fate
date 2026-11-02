@@ -1,0 +1,358 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>use_case_3.timeseries_module.timeseries_enums &mdash; State and Fate of Antarctic Ice Shelves  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=94c7bfb3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="use_case_3.timeseries_module_entrypoint" href="use_case_3.timeseries_module_entrypoint.html" />
+    <link rel="prev" title="use_case_3.timeseries_module.timeseries" href="use_case_3.timeseries_module.timeseries.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            State and Fate of Antarctic Ice Shelves
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="use_case_3.html">use_case_3</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.covariate_analyser_module.html">use_case_3.covariate_analyser_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.covariate_analyser_module_entrypoint.html">use_case_3.covariate_analyser_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.dataset_summary_module.html">use_case_3.dataset_summary_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.dataset_summary_module_entrypoint.html">use_case_3.dataset_summary_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.entrypoint_helpers.html">use_case_3.entrypoint_helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.helper_functions.html">use_case_3.helper_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.monitoring.html">use_case_3.monitoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.raster_tools.html">use_case_3.raster_tools</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="use_case_3.timeseries_module.html">use_case_3.timeseries_module</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="use_case_3.timeseries_module.timeseries.html">use_case_3.timeseries_module.timeseries</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">use_case_3.timeseries_module.timeseries_enums</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.timeseries_module_entrypoint.html">use_case_3.timeseries_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.timeseries_preprocessor_module_entrypoint.html">use_case_3.timeseries_preprocessor_module_entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.timeseries_zarr_to_json_module.html">use_case_3.timeseries_zarr_to_json_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="use_case_3.timeseries_zarr_to_json_module_entrypoint.html">use_case_3.timeseries_zarr_to_json_module_entrypoint</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">State and Fate of Antarctic Ice Shelves</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="use_case_3.html">use_case_3</a></li>
+          <li class="breadcrumb-item"><a href="use_case_3.timeseries_module.html">use_case_3.timeseries_module</a></li>
+      <li class="breadcrumb-item active">use_case_3.timeseries_module.timeseries_enums</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/use_case_3.timeseries_module.timeseries_enums.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-use_case_3.timeseries_module.timeseries_enums">
+<span id="use-case-3-timeseries-module-timeseries-enums"></span><h1>use_case_3.timeseries_module.timeseries_enums<a class="headerlink" href="#module-use_case_3.timeseries_module.timeseries_enums" title="Link to this heading"></a></h1>
+<p>Module for the manipulation of timeseries.</p>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod" title="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AggregationPeriod</span></code></a>(*values)</p></td>
+<td><p>The available aggregation periods.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy" title="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AggregationStrategy</span></code></a>(*values)</p></td>
+<td><p>The available aggregation types.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType" title="use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JointPlotAnalysisType</span></code></a>(*values)</p></td>
+<td><p>The available analysis types used to evaluate correlation or causality between variables.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric" title="use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ModelEvaluationMetric</span></code></a>(*values)</p></td>
+<td><p>The available model evaluation metrics.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.NormalisationType" title="use_case_3.timeseries_module.timeseries_enums.NormalisationType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NormalisationType</span></code></a>(*values)</p></td>
+<td><p>The available normalisation types.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.TimeseriesType" title="use_case_3.timeseries_module.timeseries_enums.TimeseriesType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeseriesType</span></code></a>(*values)</p></td>
+<td><p>Define the type of timeseries.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType" title="use_case_3.timeseries_module.timeseries_enums.UncertaintyType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UncertaintyType</span></code></a>(*values)</p></td>
+<td><p>The available uncertainty types.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">AggregationPeriod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>The available aggregation periods.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.DAY">
+<span class="sig-name descname"><span class="pre">DAY</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'day'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.DAY" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.MONTH">
+<span class="sig-name descname"><span class="pre">MONTH</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'month'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.MONTH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.QUARTER">
+<span class="sig-name descname"><span class="pre">QUARTER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'quarter'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.QUARTER" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.YEAR">
+<span class="sig-name descname"><span class="pre">YEAR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'year'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.YEAR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.format_with_units">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">format_with_units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int64</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod" title="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod"><span class="pre">AggregationPeriod</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_decimal_places</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.format_with_units" title="Link to this definition"></a></dt>
+<dd><p>Format a value with its corresponding time unit as a human-readable string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.pd_date_range_freq">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pd_date_range_freq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod" title="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod"><span class="pre">AggregationPeriod</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.pd_date_range_freq" title="Link to this definition"></a></dt>
+<dd><p>Appropriate value for <cite>pd.date_range()</cite> <cite>freq</cite> parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.pd_period_freq">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pd_period_freq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod" title="use_case_3.timeseries_module.timeseries_enums.AggregationPeriod"><span class="pre">AggregationPeriod</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationPeriod.pd_period_freq" title="Link to this definition"></a></dt>
+<dd><p>Appropriate value for <cite>pd.PeriodIndex()</cite> <cite>freq</cite> parameter.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">AggregationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>The available aggregation types.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.IQR">
+<span class="sig-name descname"><span class="pre">IQR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'IQR'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.IQR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MAX">
+<span class="sig-name descname"><span class="pre">MAX</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'max'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MAX" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MEAN">
+<span class="sig-name descname"><span class="pre">MEAN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mean'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MEAN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MEDIAN">
+<span class="sig-name descname"><span class="pre">MEDIAN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'median'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MEDIAN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MIN">
+<span class="sig-name descname"><span class="pre">MIN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'min'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.MIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.NONE">
+<span class="sig-name descname"><span class="pre">NONE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'None'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.NONE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.STD">
+<span class="sig-name descname"><span class="pre">STD</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'std'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.AggregationStrategy.STD" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">JointPlotAnalysisType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>The available analysis types used to evaluate correlation or causality between variables.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType.CAUSAL">
+<span class="sig-name descname"><span class="pre">CAUSAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'causal'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType.CAUSAL" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType.CORR">
+<span class="sig-name descname"><span class="pre">CORR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'corr'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType.CORR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType.CROSS_CORR">
+<span class="sig-name descname"><span class="pre">CROSS_CORR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cross_corr'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.JointPlotAnalysisType.CROSS_CORR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ModelEvaluationMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>The available model evaluation metrics.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric.AIC">
+<span class="sig-name descname"><span class="pre">AIC</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'aic'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric.AIC" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric.BIC">
+<span class="sig-name descname"><span class="pre">BIC</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'bic'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.ModelEvaluationMetric.BIC" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.NormalisationType">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">NormalisationType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.NormalisationType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>The available normalisation types.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.NormalisationType.FIRST">
+<span class="sig-name descname"><span class="pre">FIRST</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'first'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.NormalisationType.FIRST" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.NormalisationType.LINEAR_REGRESSION">
+<span class="sig-name descname"><span class="pre">LINEAR_REGRESSION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'linear_regression'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.NormalisationType.LINEAR_REGRESSION" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.TimeseriesType">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">TimeseriesType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.TimeseriesType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>Define the type of timeseries. This can be cumulative or derivative.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.TimeseriesType.CUMULATIVE">
+<span class="sig-name descname"><span class="pre">CUMULATIVE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cumulative'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.TimeseriesType.CUMULATIVE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.TimeseriesType.DERIVATIVE">
+<span class="sig-name descname"><span class="pre">DERIVATIVE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'derivative'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.TimeseriesType.DERIVATIVE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.UncertaintyType">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">UncertaintyType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<p>The available uncertainty types.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.UncertaintyType.IQR">
+<span class="sig-name descname"><span class="pre">IQR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'IQR'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType.IQR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.UncertaintyType.MAX">
+<span class="sig-name descname"><span class="pre">MAX</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'max'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType.MAX" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.UncertaintyType.MIN">
+<span class="sig-name descname"><span class="pre">MIN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'min'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType.MIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.UncertaintyType.PVALUE">
+<span class="sig-name descname"><span class="pre">PVALUE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'p_value'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType.PVALUE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="use_case_3.timeseries_module.timeseries_enums.UncertaintyType.STD">
+<span class="sig-name descname"><span class="pre">STD</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'std'</span></span><a class="headerlink" href="#use_case_3.timeseries_module.timeseries_enums.UncertaintyType.STD" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="use_case_3.timeseries_module.timeseries.html" class="btn btn-neutral float-left" title="use_case_3.timeseries_module.timeseries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="use_case_3.timeseries_module_entrypoint.html" class="btn btn-neutral float-right" title="use_case_3.timeseries_module_entrypoint" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

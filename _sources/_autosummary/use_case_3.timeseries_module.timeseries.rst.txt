@@ -1,0 +1,12 @@
+use\_case\_3.timeseries\_module.timeseries
+==========================================
+
+.. automodule:: use_case_3.timeseries_module.timeseries
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Timeseries
+   

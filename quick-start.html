@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Start &mdash; State and Fate of Antarctic Ice Shelves  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=94c7bfb3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Overview" href="overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            State and Fate of Antarctic Ice Shelves
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#timeseries-extraction">Timeseries extraction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preprocessing-timeseries">Preprocessing timeseries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#covariate-analysis">Covariate analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dataset-summary">Dataset summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#convert-a-timeseries-zarr-store-to-json">Convert a timeseries Zarr store to JSON</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">State and Fate of Antarctic Ice Shelves</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quick Start</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quick-start.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
+<p>The package provides five command-line entrypoints. From a cloned repository with
+the project dependencies installed (see the installation instructions in the
+project README), run each entrypoint with Poetry:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>poetry<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>ice_shelf_state_and_fate.timeseries_module_entrypoint<span class="w"> </span>--help
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">--help</span></code> with the arguments shown below to run a command. If the
+package is installed in your active Python environment, you can omit
+<code class="docutils literal notranslate"><span class="pre">poetry</span> <span class="pre">run</span></code>. Each entrypoint also accepts <code class="docutils literal notranslate"><span class="pre">--help</span></code> to list its arguments
+and defaults. Input Zarr stores may be local paths or <code class="docutils literal notranslate"><span class="pre">http://</span></code>, <code class="docutils literal notranslate"><span class="pre">https://</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URLs. Output paths are local directories.</p>
+<p>The commands can be combined into a processing workflow:</p>
+<ol class="arabic simple">
+<li><p>Extract a timeseries from one or more source datasets.</p></li>
+<li><p>Optionally preprocess multiple timeseries together.</p></li>
+<li><p>Analyse covariates in the preprocessed store.</p></li>
+</ol>
+<p>Dataset summaries and timeseries-to-JSON conversion are separate operations and
+can be run on their own.</p>
+<section id="timeseries-extraction">
+<h2>Timeseries extraction<a class="headerlink" href="#timeseries-extraction" title="Link to this heading"></a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">timeseries_module_entrypoint</span></code> to extract a measurement from each input
+dataset and save a timeseries Zarr store in a standardised format. Repeat <code class="docutils literal notranslate"><span class="pre">--dataset_paths</span></code>
+for each input dataset:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>poetry<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>ice_shelf_state_and_fate.timeseries_module_entrypoint<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--label<span class="w"> </span><span class="s2">&quot;Ice velocity&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--dataset_paths<span class="w"> </span>data/velocity_2020.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--dataset_paths<span class="w"> </span>data/velocity_2021.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output_path<span class="w"> </span>output/velocity.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--measurement_name<span class="w"> </span>velocity
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">--measurement_name</span></code> names the measurement variable in the input datasets.
+Optionally provide <code class="docutils literal notranslate"><span class="pre">--measurement_uncertainty_name</span></code> if the input also
+contains an uncertainty variable, and <code class="docutils literal notranslate"><span class="pre">--mask_json_path</span></code> to supply a GeoJSON
+mask. The default timeseries type is <code class="docutils literal notranslate"><span class="pre">cumulative</span></code> (use <code class="docutils literal notranslate"><span class="pre">derivative</span></code> for a
+derivative); aggregation defaults to <code class="docutils literal notranslate"><span class="pre">mean</span></code> by <code class="docutils literal notranslate"><span class="pre">month</span></code>. The available
+aggregation strategies are <code class="docutils literal notranslate"><span class="pre">mean</span></code>, <code class="docutils literal notranslate"><span class="pre">median</span></code>, <code class="docutils literal notranslate"><span class="pre">max</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code>, <code class="docutils literal notranslate"><span class="pre">std</span></code>,
+<code class="docutils literal notranslate"><span class="pre">IQR</span></code>, and <code class="docutils literal notranslate"><span class="pre">None</span></code>; aggregation periods are <code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">quarter</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">day</span></code>.</p>
+</section>
+<section id="preprocessing-timeseries">
+<h2>Preprocessing timeseries<a class="headerlink" href="#preprocessing-timeseries" title="Link to this heading"></a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">timeseries_preprocessor_module_entrypoint</span></code> to combine one or more
+timeseries Zarr stores into the format expected by covariate analysis. Repeat
+<code class="docutils literal notranslate"><span class="pre">--input_paths</span></code> for each store:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>poetry<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--input_paths<span class="w"> </span>output/velocity.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--input_paths<span class="w"> </span>output/temperature.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output_path<span class="w"> </span>output/preprocessed_timeseries.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--time_period<span class="w"> </span>year<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--aggregation<span class="w"> </span>mean
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">--time_period</span></code> is omitted, the lowest frequency in the input timeseries
+is used. The aggregation defaults to <code class="docutils literal notranslate"><span class="pre">mean</span></code> and accepts <code class="docutils literal notranslate"><span class="pre">mean</span></code>, <code class="docutils literal notranslate"><span class="pre">median</span></code>,
+<code class="docutils literal notranslate"><span class="pre">max</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code>, and <code class="docutils literal notranslate"><span class="pre">std</span></code>.</p>
+</section>
+<section id="covariate-analysis">
+<h2>Covariate analysis<a class="headerlink" href="#covariate-analysis" title="Link to this heading"></a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">covariate_analyser_module_entrypoint</span></code> on the preprocessed store to write
+analysis results as JSON:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>poetry<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>ice_shelf_state_and_fate.covariate_analyser_module_entrypoint<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--input_path<span class="w"> </span>output/preprocessed_timeseries.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output_path<span class="w"> </span>output/covariate_analysis.json<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--analysis_type<span class="w"> </span>corr
+</pre></div>
+</div>
+<p>The analysis type defaults to <code class="docutils literal notranslate"><span class="pre">corr</span></code>. Other supported values are
+<code class="docutils literal notranslate"><span class="pre">cross_corr</span></code> and <code class="docutils literal notranslate"><span class="pre">causal</span></code>.</p>
+</section>
+<section id="dataset-summary">
+<h2>Dataset summary<a class="headerlink" href="#dataset-summary" title="Link to this heading"></a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">dataset_summary_module_entrypoint</span></code> to create a JSON summary of a GeoZarr
+dataset. <code class="docutils literal notranslate"><span class="pre">--max_res</span></code> controls the maximum summary resolution and defaults to
+<code class="docutils literal notranslate"><span class="pre">20</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>poetry<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>ice_shelf_state_and_fate.dataset_summary_module_entrypoint<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--input_path<span class="w"> </span>data/dataset.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output_path<span class="w"> </span>output/dataset_summary.json<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--max_res<span class="w"> </span><span class="m">20</span>
+</pre></div>
+</div>
+</section>
+<section id="convert-a-timeseries-zarr-store-to-json">
+<h2>Convert a timeseries Zarr store to JSON<a class="headerlink" href="#convert-a-timeseries-zarr-store-to-json" title="Link to this heading"></a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">timeseries_zarr_to_json_module_entrypoint</span></code> on a store whose variable
+names match the <code class="docutils literal notranslate"><span class="pre">timeseries_summary</span></code> metadata in
+<code class="docutils literal notranslate"><span class="pre">src/ice_shelf_state_and_fate/timeseries_zarr_to_json_module/variable_mappings_local.yml</span></code>
+(for example, <code class="docutils literal notranslate"><span class="pre">mass_balance</span></code> or <code class="docutils literal notranslate"><span class="pre">discharge</span></code>). The generic extraction
+store produced above is not compatible with this converter.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>poetry<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>ice_shelf_state_and_fate.timeseries_zarr_to_json_module_entrypoint<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--input_path<span class="w"> </span>data/ice_shelf_timeseries.zarr<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output_path<span class="w"> </span>output/ice_shelf_timeseries.json
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

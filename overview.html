@@ -1,0 +1,174 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview &mdash; State and Fate of Antarctic Ice Shelves  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=94c7bfb3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start" href="quick-start.html" />
+    <link rel="prev" title="Ice Shelf State and Fate Module" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            State and Fate of Antarctic Ice Shelves
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#scientific-background">Scientific Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#repository-structure">Repository Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-flow">Data Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#integration-with-the-dtc-ice-sheets-dashboard">Integration with the DTC Ice Sheets Dashboard</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">State and Fate of Antarctic Ice Shelves</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>Ice shelves are permanent extensions of ice sheets that float on the ocean and play a crucial role in regulating ice
+sheet dynamics, predominantly around the periphery of the Antarctic Ice Sheet. Because ice shelves are more exposed to
+both the air above and the ocean below, they tend to respond faster to temperature increases. Ice shelves do not
+directly contribute to sea level rise as they melt because they are already floating on the ocean. However, they
+buttress glacial ice flow, reducing the speed at which glacial ice flows into the ocean. As they melt, this buttressing
+effect weakens, and the grounded ice accelerates and flows into the ocean.</p>
+<p>The <strong>Ice Shelves State and Fate</strong> module of DTC Ice Sheets lets users explore and gain key insights into the Antarctic
+ice shelves by combining and interrogating EO, in-situ, and model reanalysis variables across the ice, ocean, and
+atmosphere.</p>
+<p>This module supports the following primary workflow:</p>
+<ul class="simple">
+<li><p>The univariate and multivariate empirical analysis of ice shelf domain variables to test and discover ice shelf process relationships driving change.</p></li>
+</ul>
+<section id="scientific-background">
+<h2>Scientific Background<a class="headerlink" href="#scientific-background" title="Link to this heading"></a></h2>
+<p>DTC Ice Sheets uses the Ice Shelves State and Fate module to convert heterogeneous input variables across the ice shelf
+domain into a homogeneous set of time series, enabling investigation of empirical ice shelf processes through robust
+univariate and multivariate statistical analyses.</p>
+<ul class="simple">
+<li><p>The Spatiotemporal Insights module converts input variables in different forms, including gridded, point, and time series datasets, into a standardised time series format with associated uncertainties, where available, calculated using quadrature. Summary statistics of the final time series are available, summarising important statistical and coverage-related quantities. Change detection algorithms are automatically applied to each time series, giving important insights into when large anomalous events or changes occur.</p></li>
+<li><p>The Time Series Pre-processor module takes the data variables in the analysis and standardises them across the inputs. This includes ensuring the variables cover the same temporal range and frequency and that missing values are imputed.</p></li>
+<li><p>The Covariate Analyser module takes the standardised inputs from the time series pre-processor module and quantifies the strength of the temporal correlations between them using correlation, cross-correlation, and Granger causality. Outputs of this module include statistical plots, correlation metrics and process models.</p></li>
+</ul>
+<p>For an example of a covariate analysis being used to gain insights into ice shelf processes, please see: Gourmelen, N., Jakob, L., Holland, P. R., Dutrieux, P., Goldberg, D., Bevan, S., Luckman, A., &amp; Malczyk, G. (2025). The influence of subglacial lake discharge on Thwaites Glacier ice-shelf melting and grounding-line retreat. Nature Communications, 16(1), 2272.</p>
+</section>
+<section id="repository-structure">
+<h2>Repository Structure<a class="headerlink" href="#repository-structure" title="Link to this heading"></a></h2>
+<p>The primary functionality is exposed through three entry points:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">ice_shelf_state_and_fate.timeseries_module_entrypoint</span></code></dt><dd><p>Computes a standardised time series with uncertainties for a given ice shelf and input variable. Univariate summary statistics and change detection functionality are also included.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ice_shelf_state_and_fate.timeseries_preprocessor_module_entrypoint</span></code></dt><dd><p>Homogenises a set of input time series to the same temporal range and frequency, and imputes missing values.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ice_shelf_state_and_fate.covariate_analyser_module_entrypoint</span></code></dt><dd><p>Calculates correlation and causality between input variables. When the analysis includes subglacial lake discharge and basal melt rate variables, it also provides the power-law relationship and associated model.</p>
+</dd>
+</dl>
+</section>
+<section id="data-flow">
+<h2>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading"></a></h2>
+<p>The Ice Shelf State and Fate workflow consists of three processing steps:</p>
+<ol class="arabic simple">
+<li><p>Process the input datasets into time series, calculate summary statistics, and apply change-detection algorithms.</p></li>
+<li><p>Prepare the input time series for covariate analysis.</p></li>
+<li><p>Conduct covariate analysis and fit appropriate process models to understand the relationships between ice shelf variables.</p></li>
+</ol>
+<p>You can analyse the results in the DTC dashboard or through the prepared Jupyter notebook.</p>
+</section>
+<section id="integration-with-the-dtc-ice-sheets-dashboard">
+<h2>Integration with the DTC Ice Sheets Dashboard<a class="headerlink" href="#integration-with-the-dtc-ice-sheets-dashboard" title="Link to this heading"></a></h2>
+<p>The Ice Shelves tab of the DTC Ice Sheets dashboard serves as a graphical client for the functionality provided by this
+repository.</p>
+<p>When a user conducts an analysis in the advanced analysis tab of the ice shelves dashboard, the dashboard invokes the
+repository’s backend workflows using the same processing pipeline described above.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Ice Shelf State and Fate Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral float-right" title="Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+use\_case\_3.timeseries\_module.timeseries\_enums
+=================================================
+
+.. automodule:: use_case_3.timeseries_module.timeseries_enums
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AggregationPeriod
+      AggregationStrategy
+      JointPlotAnalysisType
+      ModelEvaluationMetric
+      NormalisationType
+      TimeseriesType
+      UncertaintyType
+   

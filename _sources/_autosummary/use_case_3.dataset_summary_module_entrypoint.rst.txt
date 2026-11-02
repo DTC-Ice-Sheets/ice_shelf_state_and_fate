@@ -1,0 +1,12 @@
+use\_case\_3.dataset\_summary\_module\_entrypoint
+=================================================
+
+.. automodule:: use_case_3.dataset_summary_module_entrypoint
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   

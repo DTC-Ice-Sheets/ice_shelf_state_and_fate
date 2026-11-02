@@ -1,0 +1,12 @@
+use\_case\_3.raster\_tools.helpers
+==================================
+
+.. automodule:: use_case_3.raster_tools.helpers
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_grid_mesh_xy
+   

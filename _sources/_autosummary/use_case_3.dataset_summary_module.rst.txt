@@ -1,0 +1,13 @@
+use\_case\_3.dataset\_summary\_module
+=====================================
+
+.. automodule:: use_case_3.dataset_summary_module
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   dataset_summary_module
