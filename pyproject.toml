@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "use_case_3"
-version = "0.0.38"
+version = "0.0.41"
 description = "DTC-IS State and fate of Antarctic Ice Shelves demonstrator will enable the stakeholders to gain information on the State and fate of Antarctic Ice Shelves"
 authors = ["Earthwave Ltd <info@earthwave.co.uk>"]
 license = "MIT"
