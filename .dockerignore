@@ -2,7 +2,6 @@
 .gh_token*
 .gh_netrc*
 .netrc
-.env
 .pypirc
 /.gh_token
 /.env

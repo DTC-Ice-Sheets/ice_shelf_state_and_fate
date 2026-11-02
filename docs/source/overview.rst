@@ -14,8 +14,7 @@ atmosphere.
 
 This module supports the following primary workflow:
 
-* The univariate and multivariate empirical analysis of ice shelf domain variables to test and discover ice shelf
-process relationships driving change.
+* The univariate and multivariate empirical analysis of ice shelf domain variables to test and discover ice shelf process relationships driving change.
 
 Scientific Background
 ---------------------
@@ -27,7 +26,7 @@ univariate and multivariate statistical analyses.
 * The Time Series Pre-processor module takes the data variables in the analysis and standardises them across the inputs. This includes ensuring the variables cover the same temporal range and frequency and that missing values are imputed.
 * The Covariate Analyser module takes the standardised inputs from the time series pre-processor module and quantifies the strength of the temporal correlations between them using correlation, cross-correlation, and Granger causality. Outputs of this module include statistical plots, correlation metrics and process models.
 
-For an example of a covariate analysis being used to gain insights into ice shelf processes, please see: Gourmelen, N., Jakob, L., Holland, P. R., Dutrieux, P., Goldberg, D., Bevan, S., ... & Malczyk, G. (2025). The influence of subglacial lake discharge on Thwaites Glacier ice-shelf melting and grounding-line retreat. Nature Communications, 16(1), 2272.
+For an example of a covariate analysis being used to gain insights into ice shelf processes, please see: Gourmelen, N., Jakob, L., Holland, P. R., Dutrieux, P., Goldberg, D., Bevan, S., Luckman, A., & Malczyk, G. (2025). The influence of subglacial lake discharge on Thwaites Glacier ice-shelf melting and grounding-line retreat. Nature Communications, 16(1), 2272.
 
 Repository Structure
 --------------------
