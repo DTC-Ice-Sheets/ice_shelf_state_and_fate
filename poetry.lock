@@ -686,14 +686,14 @@ tomlkit = ">=0.8.0,<1.0.0"
 
 [[package]]
 name = "contextily"
-version = "1.7.0"
+version = "1.7.1"
 description = "Context geo-tiles in Python"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "contextily-1.7.0-py3-none-any.whl", hash = "sha256:38393b8e7dc38580ef1f60211a9ba1c3eb142a439c260509c201987754fa9dba"},
-    {file = "contextily-1.7.0.tar.gz", hash = "sha256:6534faa5702b89b46d0d81b4c538754f2d8b3dd8cc298454b11ccedfa67e73ac"},
+    {file = "contextily-1.7.1-py3-none-any.whl", hash = "sha256:82ca36a4a51cf49e43700ad1113b50531b3637e4f12b407b54e0a1fd8950a49c"},
+    {file = "contextily-1.7.1.tar.gz", hash = "sha256:e00372357a93a9028f75ea7343d867893bd8d4b89833de17b18438725929c885"},
 ]
 
 [package.dependencies]
